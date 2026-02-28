@@ -78,10 +78,10 @@
     .video-wrap {
       position: relative;
       width: 100vw;
-      /* use a portrait aspect ratio matching the video (e.g. 9/16) */
-      aspect-ratio: 9/16;
-      max-height: 100vh; /* don't exceed viewport height */
-      margin: 0 auto 40px; /* vertical gap below only */
+      /* container tall because video will be rotated */
+      aspect-ratio: 16/9;
+      max-height: 100vh;
+      margin: 0 auto 40px;
       border-radius: 0;
       overflow: hidden;
       border: none;
@@ -94,12 +94,13 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      /* ensure the content always covers the container, cropping as needed */
+      /* rotate video upright and keep it covering the wrapper */
       min-width: 100%;
       min-height: 100%;
       width: auto;
       height: auto;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) rotate(90deg);
+      transform-origin: center;
     }
 
     /* CTA button hidden by default */
