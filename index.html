@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Padre Pio's Sacred Lent — Restore Your Connection with Your Guardian Angel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #09090e;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Hero */
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 60px;
+      gap: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      color: #d4af37;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 999px;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 4.8vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.15;
+      max-width: 860px;
+      background: linear-gradient(135deg, #fff 40%, #d4af37);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subheadline {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: #94a3b8;
+      max-width: 580px;
+      line-height: 1.75;
+    }
+
+    /* Video */
+    .video-wrap {
+      width: 100%;
+      max-width: 860px;
+      margin: 8px auto;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      box-shadow: 0 24px 80px rgba(212, 175, 55, 0.1);
+      background: #111;
+      aspect-ratio: 16/9;
+    }
+
+    .video-wrap iframe {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+    }
+
+    /* CTA */
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #b8860b, #d4af37, #c9a227);
+      color: #0d0d0d;
+      font-size: 1.05rem;
+      font-weight: 800;
+      padding: 18px 40px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 8px 36px rgba(212, 175, 55, 0.35);
+      letter-spacing: 0.01em;
+    }
+
+    .cta:hover { opacity: 0.9; transform: translateY(-2px); }
+    .cta:active { transform: translateY(0); }
+
+    .cta-arrow { font-size: 1.1rem; }
+
+    .guarantee {
+      font-size: 0.82rem;
+      color: #4b5563;
+      margin-top: -10px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 28px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.8rem;
+      color: #374151;
+    }
+
+    footer .logo { font-weight: 700; color: #4b5563; letter-spacing: 0.05em; }
+
+    footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
+    footer nav a { color: #374151; text-decoration: none; transition: color 0.2s; }
+    footer nav a:hover { color: #6b7280; }
+
+    footer .copy { color: #1f2937; }
+
+    /* Testimonials */
+    .testimonials {
+      padding: 64px 24px;
+      text-align: center;
+    }
+
+    .testimonials h2 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      color: #f0f0f0;
+      margin-bottom: 40px;
+    }
+
+    .swiper { max-width: 1100px; margin: 0 auto; padding-bottom: 48px !important; }
+
+    .swiper-slide {
+      background: #111318;
+      border: 1px solid rgba(212,175,55,0.12);
+      border-radius: 14px;
+      padding: 28px 24px;
+      text-align: left;
+      height: auto;
+    }
+
+    .stars { color: #d4af37; font-size: 1rem; margin-bottom: 12px; }
+
+    .testimonial-text {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b8860b, #d4af37);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #0d0d0d;
+      flex-shrink: 0;
+    }
+
+    .author-info .name { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; }
+    .author-info .location { font-size: 0.78rem; color: #4b5563; }
+
+    .swiper-pagination-bullet { background: #d4af37 !important; opacity: 0.4; }
+    .swiper-pagination-bullet-active { opacity: 1 !important; }
+  </style>
+  <script type="module" crossorigin src="/teste-1/assets/index-DuF7mbSd.js"></script>
+  <link rel="stylesheet" crossorigin href="/teste-1/assets/index-BHcSP5WY.css">
+</head>
+<body>
+
+  <section class="hero">
+    <span class="badge">First Time in America &bull; Limited Spots Available</span>
+
+    <h1>The Hidden Prayer of Padre Pio That Restores Your Connection with Your Guardian Angel</h1>
+
+    <p class="subheadline">
+      Discover the sacred 1-minute prayer kept secret for decades — the same one that brought miraculous healing, unexpected prosperity, and financial breakthroughs to thousands of lives around the world.
+    </p>
+
+    <div class="video-wrap">
+      <iframe
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
+        title="Padre Pio's Sacred Lent"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+
+    <a href="#" class="cta">
+      Yes! I Want Padre Pio's Sacred Lent — Only $37 <span class="cta-arrow">→</span>
+    </a>
+
+    <p class="guarantee">60-day money-back guarantee &bull; 100% secure payment &bull; Instant access</p>
+  </section>
+
+  <!-- Testimonials (powered by Swiper npm package) -->
+  <section class="testimonials">
+    <h2>Lives Changed Around the World</h2>
+    <div class="swiper">
+      <div class="swiper-wrapper">
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"On the seventh day I woke up at 3am and felt a warmth I'd never felt before. Two days later my husband received a job offer that doubled his salary. I have no doubt it was my guardian angel."</p>
+          <div class="testimonial-author">
+            <div class="avatar">MA</div>
+            <div class="author-info"><p class="name">Mary A.</p><p class="location">Texas, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"My blood sugar dropped from 260 to 98 after six days of prayer. My doctor was stunned. I feel my guardian angel protecting me and my family every single day."</p>
+          <div class="testimonial-author">
+            <div class="avatar">CR</div>
+            <div class="author-info"><p class="name">Carlos R.</p><p class="location">Florida, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"I was three months behind on rent. After using Padre Pio's prayer, a lawsuit I'd forgotten about was ruled in my favor. $30,000 appeared in my account. My life changed overnight."</p>
+          <div class="testimonial-author">
+            <div class="avatar">JT</div>
+            <div class="author-info"><p class="name">James T.</p><p class="location">Ohio, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"My mother was 70 and crying from pain every day. After three days of prayer a light filled her room at dawn and the pain was gone. It was a true miracle."</p>
+          <div class="testimonial-author">
+            <div class="avatar">AL</div>
+            <div class="author-info"><p class="name">Alana L.</p><p class="location">Georgia, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"I was unemployed for seven months. I said the prayer on a Sunday night. Monday morning I got a call out of nowhere with a job offer. I still can't believe it."</p>
+          <div class="testimonial-author">
+            <div class="avatar">DM</div>
+            <div class="author-info"><p class="name">David M.</p><p class="location">California, USA</p></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="swiper-pagination"></div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="logo">Sacred Prayers Ministry</span>
+    <nav>
+      <a href="#">About</a>
+      <a href="#">Testimonials</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Use</a>
+      <a href="#">Refund Policy</a>
+      <a href="#">Contact</a>
+    </nav>
+    <span class="copy">© 2026 Sacred Prayers Ministry. All rights reserved. | This site is not part of the Facebook website or Facebook Inc. Results may vary.</span>
+  </footer>
+
+</body>
+</html>
