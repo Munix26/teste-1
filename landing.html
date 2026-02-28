@@ -127,6 +127,65 @@
     footer nav a:hover { color: #6b7280; }
 
     footer .copy { color: #1f2937; }
+
+    /* Testimonials */
+    .testimonials {
+      padding: 64px 24px;
+      text-align: center;
+    }
+
+    .testimonials h2 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      color: #f0f0f0;
+      margin-bottom: 40px;
+    }
+
+    .swiper { max-width: 1100px; margin: 0 auto; padding-bottom: 48px !important; }
+
+    .swiper-slide {
+      background: #111318;
+      border: 1px solid rgba(212,175,55,0.12);
+      border-radius: 14px;
+      padding: 28px 24px;
+      text-align: left;
+      height: auto;
+    }
+
+    .stars { color: #d4af37; font-size: 1rem; margin-bottom: 12px; }
+
+    .testimonial-text {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b8860b, #d4af37);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #0d0d0d;
+      flex-shrink: 0;
+    }
+
+    .author-info .name { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; }
+    .author-info .location { font-size: 0.78rem; color: #4b5563; }
+
+    .swiper-pagination-bullet { background: #d4af37 !important; opacity: 0.4; }
+    .swiper-pagination-bullet-active { opacity: 1 !important; }
   </style>
 </head>
 <body>
@@ -156,6 +215,62 @@
     <p class="guarantee">60-day money-back guarantee &bull; 100% secure payment &bull; Instant access</p>
   </section>
 
+  <!-- Testimonials (powered by Swiper npm package) -->
+  <section class="testimonials">
+    <h2>Lives Changed Around the World</h2>
+    <div class="swiper">
+      <div class="swiper-wrapper">
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"On the seventh day I woke up at 3am and felt a warmth I'd never felt before. Two days later my husband received a job offer that doubled his salary. I have no doubt it was my guardian angel."</p>
+          <div class="testimonial-author">
+            <div class="avatar">MA</div>
+            <div class="author-info"><p class="name">Mary A.</p><p class="location">Texas, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"My blood sugar dropped from 260 to 98 after six days of prayer. My doctor was stunned. I feel my guardian angel protecting me and my family every single day."</p>
+          <div class="testimonial-author">
+            <div class="avatar">CR</div>
+            <div class="author-info"><p class="name">Carlos R.</p><p class="location">Florida, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"I was three months behind on rent. After using Padre Pio's prayer, a lawsuit I'd forgotten about was ruled in my favor. $30,000 appeared in my account. My life changed overnight."</p>
+          <div class="testimonial-author">
+            <div class="avatar">JT</div>
+            <div class="author-info"><p class="name">James T.</p><p class="location">Ohio, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"My mother was 70 and crying from pain every day. After three days of prayer a light filled her room at dawn and the pain was gone. It was a true miracle."</p>
+          <div class="testimonial-author">
+            <div class="avatar">AL</div>
+            <div class="author-info"><p class="name">Alana L.</p><p class="location">Georgia, USA</p></div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"I was unemployed for seven months. I said the prayer on a Sunday night. Monday morning I got a call out of nowhere with a job offer. I still can't believe it."</p>
+          <div class="testimonial-author">
+            <div class="avatar">DM</div>
+            <div class="author-info"><p class="name">David M.</p><p class="location">California, USA</p></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="swiper-pagination"></div>
+    </div>
+  </section>
+
   <footer>
     <span class="logo">Sacred Prayers Ministry</span>
     <nav>
@@ -169,5 +284,6 @@
     <span class="copy">© 2026 Sacred Prayers Ministry. All rights reserved. | This site is not part of the Facebook website or Facebook Inc. Results may vary.</span>
   </footer>
 
+  <script type="module" src="/main.js"></script>
 </body>
 </html>
