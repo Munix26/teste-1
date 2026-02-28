@@ -32,7 +32,7 @@
       flex-direction: column;
     }
 
-    /* Hero */
+    /* mobile‑first defaults -------------------------------------------------- */
     .hero {
       flex: 1;
       display: flex;
@@ -40,8 +40,8 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 80px 24px 60px;
-      gap: 24px;
+      padding: 60px 16px 40px;
+      gap: 20px;
     }
 
     .badge {
@@ -58,10 +58,10 @@
     }
 
     h1 {
-      font-size: clamp(1.9rem, 4.8vw, 3.6rem);
+      font-size: 1.9rem;
       font-weight: 800;
       line-height: 1.15;
-      max-width: 860px;
+      max-width: 100%;
       background: linear-gradient(135deg, #fff 40%, #d4af37);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -69,10 +69,66 @@
     }
 
     .subheadline {
-      font-size: clamp(1rem, 2vw, 1.2rem);
+      font-size: 1rem;
       color: #94a3b8;
-      max-width: 580px;
+      max-width: 100%;
       line-height: 1.75;
+    }
+
+    .video-wrap {
+      width: 100%;
+      max-width: 100%;
+      margin: 8px auto;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      box-shadow: 0 24px 80px rgba(212, 175, 55, 0.1);
+      background: #111;
+      aspect-ratio: 16/9;
+    }
+
+    /* CTA button hidden by default */
+    .cta {
+      display: none; /* will be shown by script */
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #b8860b, #d4af37, #c9a227);
+      color: #0d0d0d;
+      font-size: 1.05rem;
+      font-weight: 800;
+      padding: 18px 40px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 8px 36px rgba(212, 175, 55, 0.35);
+      letter-spacing: 0.01em;
+    }
+
+    .cta:hover { opacity: 0.9; transform: translateY(-2px); }
+    .cta:active { transform: translateY(0); }
+
+    .guarantee {
+      font-size: 0.82rem;
+      color: #4b5563;
+      margin-top: -10px;
+    }
+
+    /* Testimonials container small stacking handled by swiper */
+    .swiper { max-width: 100%; margin: 0 auto; padding-bottom: 48px !important; }
+
+
+    /* larger screens -------------------------------------------------------- */
+    @media (min-width: 640px) {
+      .hero {
+        padding: 80px 24px 60px;
+        gap: 24px;
+      }
+      h1 { font-size: clamp(2.4rem, 4.8vw, 3.6rem); }
+      .subheadline { font-size: clamp(1.1rem, 2vw, 1.2rem); max-width: 580px; }
+    }
+
+    @media (min-width: 1024px) {
+      .hero { padding: 100px 32px 80px; }
     }
 
     /* Video */
