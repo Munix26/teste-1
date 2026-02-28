@@ -78,15 +78,15 @@
     .video-wrap {
       position: relative;
       width: 100vw;
-      height: 100vh; /* fill viewport for immersive view */
-      max-width: 100%;
+      /* use a portrait aspect ratio matching the video (e.g. 9/16) */
+      aspect-ratio: 9/16;
+      max-height: 100vh; /* don't exceed viewport height */
       margin: 0 auto 40px; /* vertical gap below only */
       border-radius: 0;
       overflow: hidden;
       border: none;
       box-shadow: none;
       background: #000;
-      /* portrait video is centered automatically due to height:100vh */
     }
 
     .video-wrap iframe,
