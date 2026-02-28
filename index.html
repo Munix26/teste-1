@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Facebook Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1190672059709518');
+    fbq('track', 'PageView');
+  </script>
+
+  <!-- End Facebook Pixel Code -->
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Padre Pio's Sacred Lent — Restore Your Connection with Your Guardian Angel</title>
@@ -81,7 +97,7 @@
 
     /* CTA */
     .cta {
-      display: inline-flex;
+      display: none; /* hidden initially; revealed by script after delay */
       align-items: center;
       gap: 8px;
       background: linear-gradient(135deg, #b8860b, #d4af37, #c9a227);
@@ -187,10 +203,14 @@
     .swiper-pagination-bullet { background: #d4af37 !important; opacity: 0.4; }
     .swiper-pagination-bullet-active { opacity: 1 !important; }
   </style>
-  <script type="module" crossorigin src="/teste-1/assets/index-DuF7mbSd.js"></script>
+  <script type="module" crossorigin src="/teste-1/assets/index-C4Emk9gW.js"></script>
   <link rel="stylesheet" crossorigin href="/teste-1/assets/index-BHcSP5WY.css">
 </head>
 <body>
+  <!-- FB Pixel noscript fallback -->
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1190672059709518&ev=PageView&noscript=1"
+  /></noscript>
 
   <section class="hero">
     <span class="badge">First Time in America &bull; Limited Spots Available</span>
@@ -202,12 +222,13 @@
     </p>
 
     <div class="video-wrap">
-      <iframe
-        src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
-        title="Padre Pio's Sacred Lent"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen>
-      </iframe>
+      <vturb-smartplayer id="vid-695e7b01e9321dd80f60c835" style="display: block; margin: 0 auto; width: 100%; max-width: 400px;"></vturb-smartplayer>
+      <script type="text/javascript">
+        var s=document.createElement("script");
+        s.src="https://scripts.converteai.net/5c0898d0-c678-471b-a500-eda78696ac4d/players/695e7b01e9321dd80f60c835/v4/player.js";
+        s.async=!0;
+        document.head.appendChild(s);
+      </script>
     </div>
 
     <a href="#" class="cta">
