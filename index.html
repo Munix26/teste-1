@@ -76,15 +76,26 @@
     }
 
     .video-wrap {
-      width: 100%;
+      position: relative;
+      width: 100vw;
+      height: 100vh; /* fill viewport for immersive view */
       max-width: 100%;
-      margin: 8px auto;
-      border-radius: 16px;
+      margin: 0 auto 40px; /* vertical gap below only */
+      border-radius: 0;
       overflow: hidden;
-      border: 1px solid rgba(212, 175, 55, 0.15);
-      box-shadow: 0 24px 80px rgba(212, 175, 55, 0.1);
-      background: #111;
-      aspect-ratio: 16/9;
+      border: none;
+      box-shadow: none;
+      background: #000;
+      /* portrait video is centered automatically due to height:100vh */
+    }
+
+    .video-wrap iframe,
+    .video-wrap vturb-smartplayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
     }
 
     /* CTA button hidden by default */
@@ -285,7 +296,7 @@
       </script>
     </div>
 
-    <a href="#" class="cta">
+    <a href="https://pay.hotmart.com/R103725733F" class="cta" target="_blank" rel="noopener noreferrer">
       Yes! I Want Padre Pio's Sacred Lent — Only $37 <span class="cta-arrow">→</span>
     </a>
 
