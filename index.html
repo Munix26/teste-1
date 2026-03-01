@@ -76,15 +76,21 @@
     }
 
     .video-wrap {
-      width: 100%;
-      max-width: 100%;
-      margin: 8px auto;
-      border-radius: 16px;
+      position: relative;
+      width: 100vw;
+      height: 100vh; /* fill full viewport vertically */
+      margin: 0 auto;
       overflow: hidden;
-      border: 1px solid rgba(212, 175, 55, 0.15);
-      box-shadow: 0 24px 80px rgba(212, 175, 55, 0.1);
-      background: #111;
-      aspect-ratio: 16/9;
+      background: #000;
+    }
+
+    .video-wrap iframe,
+    .video-wrap vturb-smartplayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
     }
 
     /* CTA button hidden by default */
@@ -131,25 +137,7 @@
       .hero { padding: 100px 32px 80px; }
     }
 
-    /* Video */
-    .video-wrap {
-      width: 100%;
-      max-width: 860px;
-      margin: 8px auto;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(212, 175, 55, 0.15);
-      box-shadow: 0 24px 80px rgba(212, 175, 55, 0.1);
-      background: #111;
-      aspect-ratio: 16/9;
-    }
 
-    .video-wrap iframe {
-      width: 100%;
-      height: 100%;
-      display: block;
-      border: none;
-    }
 
     /* CTA */
     .cta {
@@ -259,7 +247,7 @@
     .swiper-pagination-bullet { background: #d4af37 !important; opacity: 0.4; }
     .swiper-pagination-bullet-active { opacity: 1 !important; }
   </style>
-  <script type="module" crossorigin src="/teste-1/assets/index-C4Emk9gW.js"></script>
+  <script type="module" crossorigin src="/teste-1/assets/index-xlK70rJf.js"></script>
   <link rel="stylesheet" crossorigin href="/teste-1/assets/index-BHcSP5WY.css">
 </head>
 <body>
@@ -287,9 +275,22 @@
       </script>
     </div>
 
-    <a href="#" class="cta">
+    <a href="https://pay.hotmart.com/R103725733F" class="cta" target="_blank" rel="noopener noreferrer">
       Yes! I Want Padre Pio's Sacred Lent — Only $37 <span class="cta-arrow">→</span>
     </a>
+
+    <!-- offer details revealed with CTA after timer -->
+    <section id="offer-details" style="display:none; max-width:860px; margin:24px auto; color:#e2e8f0; text-align:left; line-height:1.6;">
+      <h2>O que você recebe hoje</h2>
+      <ul style="margin-left:20px;">
+        <li><strong>O áudio completo</strong> da oração secreta de Padre Pio — prática e poderosa.</li>
+        <li><strong>Guia passo a passo</strong> em PDF para maximizar seus resultados em apenas 1 minuto por dia.</li>
+        <li><strong>Acesso imediato</strong> ao grupo privado no WhatsApp para apoio e testemunhos.</li>
+        <li><strong>Garantia de reembolso de 60 dias</strong> sem perguntas.</li>
+      </ul>
+      <p>Esta oferta especial de lançamento por apenas <strong>$37</strong> expira quando o relógio marcar 18 minutos — após isso, o preço volta ao valor normal.</p>
+      <p>Decida agora e comece a atrair milagres e proteção para sua vida com a mesma prática que transformou milhares de pessoas ao redor do mundo.</p>
+    </section>
 
     <p class="guarantee">60-day money-back guarantee &bull; 100% secure payment &bull; Instant access</p>
   </section>
