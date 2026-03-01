@@ -17,6 +17,14 @@ new Swiper('.swiper', {
   },
 });
 
+// ── Reveal sales content after 18 minutes ────────────────────────────────────
+const DELAY_MS = 18 * 60 * 1000; // 18 minutes
+
+setTimeout(() => {
+  const delayed = document.getElementById('delayed-content');
+  if (delayed) delayed.style.display = 'block';
+}, DELAY_MS);
+
 // ── canvas-confetti (CTA click) ──────────────────────────────────────────────
 import confetti from 'canvas-confetti';
 
