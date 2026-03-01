@@ -24,8 +24,10 @@ import confetti from 'canvas-confetti';
 {
   const cta = document.querySelector('.cta');
   const offer = document.getElementById('offer-details');
+  const extended = document.getElementById('extended-copy');
   if (cta) cta.style.display = 'inline-flex';
   if (offer) offer.style.display = 'block';
+  if (extended) extended.style.display = 'block';
 }
 
 document.querySelector('.cta').addEventListener('click', (e) => {
