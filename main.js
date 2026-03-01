@@ -20,22 +20,15 @@ new Swiper('.swiper', {
 // ── canvas-confetti (CTA click) ──────────────────────────────────────────────
 import confetti from 'canvas-confetti';
 
-// show call‑to‑action and offer copy immediately
-{
-  const cta = document.querySelector('.cta');
-  const offer = document.getElementById('offer-details');
-  const extended = document.getElementById('extended-copy');
-  if (cta) cta.style.display = 'inline-flex';
-  if (offer) offer.style.display = 'block';
-  if (extended) extended.style.display = 'block';
-}
-
-document.querySelector('.cta').addEventListener('click', (e) => {
-  e.preventDefault();
+function fireConfetti() {
   confetti({
     particleCount: 120,
     spread: 80,
     origin: { y: 0.6 },
     colors: ['#d4af37', '#fff', '#b8860b', '#f0e68c'],
   });
+}
+
+document.querySelectorAll('.cta, .btn-cta').forEach(btn => {
+  btn.addEventListener('click', fireConfetti);
 });

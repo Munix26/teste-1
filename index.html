@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <!-- Facebook Pixel Code -->
   <script>
@@ -14,7 +14,6 @@
     fbq('init', '1190672059709518');
     fbq('track', 'PageView');
   </script>
-
   <!-- End Facebook Pixel Code -->
 
   <meta charset="UTF-8" />
@@ -28,26 +27,22 @@
       background: #09090e;
       color: #f0f0f0;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
-    /* mobile‑first defaults -------------------------------------------------- */
+    /* ── HERO ── */
     .hero {
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       text-align: center;
-      padding: 60px 16px 40px;
+      padding: 60px 16px 0;
       gap: 20px;
     }
 
     .badge {
       display: inline-block;
-      background: rgba(212, 175, 55, 0.12);
-      border: 1px solid rgba(212, 175, 55, 0.45);
+      background: rgba(212,175,55,0.12);
+      border: 1px solid rgba(212,175,55,0.45);
       color: #d4af37;
       font-size: 0.78rem;
       font-weight: 600;
@@ -61,7 +56,7 @@
       font-size: 1.9rem;
       font-weight: 800;
       line-height: 1.15;
-      max-width: 100%;
+      max-width: 700px;
       background: linear-gradient(135deg, #fff 40%, #d4af37);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -71,77 +66,32 @@
     .subheadline {
       font-size: 1rem;
       color: #94a3b8;
-      max-width: 100%;
+      max-width: 580px;
       line-height: 1.75;
     }
 
     .video-wrap {
-      position: relative;
-      width: 100vw;
-      height: 100vh; /* fill full viewport vertically */
-      margin: 0 auto;
-      overflow: hidden;
-      background: #000;
-    }
-
-    .video-wrap iframe,
-    .video-wrap vturb-smartplayer {
-      position: absolute;
-      top: 0;
-      left: 0;
       width: 100%;
-      height: 100%;
+      background: #000;
+      margin-top: 8px;
+      display: flex;
+      justify-content: center;
     }
 
-    /* CTA button hidden by default */
-    .cta {
-      display: none; /* will be shown by script */
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #b8860b, #d4af37, #c9a227);
-      color: #0d0d0d;
-      font-size: 1.05rem;
-      font-weight: 800;
-      padding: 18px 40px;
-      border-radius: 999px;
-      text-decoration: none;
-      transition: opacity 0.2s, transform 0.2s;
-      box-shadow: 0 8px 36px rgba(212, 175, 55, 0.35);
-      letter-spacing: 0.01em;
+    .video-wrap vturb-smartplayer {
+      width: 100%;
+      max-width: 400px;
     }
 
-    .cta:hover { opacity: 0.9; transform: translateY(-2px); }
-    .cta:active { transform: translateY(0); }
-
-    .guarantee {
-      font-size: 0.82rem;
-      color: #4b5563;
-      margin-top: -10px;
-    }
-
-    /* Testimonials container small stacking handled by swiper */
-    .swiper { max-width: 100%; margin: 0 auto; padding-bottom: 48px !important; }
-
-
-    /* larger screens -------------------------------------------------------- */
     @media (min-width: 640px) {
-      .hero {
-        padding: 80px 24px 60px;
-        gap: 24px;
-      }
+      .hero { padding: 80px 24px 0; gap: 24px; }
       h1 { font-size: clamp(2.4rem, 4.8vw, 3.6rem); }
-      .subheadline { font-size: clamp(1.1rem, 2vw, 1.2rem); max-width: 580px; }
+      .subheadline { font-size: clamp(1.1rem, 2vw, 1.2rem); }
     }
+    @media (min-width: 1024px) { .hero { padding: 100px 32px 0; } }
 
-    @media (min-width: 1024px) {
-      .hero { padding: 100px 32px 80px; }
-    }
-
-
-
-    /* CTA */
     .cta {
-      display: none; /* hidden initially; revealed by script after delay */
+      display: inline-flex;
       align-items: center;
       gap: 8px;
       background: linear-gradient(135deg, #b8860b, #d4af37, #c9a227);
@@ -152,22 +102,277 @@
       border-radius: 999px;
       text-decoration: none;
       transition: opacity 0.2s, transform 0.2s;
-      box-shadow: 0 8px 36px rgba(212, 175, 55, 0.35);
+      box-shadow: 0 8px 36px rgba(212,175,55,0.35);
       letter-spacing: 0.01em;
     }
-
     .cta:hover { opacity: 0.9; transform: translateY(-2px); }
     .cta:active { transform: translateY(0); }
-
     .cta-arrow { font-size: 1.1rem; }
 
     .guarantee {
       font-size: 0.82rem;
       color: #4b5563;
-      margin-top: -10px;
     }
 
-    /* Footer */
+    /* ── SALES BODY ── */
+    .sales-body { background: #09090e; }
+
+    .sb {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 64px 24px;
+    }
+
+    .sb-divider {
+      height: 1px;
+      background: rgba(212,175,55,0.1);
+    }
+
+    .sb-label {
+      display: inline-block;
+      background: rgba(212,175,55,0.1);
+      border: 1px solid rgba(212,175,55,0.3);
+      color: #d4af37;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+    }
+
+    .sb-h2 {
+      font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.18;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+    .sb-h2 .g { color: #d4af37; }
+
+    .sb-p {
+      font-size: 1rem;
+      color: #94a3b8;
+      line-height: 1.82;
+      margin-bottom: 16px;
+    }
+    .sb-p strong { color: #e2e8f0; }
+
+    .sb-bold {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      line-height: 1.6;
+      margin: 6px 0;
+    }
+
+    /* dash list */
+    .dash-list { list-style: none; padding: 0; margin: 20px 0; }
+    .dash-list li {
+      color: #94a3b8;
+      font-size: 0.97rem;
+      line-height: 1.7;
+      padding: 5px 0 5px 26px;
+      position: relative;
+    }
+    .dash-list li::before {
+      content: "—";
+      color: #d4af37;
+      font-weight: 700;
+      position: absolute;
+      left: 0;
+    }
+
+    /* check list */
+    .check-list { list-style: none; padding: 0; margin: 20px 0; }
+    .check-list li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 0.97rem;
+      color: #94a3b8;
+      line-height: 1.75;
+      margin-bottom: 18px;
+    }
+    .check-list li strong { color: #e2e8f0; }
+    .ci {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #d4af37;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      font-size: 0.65rem;
+      color: #0d0d0d;
+      font-weight: 900;
+    }
+
+    /* pillars */
+    .pillars {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin: 28px 0;
+    }
+    @media (min-width: 540px) { .pillars { grid-template-columns: repeat(3, 1fr); } }
+    .pillar {
+      background: #111318;
+      border: 1px solid rgba(212,175,55,0.15);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+    .pillar-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .pillar-title { font-weight: 700; color: #d4af37; font-size: 0.92rem; margin-bottom: 6px; }
+    .pillar-desc { font-size: 0.82rem; color: #64748b; line-height: 1.55; }
+
+    /* lifestyle list */
+    .life-list { list-style: none; padding: 0; margin: 20px 0; }
+    .life-list li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 0.97rem;
+      color: #94a3b8;
+      line-height: 1.75;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .life-list li:last-child { border-bottom: none; }
+    .life-list li strong { color: #e2e8f0; }
+    .li-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+
+    /* CTA repeat */
+    .cta-repeat {
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .btn-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #b8860b, #d4af37, #c9a227);
+      color: #0d0d0d;
+      font-size: 1.12rem;
+      font-weight: 800;
+      padding: 20px 48px;
+      border-radius: 999px;
+      text-decoration: none;
+      box-shadow: 0 8px 36px rgba(212,175,55,0.35);
+      letter-spacing: 0.01em;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-cta:hover { opacity: 0.9; transform: translateY(-2px); }
+    .meta-line {
+      font-size: 0.78rem;
+      color: #374151;
+      margin-top: 14px;
+    }
+
+    /* bonus box */
+    .bonus-box {
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 36px 0;
+    }
+    .bonus-hdr {
+      background: #120f00;
+      padding: 13px 24px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #d4af37;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .bonus-body { padding: 28px 24px; }
+    .bonus-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    .bonus-value {
+      color: #4ade80;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+    .bonus-desc {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      line-height: 1.75;
+      margin-bottom: 12px;
+    }
+    .bonus-desc strong { color: #e2e8f0; }
+    .bonus-free {
+      font-weight: 700;
+      color: #e2e8f0;
+      font-size: 0.92rem;
+      text-align: center;
+      padding: 14px 24px;
+      background: rgba(212,175,55,0.06);
+      border-top: 1px solid rgba(212,175,55,0.12);
+    }
+
+    /* guarantee box */
+    .guarantee-box {
+      background: #0d0d14;
+      border: 1px solid rgba(212,175,55,0.18);
+      border-radius: 14px;
+      padding: 36px 32px;
+      text-align: center;
+      margin-top: 40px;
+    }
+    .g-shield { font-size: 2.5rem; margin-bottom: 12px; }
+    .g-title { font-size: 1.3rem; font-weight: 800; color: #fff; margin-bottom: 12px; }
+    .g-text {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      line-height: 1.75;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ── TESTIMONIALS ── */
+    .testimonials {
+      padding: 64px 24px;
+      text-align: center;
+    }
+    .testimonials h2 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      color: #f0f0f0;
+      margin-bottom: 40px;
+    }
+    .swiper { max-width: 1100px; margin: 0 auto; padding-bottom: 48px !important; }
+    .swiper-slide {
+      background: #111318;
+      border: 1px solid rgba(212,175,55,0.12);
+      border-radius: 14px;
+      padding: 28px 24px;
+      text-align: left;
+      height: auto;
+    }
+    .stars { color: #d4af37; font-size: 1rem; margin-bottom: 12px; }
+    .testimonial-text { font-size: 0.92rem; color: #94a3b8; line-height: 1.7; margin-bottom: 20px; }
+    .testimonial-author { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b8860b, #d4af37);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; color: #0d0d0d;
+      flex-shrink: 0;
+    }
+    .author-info .name { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; }
+    .author-info .location { font-size: 0.78rem; color: #4b5563; }
+    .swiper-pagination-bullet { background: #d4af37 !important; opacity: 0.4; }
+    .swiper-pagination-bullet-active { opacity: 1 !important; }
+
+    /* ── FOOTER ── */
     footer {
       border-top: 1px solid rgba(255,255,255,0.05);
       padding: 28px 24px;
@@ -179,92 +384,27 @@
       font-size: 0.8rem;
       color: #374151;
     }
-
     footer .logo { font-weight: 700; color: #4b5563; letter-spacing: 0.05em; }
-
     footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
     footer nav a { color: #374151; text-decoration: none; transition: color 0.2s; }
     footer nav a:hover { color: #6b7280; }
-
     footer .copy { color: #1f2937; }
-
-    /* Testimonials */
-    .testimonials {
-      padding: 64px 24px;
-      text-align: center;
-    }
-
-    .testimonials h2 {
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 700;
-      color: #f0f0f0;
-      margin-bottom: 40px;
-    }
-
-    .swiper { max-width: 1100px; margin: 0 auto; padding-bottom: 48px !important; }
-
-    .swiper-slide {
-      background: #111318;
-      border: 1px solid rgba(212,175,55,0.12);
-      border-radius: 14px;
-      padding: 28px 24px;
-      text-align: left;
-      height: auto;
-    }
-
-    .stars { color: #d4af37; font-size: 1rem; margin-bottom: 12px; }
-
-    .testimonial-text {
-      font-size: 0.92rem;
-      color: #94a3b8;
-      line-height: 1.7;
-      margin-bottom: 20px;
-    }
-
-    .testimonial-author {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #b8860b, #d4af37);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: #0d0d0d;
-      flex-shrink: 0;
-    }
-
-    .author-info .name { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; }
-    .author-info .location { font-size: 0.78rem; color: #4b5563; }
-
-    .swiper-pagination-bullet { background: #d4af37 !important; opacity: 0.4; }
-    .swiper-pagination-bullet-active { opacity: 1 !important; }
   </style>
 </head>
 <body>
-  <!-- FB Pixel noscript fallback -->
   <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1190672059709518&ev=PageView&noscript=1"
   /></noscript>
 
+  <!-- ── HERO ── -->
   <section class="hero">
     <span class="badge">First Time in America &bull; Limited Spots Available</span>
-
     <h1>The Hidden Prayer of Padre Pio That Restores Your Connection with Your Guardian Angel</h1>
-
     <p class="subheadline">
       Discover the sacred 1-minute prayer kept secret for decades — the same one that brought miraculous healing, unexpected prosperity, and financial breakthroughs to thousands of lives around the world.
     </p>
-
     <div class="video-wrap">
-      <vturb-smartplayer id="vid-695e7b01e9321dd80f60c835" style="display: block; margin: 0 auto; width: 100%; max-width: 400px;"></vturb-smartplayer>
+      <vturb-smartplayer id="vid-695e7b01e9321dd80f60c835" style="display:block;"></vturb-smartplayer>
       <script type="text/javascript">
         var s=document.createElement("script");
         s.src="https://scripts.converteai.net/5c0898d0-c678-471b-a500-eda78696ac4d/players/695e7b01e9321dd80f60c835/v4/player.js";
@@ -272,46 +412,269 @@
         document.head.appendChild(s);
       </script>
     </div>
-
-    <a href="https://pay.hotmart.com/R103725733F" class="cta" target="_blank" rel="noopener noreferrer">
-      Yes! I Want Padre Pio's Sacred Lent — Only $37 <span class="cta-arrow">→</span>
-    </a>
-
-    <!-- offer details revealed with CTA after timer -->
-    <section id="offer-details" style="display:none; max-width:860px; margin:24px auto; color:#e2e8f0; text-align:left; line-height:1.6;">
-      <h2>O que você recebe hoje</h2>
-      <ul style="margin-left:20px;">
-        <li><strong>O áudio completo</strong> da oração secreta de Padre Pio — prática e poderosa.</li>
-        <li><strong>Guia passo a passo</strong> em PDF para maximizar seus resultados em apenas 1 minuto por dia.</li>
-        <li><strong>Acesso imediato</strong> ao grupo privado no WhatsApp para apoio e testemunhos.</li>
-        <li><strong>Garantia de reembolso de 60 dias</strong> sem perguntas.</li>
-      </ul>
-      <p>Esta oferta especial de lançamento por apenas <strong>$37</strong> expira quando o relógio marcar 18 minutos — após isso, o preço volta ao valor normal.</p>
-      <p>Decida agora e comece a atrair milagres e proteção para sua vida com a mesma prática que transformou milhares de pessoas ao redor do mundo.</p>
-    </section>
-
-    <!-- extended sales copy section mimicking high-converting layouts -->
-    <section id="extended-copy" style="display:none; max-width:860px; margin:24px auto; color:#e2e8f0; text-align:left; line-height:1.7;">
-      <h2>Por que esta oração é diferente</h2>
-      <p>Padre Pio passou décadas em profundo contato com o mundo espiritual. Ele deixou este segredo para proteger você e sua família. Ao usar este áudio, você não está apenas recitando palavras... está despertando uma presença verdadeira ao seu lado.</p>
-      <h3>Imagina sentir:</h3>
-      <ul style="margin-left:20px;">
-        <li>Uma paz imediata que dissolve ansiedade.</li>
-        <li>Providências inesperadas chegando como resposta.</li>
-        <li>Doenças e bloqueios liberados com o poder da fé.</li>
-      </ul>
-      <p>Não é preciso nenhum conhecimento religioso nem tempo longo. São 60 segundos, uma vez por dia. Você pode fazer agora mesmo.</p>
-      <h3>Além do áudio</h3>
-      <p>Receba o material completo que explica <strong>como usar a oração</strong>, <strong>quando</strong> e <strong>por que</strong> funciona — apoiado por testemunhos reais que você viu no vídeo. Isso é um programa; não apenas um arquivo mp3.</p>
-      <h3>Oferta única</h3>
-      <p>Esta página é a única forma de obter tudo isso por apenas $37. Depois do relógio, o valor sobe e pode ser removido de circulação. Se você não agir agora, perderá a porta que milhares já atravessaram.</p>
-      <p><em>Não espere. Missões espirituais como essa não voltam. Clique no botão e comece hoje.</em></p>
-    </section>
-
-    <p class="guarantee">60-day money-back guarantee &bull; 100% secure payment &bull; Instant access</p>
   </section>
 
-  <!-- Testimonials (powered by Swiper npm package) -->
+  <!-- ── SALES BODY ── -->
+  <section class="sales-body">
+
+    <!-- 1. OPENING HOOK -->
+    <div class="sb">
+      <p class="sb-p">Every few generations, a hidden door opens.</p>
+      <p class="sb-p">One that allows <strong>ordinary people to receive extraordinary grace</strong> — without seminary training, without years of penance, without needing to be a mystic or a saint.</p>
+      <p class="sb-p">That door is open right now.</p>
+      <p class="sb-p">Divine protection, miraculous healing, unexpected financial breakthroughs… it's REAL.</p>
+      <p class="sb-p">The spiritual channel that Padre Pio used is still active — and those who know how to <strong>pray with precision and alignment</strong> are receiving miracles while others wait in frustration.</p>
+      <p class="sb-p">But most people still don't know how to step through it… even as others receive their breakthroughs all around them.</p>
+      <p class="sb-p"><strong>This program shows you exactly how to do it.</strong></p>
+      <p class="sb-p">It reveals how Padre Pio quietly helped thousands of souls restore their connection to divine grace — <strong>in less than 60 seconds a day, from anywhere, with no special religious background required.</strong></p>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- 2. WHY MOST PEOPLE STAY STUCK -->
+    <div class="sb">
+      <h2 class="sb-h2">Why Most People <span class="g">Never Experience Miracles...</span><br>and How to Break Through the Veil</h2>
+      <p class="sb-p">You've probably been told that to receive divine intervention, you need to…</p>
+      <ul class="dash-list">
+        <li>Pray for years before seeing any real results</li>
+        <li>Consult a priest or spiritual director first</li>
+        <li>Attend retreats and special religious ceremonies</li>
+        <li>Be "holy enough" or completely free from sin to receive miracles</li>
+        <li>Spend hours in daily devotion before anything ever changes</li>
+      </ul>
+      <p class="sb-p"><strong>That's the trap.</strong></p>
+      <p class="sb-p">I call it the <strong>visible religion</strong> — a loud, exhausting routine that keeps sincere people busy but spiritually blocked.</p>
+      <p class="sb-p">But there's another way of connecting. A quieter one.<br>And much more powerful.</p>
+      <p class="sb-p">By people who understand how to turn sincere intention into <strong>direct access to divine grace</strong>.</p>
+      <p class="sb-p">No guilt. No performance. No impossible standards.</p>
+      <p class="sb-bold">They pray once. They align deeply. They receive abundantly.</p>
+      <p class="sb-p">And most of the time, you don't even see them coming.</p>
+    </div>
+
+    <!-- CTA REPEAT 1 -->
+    <div class="cta-repeat">
+      <a href="https://pay.hotmart.com/R103725733F" class="btn-cta" target="_blank" rel="noopener noreferrer">
+        → Yes! I Want Padre Pio's Sacred Lent — Only $37
+      </a>
+      <p class="meta-line">60-day money-back guarantee &bull; Secure payment &bull; Instant access</p>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- 3. WHAT IT REALLY MEANS -->
+    <div class="sb">
+      <h2 class="sb-h2">What It Really Means to <span class="g">Pray Like Padre Pio</span></h2>
+      <p class="sb-p">Real prayer is not about length. It's about alignment.</p>
+      <p class="sb-p">All you need is:</p>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="pillar-icon">🕯️</div>
+          <div class="pillar-title">A Sacred Word</div>
+          <div class="pillar-desc">The exact invocation revealed to Padre Pio — given to you in the audio.</div>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">⏱️</div>
+          <div class="pillar-title">One Daily Moment</div>
+          <div class="pillar-desc">60 seconds a day is all you need. Morning, evening, or anywhere in between.</div>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">🙏</div>
+          <div class="pillar-title">A Willing Heart</div>
+          <div class="pillar-desc">No special gift required. No prior religious background needed.</div>
+        </div>
+      </div>
+      <p class="sb-p">That's it.</p>
+      <p class="sb-p">When you understand how to <strong>align your spirit with the frequency of divine grace</strong> — everything changes.</p>
+      <p class="sb-p">You can take what you have right now — your faith, your desire, your 60 seconds — and start receiving what you've been asking for in days, not years.</p>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- 4. WHAT THIS LOOKS LIKE IN REAL LIFE -->
+    <div class="sb">
+      <h2 class="sb-h2">What This <span class="g">Looks Like in Real Life...</span></h2>
+      <ul class="life-list">
+        <li>
+          <span class="li-icon">🌅</span>
+          <span>Waking up every morning with <strong>a deep, unexplainable peace</strong> that dissolves fear and anxiety before the day even begins</span>
+        </li>
+        <li>
+          <span class="li-icon">📞</span>
+          <span>Receiving calls out of nowhere with <strong>job offers, resolved legal cases, and unexpected checks</strong> — right after your first prayer</span>
+        </li>
+        <li>
+          <span class="li-icon">💊</span>
+          <span>Watching <strong>health conditions reverse</strong> without any medical explanation, leaving doctors speechless</span>
+        </li>
+        <li>
+          <span class="li-icon">💰</span>
+          <span>Experiencing <strong>financial breakthroughs after months of struggle</strong> — doors opening that were firmly closed for years</span>
+        </li>
+        <li>
+          <span class="li-icon">🛡️</span>
+          <span>Sensing an invisible presence <strong>protecting your family</strong> at all times — a warmth and certainty you've never felt before</span>
+        </li>
+        <li>
+          <span class="li-icon">✨</span>
+          <span>Living every day with the certainty that <strong>you are never alone</strong> and that every sincere prayer is heard and answered</span>
+        </li>
+      </ul>
+      <p class="sb-p">This is the life of those who have learned to walk in alignment with divine grace.</p>
+      <p class="sb-p">And once you experience it, there's no going back.</p>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- 5. ORIGIN STORY -->
+    <div class="sb">
+      <span class="sb-label">The Story Behind the Prayer</span>
+      <h2 class="sb-h2">How This Prayer Was <span class="g">Kept Secret for Decades</span></h2>
+      <p class="sb-p">Padre Pio of Pietrelcina spent over 50 years in deep mystical union with God — receiving the stigmata, bi-locating to help those in need, and guiding millions of souls across the world.</p>
+      <p class="sb-p">But among all his practices, there was one specific prayer — a sacred invocation he used every single day — that he kept close to his heart.</p>
+      <p class="sb-p">It wasn't in any official book. It wasn't shared widely. It was passed on quietly, soul to soul, to those he trusted most.</p>
+      <p class="sb-p">And in 2006, through a rare account from one of Padre Pio's closest spiritual sons, this prayer was documented for the first time.</p>
+      <p class="sb-p"><strong>That discovery changed everything.</strong></p>
+      <p class="sb-p">It revealed not just the words — but the <strong>exact tone, rhythm, and intention</strong> that makes this prayer work. The posture of the soul that opens the channel to divine grace.</p>
+      <p class="sb-p">Since then, I've gathered and refined this program across thousands of participants — building a community that receives documented breakthroughs every single week.</p>
+      <p class="sb-p">For my own students. For my own community. For my own results.</p>
+      <p class="sb-p"><strong>And I put the entire blueprint into this audio program that you can access in the next 60 seconds.</strong></p>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- 6. WHAT'S INSIDE -->
+    <div class="sb">
+      <h2 class="sb-h2" style="text-align:center;">Inside <span class="g">Padre Pio's Sacred Lent</span>,<br>You'll Discover...</h2>
+      <ul class="check-list">
+        <li>
+          <span class="ci">✓</span>
+          <span>How to access the <strong>hidden channel of divine grace</strong> using the exact prayer Padre Pio used every day — and why it works even if you've never felt anything during prayer before.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>The <strong>'Sacred Alignment Method'</strong>: a simple posture of heart and mind that opens you to receive what you've been asking for — starting on day one.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>The 3 types of spiritual blockages that prevent most people from receiving miracles — and <strong>the daily practice that dissolves all three</strong> at once.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>How to pray the <strong>Guardian Angel Invocation</strong>: the exact words and rhythm that establish a living, active connection between you and your personal angel.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>The <strong>Lenten Power Window</strong>: why the 40-day period activates a special grace that multiplies the effect of every prayer — and how to use it year-round.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>How to <strong>stop praying for things</strong> and start praying from a place of already having them — the single shift that transforms prayer from a request into a declaration.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>Why most prayers plateau after a few weeks — and <strong>the simple escalation that unlocks deeper and deeper levels of grace</strong> without adding more time.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>The <strong>exact prayer sequence</strong> my students have used to receive financial breakthroughs, health recoveries, and family reconciliations — often within 7 days.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>How to <strong>build a spiritual life that protects you even when you're not actively praying</strong> — using simple daily habits that keep the channel open 24/7.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>The <strong>24-hour activation sequence</strong> to instantly establish contact with your guardian angel… so you stop feeling alone and start feeling protected from day one.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>Why most people receive no response — and <strong>the simple fix that unlocks divine communication</strong> without adding a single extra minute to your routine.</span>
+        </li>
+        <li>
+          <span class="ci">✓</span>
+          <span>The overlooked reason most spiritual practices quietly stop working within 30 days — and the <strong>one adjustment that keeps the grace flowing for years.</strong></span>
+        </li>
+      </ul>
+      <p class="sb-p" style="margin-top:8px;">And much more.</p>
+      <p class="sb-p">This isn't a motivational pep talk.</p>
+      <p class="sb-p">It's a <strong>tactical spiritual guide for receiving breakthroughs fast</strong>, with proven practices that actually work.</p>
+    </div>
+
+    <!-- CTA REPEAT 2 -->
+    <div class="cta-repeat">
+      <a href="https://pay.hotmart.com/R103725733F" class="btn-cta" target="_blank" rel="noopener noreferrer">
+        → Yes! I Want Padre Pio's Sacred Lent — Only $37
+      </a>
+      <p class="meta-line">60-day money-back guarantee &bull; Secure payment &bull; Instant access</p>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- 7. BONUSES -->
+    <div class="sb">
+      <h2 class="sb-h2" style="text-align:center;">Also Included <span class="g">in Your Bundle Today:</span></h2>
+
+      <div class="bonus-box">
+        <div class="bonus-hdr">BONUS #1 — The Complete Audio Guide</div>
+        <div class="bonus-body">
+          <div class="bonus-title">The Sacred Lent Audio Edition:<br>Hear. Absorb. Transform.</div>
+          <div class="bonus-value">TOTAL VALUE: $47.00</div>
+          <p class="bonus-desc">Prefer to listen? You'll receive the complete narrated audio version of Padre Pio's Sacred Lent — recorded so you can absorb the full practice while walking, driving, or lying in bed before sleep.</p>
+          <p class="bonus-desc">It's the same sacred, tactical prayer system, just delivered in audio format for transformation on the go.</p>
+          <p class="bonus-desc"><strong>Format:</strong> Downloadable MP3 Audio</p>
+          <div class="bonus-free">Get This FREE in the Bundle When You Order Today!</div>
+        </div>
+      </div>
+
+      <div class="bonus-box">
+        <div class="bonus-hdr">BONUS #2 — The Sacred PDF Companion Guide</div>
+        <div class="bonus-body">
+          <div class="bonus-title">Step-by-Step Prayer Blueprint:<br>The Complete Written Guide</div>
+          <div class="bonus-value">TOTAL VALUE: $27.00</div>
+          <p class="bonus-desc">This printable companion guide walks you through every step of the Sacred Lent practice — from your very first prayer to full spiritual alignment. Use it alongside the audio or completely on its own.</p>
+          <p class="bonus-desc">Includes the exact words, the timing, the heart posture, and the 40-day progression map that accelerates your results from the very first day.</p>
+          <p class="bonus-desc"><strong>Format:</strong> Downloadable PDF</p>
+          <div class="bonus-free">Get This FREE in the Bundle When You Order Today!</div>
+        </div>
+      </div>
+
+      <div class="bonus-box">
+        <div class="bonus-hdr">BONUS #3 — The Private Prayer Community</div>
+        <div class="bonus-body">
+          <div class="bonus-title">The Sacred Lent Community:<br>Daily Support + Live Testimonials</div>
+          <div class="bonus-value">TOTAL VALUE: $97.00</div>
+          <p class="bonus-desc">When you get Padre Pio's Sacred Lent today, you'll also unlock access to the <strong>private WhatsApp community</strong>: a dedicated space for those walking the 40-day journey and receiving real breakthroughs together.</p>
+          <p class="bonus-desc">Whether you're starting your first prayer or deepening an existing practice, the community gives you <strong>direct access to a network of sincere souls who are receiving real results</strong> — in real time, every single day.</p>
+          <ul class="check-list" style="margin-top:16px;">
+            <li><span class="ci">✓</span><span><strong>Community:</strong> Daily testimonials, shared progress, and mutual encouragement from people walking the same path.</span></li>
+            <li><span class="ci">✓</span><span><strong>Support:</strong> Direct access to guidance, prayer intentions, and answers from the group.</span></li>
+            <li><span class="ci">✓</span><span><strong>Clarity:</strong> Stay inspired, plugged in, and surrounded by people who are serious about receiving divine breakthroughs.</span></li>
+          </ul>
+          <div class="bonus-free">Get This FREE in the Bundle When You Order Today!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINAL CTA -->
+    <div class="cta-repeat">
+      <a href="https://pay.hotmart.com/R103725733F" class="btn-cta" target="_blank" rel="noopener noreferrer">
+        → Yes! I Want Padre Pio's Sacred Lent — Only $37
+      </a>
+      <p class="meta-line">60-day money-back guarantee &bull; Secure payment &bull; Instant access</p>
+    </div>
+
+    <!-- GUARANTEE -->
+    <div class="sb" style="padding-top: 0;">
+      <div class="guarantee-box">
+        <div class="g-shield">🛡️</div>
+        <div class="g-title">60-Day Sacred Guarantee</div>
+        <p class="g-text">Try Padre Pio's Sacred Lent for a full 60 days. If you don't experience a deeper connection, an increase in peace, or any tangible sign that this practice is working in your life — simply reach out and we'll refund every penny. No questions asked. No hard feelings. Your faith and your investment are fully protected.</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── TESTIMONIALS ── -->
   <section class="testimonials">
     <h2>Lives Changed Around the World</h2>
     <div class="swiper">
