@@ -20,10 +20,12 @@ new Swiper('.swiper', {
 // ── canvas-confetti (CTA click) ──────────────────────────────────────────────
 import confetti from 'canvas-confetti';
 
-// reveal the call‑to‑action after 18 minutes (1 080 000 ms)
+// reveal the call‑to‑action and offer copy after 18 minutes (1 080 000 ms)
 setTimeout(() => {
   const cta = document.querySelector('.cta');
+  const offer = document.getElementById('offer-details');
   if (cta) cta.style.display = 'inline-flex';
+  if (offer) offer.style.display = 'block';
 }, 1080000);
 
 document.querySelector('.cta').addEventListener('click', (e) => {
