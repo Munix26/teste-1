@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tibia": {
+      "type": "http",
+      "url": "https://tibia-mcp.vercel.app/mcp"
+    }
+  }
+}
