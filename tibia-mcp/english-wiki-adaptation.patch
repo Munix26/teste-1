@@ -1,0 +1,116 @@
+diff --git a/src/main.py b/src/main.py
+index 76c8ccd..94153e5 100644
+--- a/src/main.py
++++ b/src/main.py
+@@ -115,15 +115,22 @@ def phase_parse_and_import():
+             table = parser_module.TABLE
+             columns = parser_module.COLUMNS
+ 
+-            # Find pages with this template (normalize underscore/space)
+-            search_pattern1 = f"%{{{{{template_name}%"
+-            search_pattern2 = f"%{{{{{template_name.replace('_', ' ')}%"
++            # Find pages with this template (normalize underscore/space),
++            # including English-wiki alias template names
++            from src.parser.wikitext import TEMPLATE_ALIASES
++
++            names = [template_name, template_name.replace("_", " ")]
++            alias = TEMPLATE_ALIASES.get(template_name.replace(" ", "_").lower())
++            if alias:
++                names += [alias, alias.replace("_", " ")]
++            patterns = [f"%{{{{{n}%" for n in names]
++            where = " OR ".join(["content LIKE %s"] * len(patterns))
+ 
+             with conn.cursor() as cur:
+                 cur.execute(
+                     "SELECT page_id, content FROM raw_pages "
+-                    "WHERE NOT is_redirect AND (content LIKE %s OR content LIKE %s)",
+-                    (search_pattern1, search_pattern2),
++                    f"WHERE NOT is_redirect AND ({where})",
++                    patterns,
+                 )
+                 pages = cur.fetchall()
+ 
+diff --git a/src/mcp_server.py b/src/mcp_server.py
+index c7776da..e588c4f 100644
+--- a/src/mcp_server.py
++++ b/src/mcp_server.py
+@@ -756,7 +756,7 @@ def recommend_hunt(level: int, vocation: str = "", compact: bool = True) -> str:
+     params = [level + 50, max(1, level - 30)]
+ 
+     if vocation:
+-        conditions.append("(vocation ILIKE %s OR vocation ILIKE '%all%' OR vocation IS NULL)")
++        conditions.append("(vocation ILIKE %s OR vocation ILIKE '%%all%%' OR vocation IS NULL)")
+         params.append(f"%{vocation}%")
+ 
+     where = " AND ".join(conditions)
+diff --git a/src/parser/hunts.py b/src/parser/hunts.py
+index 98708db..af9d63a 100644
+--- a/src/parser/hunts.py
++++ b/src/parser/hunts.py
+@@ -25,8 +25,16 @@ FIELD_MAP = {
+     "info": "info",
+     "notas": "notes",
+     "notes": "notes",
++    # English TibiaWiki (tibia.fandom.com) field names
++    "vocation": "vocation",
++    "lootstar": "loot_rating",
++    "expstar": "exp_rating",
++    "bestloot": "rare_items",
+ }
+ 
++# English wiki has per-vocation levels instead of a single "lvl" field
++EN_LEVEL_FIELDS = ("lvlknights", "lvlpaladins", "lvlmages")
++
+ BOOL_FIELDS = {"premium"}
+ INT_FIELDS = {"difficulty", "level", "loot_rating", "exp_rating"}
+ CLEAN_FIELDS = {"rare_items", "info", "notes"}
+@@ -53,6 +61,12 @@ def parse(page_id, content):
+         else:
+             record[col] = value.strip() if value else None
+ 
++    if record.get("level") is None:
++        levels = [parse_int(raw.get(f)) for f in EN_LEVEL_FIELDS]
++        levels = [l for l in levels if l is not None]
++        if levels:
++            record["level"] = min(levels)
++
+     if "name" not in record or not record["name"]:
+         return None
+ 
+diff --git a/src/parser/wikitext.py b/src/parser/wikitext.py
+index ea1bc60..80564dd 100644
+--- a/src/parser/wikitext.py
++++ b/src/parser/wikitext.py
+@@ -8,6 +8,18 @@ import logging
+ 
+ logger = logging.getLogger(__name__)
+ 
++# English TibiaWiki (tibia.fandom.com) template names for BR template names.
++# The BR wiki is a fork of the English one; field names largely match, only a
++# few template names differ.
++TEMPLATE_ALIASES = {
++    "infobox_criatura": "Infobox_Creature",
++    "infobox_item": "Infobox_Object",
++    "infobox_runas": "Infobox_Rune",
++    "infobox_hunts": "Infobox_Hunt",
++    "infobox_tasks": "Infobox_Task",
++    "infobox_updates": "Infobox_Update",
++}
++
+ 
+ def extract_infobox(content, template_name):
+     """Extract infobox fields from wikitext content.
+@@ -28,7 +40,12 @@ def extract_infobox(content, template_name):
+     pattern_name = template_name.replace("_", "[_ ]")
+     match = re.search(r"\{\{" + pattern_name + r"\s*\|", content, re.IGNORECASE)
+     if not match:
+-        return None
++        alias = TEMPLATE_ALIASES.get(template_name.replace(" ", "_").lower())
++        if alias:
++            pattern_name = alias.replace("_", "[_ ]")
++            match = re.search(r"\{\{" + pattern_name + r"\s*\|", content, re.IGNORECASE)
++        if not match:
++            return None
+ 
+     start = match.start()
+ 
