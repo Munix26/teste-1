@@ -1,41 +1,203 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Novo Projeto</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Equipamento de Paladin</title>
 
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 24px; }
+
+  /* ── controles ── */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #1a1d26;
+    border: 1px solid #262b38;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  input, select {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus { outline: 1px solid #d4af37; }
+
+  #q { flex: 1; min-width: 180px; }
+  #lvl { width: 110px; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  /* ── tabelas ── */
+  h2 {
+    font-size: 1.05rem;
+    color: #d4af37;
+    margin: 28px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #262b38;
+  }
+
+  .scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+
+  th {
+    text-align: left;
+    color: #8b93a7;
+    font-weight: 600;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 6px 10px;
+    border-bottom: 1px solid #262b38;
+    white-space: nowrap;
+  }
+
+  td { padding: 7px 10px; border-bottom: 1px solid #1c202a; vertical-align: top; }
+
+  tr:hover td { background: #1a1d26; }
+
+  .name { font-weight: 600; white-space: nowrap; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .tag.pal { background: rgba(212,175,55,0.14); color: #d4af37; }
+  .tag.all { background: rgba(96,165,250,0.14); color: #60a5fa; }
+
+  .attrib { color: #7dd3a0; }
+  .resist { color: #a5b4fc; }
+  .neg { color: #f87171; }
+  .dim { color: #5c6478; }
+
+  td:last-child { white-space: nowrap; font-size: 0.78rem; }
+
+  .empty { color: #8b93a7; padding: 32px 0; text-align: center; }
+
+  @media (max-width: 640px) {
+    .count { margin-left: 0; width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+  <h1>Equipamento de Paladin</h1>
+  <p class="sub">
+    Itens usáveis por paladin (vocação exclusiva ou livre), apenas com atributos que
+    importam em hunt. Dados do TibiaWiki.
+  </p>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="Buscar item, atributo ou resistência…" />
+    <label for="voc">Vocação</label>
+    <select id="voc">
+      <option value="">Todas as opções</option>
+      <option value="paladin">Só paladin</option>
+      <option value="todas">Sem restrição</option>
+    </select>
+    <label for="lvl">Level até</label>
+    <input id="lvl" type="number" placeholder="ex.: 360" min="0" />
+    <span class="count" id="count"></span>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script src="items-data.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const out = $('out');
+
+  // resistências negativas merecem destaque — são armadilha
+  function paintResist(text) {
+    return text.replace(/([a-z ]+ -\d+%)/gi, '<span class="neg">$1</span>');
+  }
+
+  function row(it) {
+    const stats = [];
+    if (it.atk) stats.push('atk ' + it.atk);
+    if (it.hit) stats.push('hit ' + it.hit);
+    if (it.armor) stats.push('arm ' + it.armor);
+    const extra = [];
+    if (it.slots) extra.push(it.slots + ' slot' + (it.slots > 1 ? 's' : ''));
+    if (it.cls) extra.push('class ' + it.cls);
+
+    return `<tr>
+      <td class="name">${it.name}</td>
+      <td class="num">${it.lvl || '<span class="dim">—</span>'}</td>
+      <td><span class="tag ${it.voc === 'paladin' ? 'pal' : 'all'}">${it.voc}</span></td>
+      <td class="num">${stats.join(' · ') || '<span class="dim">—</span>'}</td>
+      <td class="attrib">${it.attrib || '<span class="dim">—</span>'}</td>
+      <td class="resist">${paintResist(it.resist) || '<span class="dim">—</span>'}</td>
+      <td class="dim">${extra.join(' · ')}</td>
+    </tr>`;
+  }
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const voc = $('voc').value;
+    const maxLvl = parseInt($('lvl').value, 10);
+    let shown = 0;
+    let out_html = '';
+
+    for (const cat of window.ITEMS) {
+      const items = cat.items.filter((it) => {
+        if (voc && it.voc !== voc) return false;
+        if (!isNaN(maxLvl) && it.lvl > maxLvl) return false;
+        if (q) {
+          const hay = (it.name + ' ' + it.attrib + ' ' + it.resist).toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+      if (!items.length) continue;
+      shown += items.length;
+      out_html += `<h2>${cat.label} <span class="dim">(${items.length})</span></h2>
+        <div class="scroll"><table>
+          <tr><th>Item</th><th>Lvl</th><th>Voc</th><th>Base</th><th>Atributos</th><th>Resistências</th><th></th></tr>
+          ${items.map(row).join('')}
+        </table></div>`;
     }
 
-    main {
-      text-align: center;
-      padding: 24px;
-    }
+    out.innerHTML = out_html || '<p class="empty">Nenhum item com esses filtros.</p>';
+    $('count').textContent = shown + ' itens';
+  }
 
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 12px;
-    }
+  ['q', 'voc', 'lvl'].forEach((id) => {
+    $(id).addEventListener('input', render);
+  });
 
-    p {
-      color: #94a3b8;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Em construção</h1>
-    <p>Base limpa, pronta para o novo site.</p>
-  </main>
-</body>
-</html>
+  render();
+</script>
