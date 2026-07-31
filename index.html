@@ -17,7 +17,20 @@
 
   h1 { font-size: 1.5rem; margin-bottom: 4px; }
 
-  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 24px; }
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
+
+  nav { margin-bottom: 20px; display: flex; gap: 8px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
 
   /* ── controles ── */
   .controls {
@@ -118,6 +131,11 @@
     Itens usáveis por paladin (vocação exclusiva ou livre), apenas com atributos que
     importam em hunt. Dados do TibiaWiki.
   </p>
+
+  <nav>
+    <a href="index.html" class="on">Equipamento</a>
+    <a href="creatures.html">Criaturas</a>
+  </nav>
 
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar item, atributo ou resistência…" />
