@@ -3,3 +3,5 @@ dist/
 .DS_Store
 .vite/
 .vscode/
+__pycache__/
+*.pyc
