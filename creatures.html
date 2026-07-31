@@ -1,0 +1,236 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Criaturas</title>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
+
+  nav { margin-bottom: 20px; display: flex; gap: 8px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #1a1d26;
+    border: 1px solid #262b38;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  input, select {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus { outline: 1px solid #d4af37; }
+
+  #q { flex: 1; min-width: 170px; }
+  #minexp { width: 110px; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  .scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+  th {
+    text-align: left;
+    color: #8b93a7;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 6px 8px;
+    border-bottom: 1px solid #262b38;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover { color: #d4af37; }
+  th.sorted { color: #d4af37; }
+
+  td { padding: 6px 8px; border-bottom: 1px solid #1c202a; white-space: nowrap; }
+
+  tr:hover td { background: #1a1d26; }
+
+  .name { font-weight: 600; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .dim { color: #5c6478; }
+
+  .boss { color: #f0abfc; font-size: 0.7rem; margin-left: 4px; }
+
+  /* resistência: quanto maior o número, mais dano a criatura toma */
+  .weak   { color: #4ade80; font-weight: 600; }  /* > 100% — bata com isso */
+  .plain  { color: #94a3b8; }                    /* = 100% */
+  .strong { color: #fb923c; }                    /* < 100% */
+  .immune { color: #ef4444; }                    /* 0% — não use */
+
+  .empty { color: #8b93a7; padding: 32px 0; text-align: center; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+</style>
+
+<div class="wrap">
+  <h1>Criaturas</h1>
+  <p class="sub">
+    Stats, resistências elementais e valor esperado de loot. As resistências
+    saem do wikitext (não estão nas tabelas do wiki) e o ouro é calculado da
+    loot table pesada por raridade, a preço de NPC.
+  </p>
+
+  <nav>
+    <a href="index.html">Equipamento</a>
+    <a href="creatures.html" class="on">Criaturas</a>
+  </nav>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="Buscar criatura ou classe…" />
+    <label for="cls">Classe</label>
+    <select id="cls"><option value="">Todas</option></select>
+    <label for="minexp">Exp mínima</label>
+    <input id="minexp" type="number" placeholder="ex.: 1000" min="0" />
+    <label for="boss">Bosses</label>
+    <select id="boss">
+      <option value="">Incluir</option>
+      <option value="no">Esconder</option>
+      <option value="only">Só bosses</option>
+    </select>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="scroll"><table id="tbl"></table></div>
+
+  <p class="legend">
+    Resistência: <span class="weak">verde &gt; 100%</span> = fraqueza (bata com esse elemento) ·
+    <span class="plain">cinza = 100%</span> ·
+    <span class="strong">laranja &lt; 100%</span> = resistente ·
+    <span class="immune">vermelho = 0%</span> = imune.
+    Ouro é estimativa: itens sem preço de NPC (só Market) ficam de fora.
+  </p>
+</div>
+
+<script src="creatures-data.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ELEMENTS = ['physical', 'fire', 'earth', 'energy', 'ice', 'holy', 'death'];
+  const ABBR = { physical: 'Fís', fire: 'Fogo', earth: 'Terra', energy: 'Ener', ice: 'Gelo', holy: 'Holy', death: 'Death' };
+
+  let sortKey = 'exp';
+  let sortDir = -1;
+
+  function modCell(v) {
+    if (v === undefined) return '<span class="dim">—</span>';
+    const cls = v === 0 ? 'immune' : v > 100 ? 'weak' : v < 100 ? 'strong' : 'plain';
+    return `<span class="${cls}">${v}%</span>`;
+  }
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const cls = $('cls').value;
+    const minExp = parseInt($('minexp').value, 10);
+    const boss = $('boss').value;
+
+    let rows = window.CREATURES.filter((c) => {
+      if (cls && c.cls !== cls) return false;
+      if (!isNaN(minExp) && c.exp < minExp) return false;
+      if (boss === 'no' && c.boss) return false;
+      if (boss === 'only' && !c.boss) return false;
+      if (q && !(c.name + ' ' + (c.cls || '')).toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (x === null || x === undefined) return 1;
+      if (y === null || y === undefined) return -1;
+      return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
+    });
+
+    const head = `<tr>
+      <th data-k="name">Criatura</th>
+      <th data-k="hp" class="num">HP</th>
+      <th data-k="exp" class="num">Exp</th>
+      <th data-k="ratio" class="num">Exp/HP</th>
+      <th data-k="gold" class="num">gp/kill</th>
+      <th data-k="armor" class="num">Arm</th>
+      <th data-k="maxdmg" class="num">Max dmg</th>
+      ${ELEMENTS.map((e) => `<th class="num">${ABBR[e]}</th>`).join('')}
+      <th data-k="cls">Classe</th>
+      <th data-k="diff">Dific.</th>
+    </tr>`;
+
+    const body = rows.slice(0, 400).map((c) => `<tr>
+      <td class="name">${c.name}${c.boss ? '<span class="boss">boss</span>' : ''}</td>
+      <td class="num">${c.hp.toLocaleString('pt-BR')}</td>
+      <td class="num">${c.exp.toLocaleString('pt-BR')}</td>
+      <td class="num">${c.ratio.toFixed(2)}</td>
+      <td class="num">${c.gold ? c.gold.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
+      <td class="num">${c.armor ?? '<span class="dim">—</span>'}</td>
+      <td class="num">${c.maxdmg ? c.maxdmg.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
+      ${ELEMENTS.map((e) => `<td class="num">${modCell(c.mods[e])}</td>`).join('')}
+      <td class="dim">${c.cls || '—'}</td>
+      <td class="dim">${c.diff || '—'}</td>
+    </tr>`).join('');
+
+    $('tbl').innerHTML = rows.length ? head + body : '';
+    $('count').textContent = rows.length > 400
+      ? `${rows.length} criaturas (mostrando 400)`
+      : `${rows.length} criaturas`;
+
+    $('tbl').querySelectorAll('th[data-k]').forEach((th) => {
+      if (th.dataset.k === sortKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (sortKey === th.dataset.k) sortDir *= -1;
+        else { sortKey = th.dataset.k; sortDir = -1; }
+        render();
+      };
+    });
+  }
+
+  // popula o filtro de classe com o que existe nos dados
+  const classes = [...new Set(window.CREATURES.map((c) => c.cls).filter(Boolean))].sort();
+  $('cls').innerHTML += classes.map((c) => `<option>${c}</option>`).join('');
+
+  ['q', 'cls', 'minexp', 'boss'].forEach((id) => $(id).addEventListener('input', render));
+  render();
+</script>
