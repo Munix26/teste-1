@@ -179,14 +179,25 @@
 
   .src {
     display: grid;
-    grid-template-columns: minmax(140px, auto) minmax(80px, auto) 1fr;
-    gap: 4px 14px;
+    grid-template-columns:
+      minmax(130px, auto) minmax(70px, auto) minmax(58px, auto)
+      minmax(72px, auto) minmax(70px, auto) 1fr;
+    gap: 4px 12px;
     font-size: 0.83rem;
     align-items: baseline;
   }
 
   .src .c { font-weight: 600; }
   .src .loc { color: #8b93a7; font-size: 0.8rem; }
+  .src .h { color: #6b7385; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .src .lv { color: #7dd3a0; }
+
+  /* dificuldade do bestiário */
+  .d-Harmless, .d-Trivial { color: #94a3b8; }
+  .d-Easy { color: #4ade80; }
+  .d-Medium { color: #fbbf24; }
+  .d-Hard { color: #fb923c; }
+  .d-Challenging { color: #f87171; }
 
   .r-always, .r-common { color: #94a3b8; }
   .r-uncommon { color: #60a5fa; }
@@ -373,10 +384,24 @@
       kv('Compra de', it.bf), kv('Vende para', it.sl_to),
     ].join('');
 
-    const drops = it.by ? `<div class="src">${it.by.map(([i, r]) => `
-      <span class="c">${CR[i][0]}</span>
+    // [nome, local, hp, dificuldade, lvl mín, lvl máx]
+    const lvlText = ([, , , , lo, hi]) =>
+      !lo ? '<span class="dim">—</span>'
+          : `<span class="lv">${lo === hi ? lo : lo + '–' + hi}</span>`;
+
+    const drops = it.by ? `<div class="src">
+      <span class="h">Criatura</span><span class="h">Raridade</span><span class="h">HP</span>
+      <span class="h">Dificuldade</span><span class="h">Lvl do spawn</span><span class="h">Onde vive</span>
+      ${it.by.map(([i, r]) => {
+        const c = CR[i];
+        return `
+      <span class="c">${c[0]}</span>
       <span class="${rcls(r)}">${r}</span>
-      <span class="loc">${CR[i][1] || '—'}</span>`).join('')}</div>` : '';
+      <span class="num">${c[2] ? c[2].toLocaleString('pt-BR') : '<span class="dim">—</span>'}</span>
+      <span class="d-${c[3] || 'none'}">${c[3] || '<span class="dim">—</span>'}</span>
+      <span>${lvlText(c)}</span>
+      <span class="loc">${c[1] || '—'}</span>`;
+      }).join('')}</div>` : '';
 
     $('panel').innerHTML = `
       <div class="panel-head">
@@ -392,7 +417,9 @@
         kv('Preço de compra no NPC', it.dt[2].toLocaleString('pt-BR') + ' gp') +
         kv('Custo máximo estimado', (it.dt[1] * it.dt[2]).toLocaleString('pt-BR') + ' gp')
       }</div>`) : ''}
-      ${section(it.by ? `Dropado por (${it.by.length}) — criatura, raridade e onde vive` : 'Dropado por', drops)}
+      ${section(it.by ? `Dropado por (${it.by.length})` : 'Dropado por', drops)}
+      ${it.by ? '<p class="legend" style="margin-top:6px">O level vem dos spawns onde a criatura aparece — '
+        + 'uma faixa significa que ela habita áreas de dificuldades diferentes.</p>' : ''}
       ${section('Notas', it.no ? `<p class="prose">${it.no}</p>` : '')}
     `;
     $('overlay').classList.add('open');
