@@ -60,7 +60,7 @@
   input:focus, select:focus { outline: 1px solid #d4af37; }
 
   #q { flex: 1; min-width: 170px; }
-  #minexp { width: 110px; }
+  #minexp, #maxexp, #minhp, #maxhp { width: 82px; }
 
   label { font-size: 0.82rem; color: #8b93a7; }
 
@@ -108,6 +108,104 @@
   .empty { color: #8b93a7; padding: 32px 0; text-align: center; }
 
   .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+
+  tbody tr { cursor: pointer; }
+
+  /* ── painel de detalhe ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: none;
+    z-index: 50;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+
+  .overlay.open { display: block; }
+
+  .panel {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #171a22;
+    border: 1px solid #2c3242;
+    border-radius: 10px;
+    padding: 20px 22px 26px;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    border-bottom: 1px solid #262b38;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+
+  .panel-head h2 { font-size: 1.3rem; color: #d4af37; margin: 0; border: 0; padding: 0; }
+
+  .close {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #303646;
+    color: #8b93a7;
+    border-radius: 6px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .close:hover { color: #e6e8ee; border-color: #4a5266; }
+
+  .panel h3 {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8b93a7;
+    margin: 18px 0 7px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px 16px;
+  }
+
+  .kv { font-size: 0.85rem; }
+  .kv .k { color: #6b7385; font-size: 0.74rem; display: block; }
+  .kv .v { color: #e6e8ee; }
+
+  .na { color: #5c6478; font-style: italic; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .chip {
+    font-size: 0.78rem;
+    background: #12141a;
+    border: 1px solid #2c3242;
+    border-radius: 6px;
+    padding: 3px 9px;
+  }
+
+  .prose { font-size: 0.87rem; color: #b8bfd0; }
+
+  .loot-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .loot-item {
+    font-size: 0.78rem;
+    border: 1px solid #2c3242;
+    border-radius: 6px;
+    padding: 3px 9px;
+    background: #12141a;
+  }
+
+  .r-always, .r-common { border-color: #3f4a5c; }
+  .r-uncommon { border-color: #3b5a7a; }
+  .r-semirare { border-color: #5a4a7a; }
+  .r-rare { border-color: #7a5a2a; color: #fbbf24; }
+  .r-veryrare { border-color: #7a2a4a; color: #f0abfc; }
+
+  .price { color: #6b7385; }
 </style>
 
 <div class="wrap">
@@ -127,8 +225,14 @@
     <input id="q" type="search" placeholder="Buscar criatura ou classe…" />
     <label for="cls">Classe</label>
     <select id="cls"><option value="">Todas</option></select>
-    <label for="minexp">Exp mínima</label>
-    <input id="minexp" type="number" placeholder="ex.: 1000" min="0" />
+    <label for="diff">Dificuldade</label>
+    <select id="diff"><option value="">Todas</option></select>
+    <label>Exp</label>
+    <input id="minexp" type="number" placeholder="mín." min="0" />
+    <input id="maxexp" type="number" placeholder="máx." min="0" />
+    <label>HP</label>
+    <input id="minhp" type="number" placeholder="mín." min="0" />
+    <input id="maxhp" type="number" placeholder="máx." min="0" />
     <label for="boss">Bosses</label>
     <select id="boss">
       <option value="">Incluir</option>
@@ -140,6 +244,8 @@
 
   <div class="scroll"><table id="tbl"></table></div>
 
+  <p class="legend">Clique numa criatura para ver todos os dados disponíveis.</p>
+
   <p class="legend">
     Resistência: <span class="weak">verde &gt; 100%</span> = fraqueza (bata com esse elemento) ·
     <span class="plain">cinza = 100%</span> ·
@@ -147,6 +253,10 @@
     <span class="immune">vermelho = 0%</span> = imune.
     Ouro é estimativa: itens sem preço de NPC (só Market) ficam de fora.
   </p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="panel" id="panel"></div>
 </div>
 
 <script src="creatures-data.js"></script>
@@ -164,15 +274,23 @@
     return `<span class="${cls}">${v}%</span>`;
   }
 
+  let current = [];
+
   function render() {
     const q = $('q').value.trim().toLowerCase();
     const cls = $('cls').value;
-    const minExp = parseInt($('minexp').value, 10);
+    const diff = $('diff').value;
     const boss = $('boss').value;
+    const num = (id) => parseInt($(id).value, 10);
+    const [minExp, maxExp, minHp, maxHp] = ['minexp', 'maxexp', 'minhp', 'maxhp'].map(num);
 
     let rows = window.CREATURES.filter((c) => {
       if (cls && c.cls !== cls) return false;
+      if (diff && c.diff !== diff) return false;
       if (!isNaN(minExp) && c.exp < minExp) return false;
+      if (!isNaN(maxExp) && c.exp > maxExp) return false;
+      if (!isNaN(minHp) && c.hp < minHp) return false;
+      if (!isNaN(maxHp) && c.hp > maxHp) return false;
       if (boss === 'no' && c.boss) return false;
       if (boss === 'only' && !c.boss) return false;
       if (q && !(c.name + ' ' + (c.cls || '')).toLowerCase().includes(q)) return false;
@@ -186,7 +304,7 @@
       return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
     });
 
-    const head = `<tr>
+    const head = `<thead><tr>
       <th data-k="name">Criatura</th>
       <th data-k="hp" class="num">HP</th>
       <th data-k="exp" class="num">Exp</th>
@@ -197,9 +315,10 @@
       ${ELEMENTS.map((e) => `<th class="num">${ABBR[e]}</th>`).join('')}
       <th data-k="cls">Classe</th>
       <th data-k="diff">Dific.</th>
-    </tr>`;
+    </tr></thead>`;
 
-    const body = rows.slice(0, 400).map((c) => `<tr>
+    current = rows.slice(0, 400);
+    const body = current.map((c, i) => `<tr data-i="${i}">
       <td class="name">${c.name}${c.boss ? '<span class="boss">boss</span>' : ''}</td>
       <td class="num">${c.hp.toLocaleString('pt-BR')}</td>
       <td class="num">${c.exp.toLocaleString('pt-BR')}</td>
@@ -212,7 +331,7 @@
       <td class="dim">${c.diff || '—'}</td>
     </tr>`).join('');
 
-    $('tbl').innerHTML = rows.length ? head + body : '';
+    $('tbl').innerHTML = rows.length ? head + `<tbody>${body}</tbody>` : '';
     $('count').textContent = rows.length > 400
       ? `${rows.length} criaturas (mostrando 400)`
       : `${rows.length} criaturas`;
@@ -225,12 +344,111 @@
         render();
       };
     });
+
+    $('tbl').querySelectorAll('tbody tr').forEach((tr) => {
+      tr.onclick = () => openDetail(current[+tr.dataset.i]);
+    });
   }
 
-  // popula o filtro de classe com o que existe nos dados
-  const classes = [...new Set(window.CREATURES.map((c) => c.cls).filter(Boolean))].sort();
-  $('cls').innerHTML += classes.map((c) => `<option>${c}</option>`).join('');
+  // ── painel de detalhe ────────────────────────────────────────────────────
+  const NA = '<span class="na">não disponível</span>';
+  const EL_PT = {
+    physical: 'Físico', fire: 'Fogo', earth: 'Terra', energy: 'Energia',
+    ice: 'Gelo', holy: 'Holy', death: 'Death', drown: 'Afogamento',
+    hpDrain: 'Life drain',
+  };
+  const FLAG_PT = {
+    pushable: 'Empurrável', pushobjects: 'Empurra objetos', illusionable: 'Illusionable',
+    paraimmune: 'Imune a paralyse', senseinvis: 'Enxerga invisível',
+    walksaround: 'Desvia de', walksthrough: 'Atravessa', usespells: 'Usa spells',
+  };
 
-  ['q', 'cls', 'minexp', 'boss'].forEach((id) => $(id).addEventListener('input', render));
+  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span><span class="v">${
+    v === null || v === undefined || v === '' ? NA : v}</span></div>`;
+
+  function section(title, inner) {
+    return inner ? `<h3>${title}</h3>${inner}` : `<h3>${title}</h3><p class="prose">${NA}</p>`;
+  }
+
+  function openDetail(c) {
+    const n = (v) => (v === null || v === undefined ? null : v.toLocaleString('pt-BR'));
+
+    const stats = [
+      kv('HP', n(c.hp)), kv('Experiência', n(c.exp)), kv('Exp / HP', c.ratio.toFixed(3)),
+      kv('Armor', c.armor), kv('Mitigação', c.mit), kv('Velocidade', c.speed),
+      kv('Dano máximo', n(c.maxdmg)), kv('Ouro esperado / kill', n(c.gold)),
+      kv('Classe (bestiário)', c.cls), kv('Dificuldade', c.diff),
+      kv('Ocorrência', c.occ), kv('Tipo', c.type),
+      kv('Tipo de ataque', c.atktype), kv('Spawn', c.spawn),
+      kv('Custo de summon', c.summon), kv('Custo de convince', c.convince),
+    ].join('');
+
+    // resistências: todos os elementos, marcando os que o wiki não traz
+    const mods = Object.keys(EL_PT).map((e) => {
+      const v = c.mods[e];
+      if (v === undefined) return kv(EL_PT[e], null);
+      const cls = v === 0 ? 'immune' : v > 100 ? 'weak' : v < 100 ? 'strong' : 'plain';
+      return `<div class="kv"><span class="k">${EL_PT[e]}</span><span class="${cls}">${v}%</span></div>`;
+    }).join('') + kv('Cura recebida', c.heal === null ? null : c.heal + '%');
+
+    const dmgParts = Object.entries(c.dmg);
+    const dmg = dmgParts.length
+      ? `<div class="chips">${dmgParts.map(([k, v]) =>
+          `<span class="chip">${EL_PT[k] || k}: ${v.toLocaleString('pt-BR')}</span>`).join('')}</div>`
+      : '';
+
+    const abil = c.abil.length
+      ? `<div class="chips">${c.abil.map((a) =>
+          `<span class="chip">${a.name}${a.dmg ? ` <span class="price">${a.dmg}</span>` : ''}${
+            a.el ? ` <span class="price">(${EL_PT[a.el] || a.el})</span>` : ''}</span>`).join('')}</div>`
+      : '';
+
+    const flags = Object.keys(c.flags).length
+      ? `<div class="chips">${Object.entries(c.flags).map(([k, v]) =>
+          `<span class="chip">${FLAG_PT[k] || k}: ${v}</span>`).join('')}</div>`
+      : '';
+
+    const loot = c.loot.length
+      ? `<div class="loot-list">${c.loot.map((it) =>
+          `<span class="loot-item r-${it.r.replace(/[ -]/g, '')}">${it.n}${
+            it.p ? ` <span class="price">${it.p.toLocaleString('pt-BR')} gp</span>`
+                 : ' <span class="price">só Market</span>'}</span>`).join('')}</div>`
+      : '';
+
+    $('panel').innerHTML = `
+      <div class="panel-head">
+        <h2>${c.name}</h2>
+        ${c.boss ? '<span class="boss">boss</span>' : ''}
+        <button class="close" onclick="closeDetail()">fechar ✕</button>
+      </div>
+      ${section('Stats', `<div class="grid">${stats}</div>`)}
+      ${section('Resistências', `<div class="grid">${mods}</div>`)}
+      ${section('Dano máximo por elemento', dmg)}
+      ${section('Habilidades', abil)}
+      ${section('Comportamento', flags)}
+      ${section('Onde encontrar', c.loc ? `<p class="prose">${c.loc}</p>` : '')}
+      ${section('Estratégia', c.strat && c.strat !== 'Unknown' ? `<p class="prose">${c.strat}</p>` : '')}
+      ${section('Bestiário', c.text ? `<p class="prose">${c.text}</p>` : '')}
+      ${section(`Loot (${c.loot.length} itens)`, loot)}
+    `;
+    $('overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDetail() {
+    $('overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
+  document.onkeydown = (e) => { if (e.key === 'Escape') closeDetail(); };
+
+  // popula os filtros com o que existe nos dados
+  const uniq = (key) => [...new Set(window.CREATURES.map((c) => c[key]).filter(Boolean))].sort();
+  $('cls').innerHTML += uniq('cls').map((c) => `<option>${c}</option>`).join('');
+  $('diff').innerHTML += uniq('diff').map((d) => `<option>${d}</option>`).join('');
+
+  ['q', 'cls', 'diff', 'minexp', 'maxexp', 'minhp', 'maxhp', 'boss']
+    .forEach((id) => $(id).addEventListener('input', render));
   render();
 </script>

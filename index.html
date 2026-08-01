@@ -145,6 +145,8 @@
       <option value="paladin">Só paladin</option>
       <option value="todas">Sem restrição</option>
     </select>
+    <label for="cat">Categoria</label>
+    <select id="cat"><option value="">Todas</option></select>
     <label for="lvl">Level até</label>
     <input id="lvl" type="number" placeholder="ex.: 360" min="0" />
     <span class="count" id="count"></span>
@@ -190,7 +192,10 @@
     let shown = 0;
     let out_html = '';
 
+    const onlyCat = $('cat').value;
+
     for (const cat of window.ITEMS) {
+      if (onlyCat && cat.label !== onlyCat) continue;
       const items = cat.items.filter((it) => {
         if (voc && it.voc !== voc) return false;
         if (!isNaN(maxLvl) && it.lvl > maxLvl) return false;
@@ -213,7 +218,15 @@
     $('count').textContent = shown + ' itens';
   }
 
-  ['q', 'voc', 'lvl'].forEach((id) => {
+  $('cat').innerHTML += window.ITEMS
+    .map((c) => `<option>${c.label} (${c.items.length})</option>`)
+    .join('');
+  // o texto da option carrega a contagem; o value é só o label
+  [...$('cat').options].forEach((o, i) => {
+    if (i > 0) o.value = window.ITEMS[i - 1].label;
+  });
+
+  ['q', 'voc', 'cat', 'lvl'].forEach((id) => {
     $(id).addEventListener('input', render);
   });
 
