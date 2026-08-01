@@ -44,7 +44,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
-| `tibia-mcp/loot_value.py` | calcula gp/kill de criaturas (loot table × preço de NPC) |
+| `tibia-mcp/loot.py` | parser compartilhado das loot tables + faixa de gp/kill |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |
 
 ## Decisões técnicas importantes
@@ -58,6 +58,14 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   Foi assim que saíram drops, requisitos de quest e stats de arma.
 - O `query_database` do MCP tem um guard de SQL ingênuo: bloqueia queries que
   contenham a substring "drop" (inclusive na coluna `dropped_by`).
+- **Ouro por kill é uma faixa, nunca um número exato.** O wiki (página
+  Rareness) documenta as chances por raridade como intervalos — common 25–100%,
+  uncommon 5–25%, semi-rare 1–5%, rare 0,5–1%, very rare <0,5%. Escolher um
+  ponto dentro do intervalo seria inventar precisão. Todo o cálculo vive em
+  `tibia-mcp/loot.py`; não reintroduzir tabelas de probabilidade fixas.
+- **`{{Loot Item}}` tem dois formatos**: `|Item|raridade` e `|1-8|Item|raridade`.
+  Metade das páginas usa o segundo. Ler o primeiro parâmetro como nome do item
+  perde esses drops silenciosamente (foi o que aconteceu até 2026-08).
 - **Armadilhas do parser de wikitext** (todas já corrigidas, mas fáceis de
   reintroduzir): campos multi-linha terminam no próximo ` | chave =` com espaço
   após o pipe (parâmetros aninhados usam `|chave=` sem espaço); usar `[ \t]*`

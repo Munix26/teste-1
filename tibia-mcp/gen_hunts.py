@@ -7,19 +7,17 @@ per kill for the spawn as a whole.
 import json
 import os
 import re
+import sys
 from collections import defaultdict
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from loot import gold_range
+
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hunts-data.js")
-
-RARITY = {"always": 1.0, "common": 0.20, "uncommon": 0.05,
-          "semi-rare": 0.01, "rare": 0.0025, "very rare": 0.0005}
-AMOUNT = {"Gold Coin": 100, "Platinum Coin": 25, "Small Diamond": 2, "Small Ruby": 2,
-          "Small Emerald": 2, "Small Sapphire": 2, "Small Amethyst": 3, "Small Topaz": 2,
-          "Small Enchanted Ruby": 2, "Small Enchanted Sapphire": 2, "Meat": 3, "Ham": 2}
 
 
 def field(content, name):
@@ -61,18 +59,6 @@ def creature_stats(rows):
     return out
 
 
-def loot_gold(content, prices):
-    block = re.search(r"\|\s*loot\s*=\s*\{\{Loot Table(.*?)\n\s*\}\}", content, re.S)
-    if not block:
-        return None
-    total = 0.0
-    for m in re.finditer(r"\{\{Loot Item\|([^}|]+)(?:\|([^}|]+))?", block.group(1)):
-        name = m.group(1).strip()
-        price = prices.get(name)
-        if price is None:
-            continue
-        total += RARITY.get((m.group(2) or "common").strip().lower(), 0.05) * price * AMOUNT.get(name, 1)
-    return round(total)
 
 
 def parse_creature_list(content):
@@ -99,7 +85,7 @@ def main():
                     "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Creature%",))
         creatures = creature_stats([(r["title"], r["content"]) for r in cur.fetchall()])
         for name, c in creatures.items():
-            c["gold"] = loot_gold(c.pop("content"), prices)
+            c["gold"] = gold_range(c.pop("content"), prices)
 
         cur.execute("SELECT title, content FROM raw_pages "
                     "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Hunt%",))
@@ -119,7 +105,7 @@ def main():
         farm = [k for _, k in known if k["exp"] and not k["boss"]]
         exps = [k["exp"] for k in farm]
         hps = [k["hp"] for k in farm if k["hp"]]
-        golds = [k["gold"] for k in farm if k["gold"]]
+        golds = [k["gold"] for k in farm if k["gold"]]  # cada um é [mín, máx]
 
         hunts.append({
             "n": title,
@@ -142,7 +128,8 @@ def main():
             "avgexp": round(sum(exps) / len(exps)) if exps else None,
             "avghp": round(sum(hps) / len(hps)) if hps else None,
             "ratio": round(sum(exps) / sum(hps), 3) if exps and hps and sum(hps) else None,
-            "avggold": round(sum(golds) / len(golds)) if golds else None,
+            "avggold": [round(sum(g[0] for g in golds) / len(golds)),
+                        round(sum(g[1] for g in golds) / len(golds))] if golds else None,
             "impl": field(c, "implemented"),
         })
 
