@@ -206,6 +206,7 @@
   <nav>
     <a href="index.html" class="on">Itens</a>
     <a href="creatures.html">Criaturas</a>
+    <a href="spawns.html">Spawns</a>
   </nav>
 
   <div class="controls">
@@ -221,10 +222,15 @@
       <option value="druid">Druid</option>
       <option value="none">Sem restrição</option>
     </select>
+    <label for="attr">Atributo</label>
+    <select id="attr"><option value="">Qualquer</option></select>
+    <label for="res">Resistência</label>
+    <select id="res"><option value="">Qualquer</option></select>
     <label for="lvl">Level até</label>
     <input id="lvl" type="number" placeholder="360" min="0" />
-    <label class="chk"><input type="checkbox" id="onlydrop" /> Só com drop conhecido</label>
-    <label class="chk"><input type="checkbox" id="onlystats" /> Só com atributos</label>
+    <label class="chk"><input type="checkbox" id="onlydrop" /> Com drop</label>
+    <label class="chk"><input type="checkbox" id="onlystats" /> Com atributos</label>
+    <label class="chk"><input type="checkbox" id="onlytask" /> Delivery task</label>
     <span class="count" id="count"></span>
   </div>
 
@@ -272,12 +278,19 @@
     const maxLvl = parseInt($('lvl').value, 10);
     const onlyDrop = $('onlydrop').checked;
     const onlyStats = $('onlystats').checked;
+    const onlyTask = $('onlytask').checked;
+    const attr = $('attr').value;
+    const res = $('res').value;
 
     let rows = D.items.filter((it) => {
       if (cat && it.c !== cat) return false;
       if (voc && !matchVoc(it, voc)) return false;
+      if (attr && !(it.af || []).includes(attr)) return false;
+      // só interessa resistência positiva ao filtrar por elemento
+      if (res && !(it.rf || []).some(([el, v]) => el === res && v > 0)) return false;
       if (!isNaN(maxLvl) && (it.lvl || 0) > maxLvl) return false;
       if (onlyDrop && !it.by) return false;
+      if (onlyTask && !it.dt) return false;
       if (onlyStats && !(it.at || it.rs || it.arm || it.atk)) return false;
       if (q) {
         const hay = [it.n, it.at, it.rs, it.bf, it.sl_to, it.c].join(' ').toLowerCase();
@@ -374,6 +387,11 @@
       ${section('Atributos', it.at ? `<p class="prose attrib">${it.at}</p>` : '')}
       ${section('Resistências', it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '')}
       ${section('Comércio', `<div class="grid">${value}</div>`)}
+      ${it.dt ? section('Delivery task (semanal)', `<div class="grid">${
+        kv('Quantidade pedida', `${it.dt[0]}–${it.dt[1]} unidades`) +
+        kv('Preço de compra no NPC', it.dt[2].toLocaleString('pt-BR') + ' gp') +
+        kv('Custo máximo estimado', (it.dt[1] * it.dt[2]).toLocaleString('pt-BR') + ' gp')
+      }</div>`) : ''}
       ${section(it.by ? `Dropado por (${it.by.length}) — criatura, raridade e onde vive` : 'Dropado por', drops)}
       ${section('Notas', it.no ? `<p class="prose">${it.no}</p>` : '')}
     `;
@@ -389,12 +407,23 @@
   $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
   document.onkeydown = (e) => { if (e.key === 'Escape') closeDetail(); };
 
-  const counts = {};
-  D.items.forEach((it) => { counts[it.c] = (counts[it.c] || 0) + 1; });
-  $('cat').innerHTML += D.cats
-    .map((c) => `<option value="${c}">${c} (${counts[c]})</option>`).join('');
+  // opções derivadas dos dados, com a contagem de cada uma
+  function fill(sel, pairs) {
+    $(sel).innerHTML += pairs
+      .sort((a, b) => b[1] - a[1])
+      .map(([v, n]) => `<option value="${v}">${v} (${n})</option>`).join('');
+  }
+  const tally = (fn) => {
+    const m = new Map();
+    D.items.forEach((it) => fn(it).forEach((k) => m.set(k, (m.get(k) || 0) + 1)));
+    return [...m.entries()];
+  };
 
-  ['q', 'cat', 'voc', 'lvl', 'onlydrop', 'onlystats']
+  fill('cat', tally((it) => [it.c]));
+  fill('attr', tally((it) => it.af || []));
+  fill('res', tally((it) => [...new Set((it.rf || []).filter(([, v]) => v > 0).map(([e]) => e))]));
+
+  ['q', 'cat', 'voc', 'attr', 'res', 'lvl', 'onlydrop', 'onlystats', 'onlytask']
     .forEach((id) => $(id).addEventListener('input', render));
   render();
 </script>

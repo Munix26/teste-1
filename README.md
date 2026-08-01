@@ -13,8 +13,12 @@ TibiaWiki inteiro.
   criatura vive**.
 - **`creatures.html`** — 1.629 criaturas com stats, resistências elementais e
   gp/kill; clicar abre o detalhe completo (habilidades, comportamento,
-  localização, estratégia, bestiário e loot table).
-- **`items-data.js`** / **`creatures-data.js`** — os dados das páginas.
+  localização, estratégia, bestiário e loot table). Filtra por faixas de exp,
+  HP e ouro, e por "fraco a" cada elemento.
+- **`spawns.html`** — 442 locais de caçada cruzados com suas criaturas, com
+  exp média, exp/HP e ouro por kill **calculados** (o wiki não traz), ignorando
+  bosses e objetos.
+- **`items-data.js`** / **`creatures-data.js`** / **`hunts-data.js`** — os dados das páginas.
 - **`tibia-mcp/`** — tudo para recriar o servidor MCP com dados:
   - `tibiawiki.dump` — banco PostgreSQL populado (2.193 criaturas, 9.792
     itens, 1.246 NPCs, 443 caçadas, 371 quests, magias, mounts e o wikitext

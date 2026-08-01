@@ -217,8 +217,9 @@
   </p>
 
   <nav>
-    <a href="index.html">Equipamento</a>
+    <a href="index.html">Itens</a>
     <a href="creatures.html" class="on">Criaturas</a>
+    <a href="spawns.html">Spawns</a>
   </nav>
 
   <div class="controls">
@@ -227,12 +228,14 @@
     <select id="cls"><option value="">Todas</option></select>
     <label for="diff">Dificuldade</label>
     <select id="diff"><option value="">Todas</option></select>
-    <label>Exp</label>
-    <input id="minexp" type="number" placeholder="mín." min="0" />
-    <input id="maxexp" type="number" placeholder="máx." min="0" />
-    <label>HP</label>
-    <input id="minhp" type="number" placeholder="mín." min="0" />
-    <input id="maxhp" type="number" placeholder="máx." min="0" />
+    <label for="exprange">Exp</label>
+    <select id="exprange"><option value="">Qualquer</option></select>
+    <label for="hprange">HP</label>
+    <select id="hprange"><option value="">Qualquer</option></select>
+    <label for="goldrange">gp/kill</label>
+    <select id="goldrange"><option value="">Qualquer</option></select>
+    <label for="weak">Fraco a</label>
+    <select id="weak"><option value="">Qualquer</option></select>
     <label for="boss">Bosses</label>
     <select id="boss">
       <option value="">Incluir</option>
@@ -281,16 +284,23 @@
     const cls = $('cls').value;
     const diff = $('diff').value;
     const boss = $('boss').value;
-    const num = (id) => parseInt($(id).value, 10);
-    const [minExp, maxExp, minHp, maxHp] = ['minexp', 'maxexp', 'minhp', 'maxhp'].map(num);
+    const range = (id) => {
+      const v = $(id).value;
+      if (!v) return null;
+      const [lo, hi] = v.split('|').map(Number);
+      return [lo, hi];
+    };
+    const rExp = range('exprange'), rHp = range('hprange'), rGold = range('goldrange');
+    const weak = $('weak').value;
 
     let rows = window.CREATURES.filter((c) => {
       if (cls && c.cls !== cls) return false;
       if (diff && c.diff !== diff) return false;
-      if (!isNaN(minExp) && c.exp < minExp) return false;
-      if (!isNaN(maxExp) && c.exp > maxExp) return false;
-      if (!isNaN(minHp) && c.hp < minHp) return false;
-      if (!isNaN(maxHp) && c.hp > maxHp) return false;
+      if (rExp && !(c.exp >= rExp[0] && c.exp < rExp[1])) return false;
+      if (rHp && !(c.hp >= rHp[0] && c.hp < rHp[1])) return false;
+      if (rGold && !(c.gold >= rGold[0] && c.gold < rGold[1])) return false;
+      // "fraco a X" = toma mais de 100% de dano daquele elemento
+      if (weak && !(c.mods[weak] > 100)) return false;
       if (boss === 'no' && c.boss) return false;
       if (boss === 'only' && !c.boss) return false;
       if (q && !(c.name + ' ' + (c.cls || '')).toLowerCase().includes(q)) return false;
@@ -448,7 +458,34 @@
   $('cls').innerHTML += uniq('cls').map((c) => `<option>${c}</option>`).join('');
   $('diff').innerHTML += uniq('diff').map((d) => `<option>${d}</option>`).join('');
 
-  ['q', 'cls', 'diff', 'minexp', 'maxexp', 'minhp', 'maxhp', 'boss']
+  // faixas derivadas dos dados — nada de adivinhar números
+  function fillRange(sel, values, steps) {
+    const opts = [];
+    for (let i = 0; i < steps.length; i++) {
+      const lo = steps[i], hi = steps[i + 1] ?? Infinity;
+      const n = values.filter((v) => v >= lo && v < hi).length;
+      if (n) opts.push(`<option value="${lo}|${hi}">${lo.toLocaleString('pt-BR')}${
+        hi === Infinity ? '+' : '–' + (hi - 1).toLocaleString('pt-BR')} (${n})</option>`);
+    }
+    $(sel).innerHTML += opts.join('');
+  }
+
+  const C = window.CREATURES;
+  fillRange('exprange', C.map((c) => c.exp),
+            [0, 100, 500, 1000, 2000, 5000, 10000, 25000, 100000]);
+  fillRange('hprange', C.map((c) => c.hp),
+            [0, 500, 1000, 2500, 5000, 10000, 25000, 100000]);
+  fillRange('goldrange', C.map((c) => c.gold).filter(Boolean),
+            [0, 100, 250, 500, 1000, 2500, 10000]);
+
+  const weakCounts = {};
+  C.forEach((c) => Object.entries(c.mods).forEach(([e, v]) => {
+    if (v > 100) weakCounts[e] = (weakCounts[e] || 0) + 1;
+  }));
+  $('weak').innerHTML += Object.entries(weakCounts).sort((a, b) => b[1] - a[1])
+    .map(([e, n]) => `<option value="${e}">${EL_PT[e] || e} (${n})</option>`).join('');
+
+  ['q', 'cls', 'diff', 'exprange', 'hprange', 'goldrange', 'weak', 'boss']
     .forEach((id) => $(id).addEventListener('input', render));
   render();
 </script>

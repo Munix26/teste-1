@@ -47,6 +47,59 @@ FALLBACK = {
 
 RARITY_ORDER = ["always", "common", "uncommon", "semi-rare", "rare", "very rare"]
 
+# nomes de atributo normalizados para virar filtro (facet)
+ATTR_ALIASES = [
+    ("distance fighting", "Distance"), ("sword fighting", "Sword"),
+    ("axe fighting", "Axe"), ("club fighting", "Club"), ("shielding", "Shielding"),
+    ("fist fighting", "Fist"), ("holy magic level", "Magic Level (holy)"),
+    ("death magic level", "Magic Level (death)"), ("fire magic level", "Magic Level (fire)"),
+    ("ice magic level", "Magic Level (ice)"), ("earth magic level", "Magic Level (earth)"),
+    ("energy magic level", "Magic Level (energy)"), ("magic level", "Magic Level"),
+    ("speed", "Speed"), ("regeneration", "Regeneração"), ("mana", "Mana"),
+    ("health", "Vida"), ("critical", "Crítico"), ("protection", "Proteção"),
+]
+ELEMENTS = ["physical", "fire", "earth", "energy", "ice", "holy", "death",
+            "life drain", "mana drain", "drowning"]
+
+
+def attr_facets(attrib):
+    """'distance fighting +3, holy magic level +1' -> ['Distance', 'Magic Level (holy)']"""
+    if not attrib:
+        return []
+    low = attrib.lower()
+    found = []
+    for needle, label in ATTR_ALIASES:
+        if needle in low and label not in found:
+            # 'magic level' genérico não deve capturar 'holy magic level'
+            if needle == "magic level" and re.search(r"(holy|death|fire|ice|earth|energy) magic level", low):
+                continue
+            found.append(label)
+    return found
+
+
+def resist_facets(resist):
+    """'fire +5%, earth -5%' -> [['fire', 5], ['earth', -5]]"""
+    if not resist:
+        return []
+    out = []
+    for m in re.finditer(r"([a-z ]+?)\s*([+-]?\d+)\s*%", resist.lower()):
+        el = m.group(1).strip()
+        if el in ELEMENTS:
+            out.append([el, int(m.group(2))])
+    return out
+
+
+def parse_delivery_tasks(content):
+    """Delivery Task page -> {item: [min, max, npc_buy_price]}"""
+    out = {}
+    for m in re.finditer(r"\|\s*\{\{ilink\|[^}]*\}\}\s*\|\|\s*\[\[([^\]|]+)(?:\|[^\]]*)?\]\]"
+                         r"\s*\|\|\s*([\d,]+)\s*\|\|\s*([\d,]+)\s*\|\|\s*([\d,]+)", content):
+        name = m.group(1).strip()
+        out[name] = [int(m.group(2).replace(",", "")),
+                     int(m.group(3).replace(",", "")),
+                     int(m.group(4).replace(",", ""))]
+    return out
+
 
 def field(content, name):
     m = re.search(r"\|\s*" + name + r"\s*=[ \t]*([^\n|]*)", content)
@@ -102,6 +155,10 @@ def main():
         cur.execute("SELECT title, content FROM raw_pages "
                     "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Object%",))
         item_rows = cur.fetchall()
+
+        cur.execute("SELECT content FROM raw_pages WHERE title = 'Delivery Task'")
+        row = cur.fetchone()
+        delivery = parse_delivery_tasks(row["content"]) if row else {}
     conn.close()
 
     # creatures referenced by any drop, stored once and referenced by index
@@ -118,7 +175,12 @@ def main():
 
         by = sorted(drops.get(title, []), key=lambda x: RARITY_ORDER.index(x[1])
                     if x[1] in RARITY_ORDER else 9)
+        attrib = clean(field(c, "attrib"))
+        resist = clean(field(c, "resist"))
         items.append({
+            "af": attr_facets(attrib),
+            "rf": resist_facets(resist),
+            "dt": delivery.get(title),
             "n": title,
             "c": cat,
             "t": ptype or oclass,
@@ -128,8 +190,8 @@ def main():
             "atk": clean(field(c, "atk_mod") or field(c, "attack")),
             "hit": clean(field(c, "hit_mod")),
             "def": clean(field(c, "defense")),
-            "at": clean(field(c, "attrib")),
-            "rs": clean(field(c, "resist")),
+            "at": attrib,
+            "rs": resist,
             "sl": to_int(field(c, "imbueslots")),
             "cl": to_int(field(c, "upgradeclass")),
             "w": clean(field(c, "weight")),
