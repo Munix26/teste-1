@@ -128,12 +128,16 @@ def to_int(value):
 
 
 def build_drop_index(rows):
-    """creature loot tables -> {item name: [(creature, rarity)]}"""
+    """creature loot tables -> {item name: [(creature, rarity)]}, plus creature info."""
     index = defaultdict(list)
-    creatures = {}
+    info = {}
     for title, content in rows:
-        loc = clean(big_field(content, "location"))[:180]
-        creatures[title] = loc
+        info[title] = {
+            "loc": clean(big_field(content, "location"))[:180],
+            "hp": to_int(field(content, "hp")),
+            "diff": field(content, "bestiarylevel"),
+            "boss": field(content, "isboss").lower() == "yes",
+        }
         block = re.search(r"\|\s*loot\s*=\s*\{\{Loot Table(.*?)\n\s*\}\}", content, re.S)
         if not block:
             continue
@@ -142,7 +146,28 @@ def build_drop_index(rows):
             if not item or item.isdigit():
                 continue
             index[item].append((title, (m.group(2) or "common").strip().lower()))
-    return index, creatures
+    return index, info
+
+
+def spawn_levels(rows):
+    """creature -> [levels of the hunting places it appears in].
+
+    Old creatures show up in many mixed spawns, so the spread is real
+    information — a range is more honest than a single number.
+    """
+    levels = defaultdict(list)
+    for title, content in rows:
+        lv = [to_int(field(content, f)) for f in ("lvlknights", "lvlpaladins", "lvlmages")]
+        lv = [x for x in lv if x]
+        if not lv:
+            continue
+        low = min(lv)
+        for block in re.finditer(r"\{\{CreatureList([^}]*)\}\}", content, re.S):
+            for part in block.group(1).split("|"):
+                part = part.strip()
+                if part and "=" not in part and not part.lower().startswith("type"):
+                    levels[part].append(low)
+    return levels
 
 
 def main():
@@ -150,7 +175,11 @@ def main():
     with conn.cursor() as cur:
         cur.execute("SELECT title, content FROM raw_pages "
                     "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Creature%",))
-        drops, creature_loc = build_drop_index([(r["title"], r["content"]) for r in cur.fetchall()])
+        drops, creature_info = build_drop_index([(r["title"], r["content"]) for r in cur.fetchall()])
+
+        cur.execute("SELECT title, content FROM raw_pages "
+                    "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Hunt%",))
+        levels = spawn_levels([(r["title"], r["content"]) for r in cur.fetchall()])
 
         cur.execute("SELECT title, content FROM raw_pages "
                     "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Object%",))
@@ -164,7 +193,15 @@ def main():
     # creatures referenced by any drop, stored once and referenced by index
     referenced = sorted({c for lst in drops.values() for c, _ in lst})
     cidx = {name: i for i, name in enumerate(referenced)}
-    creature_table = [[n, creature_loc.get(n, "")] for n in referenced]
+    # [nome, local, hp, dificuldade, level mínimo, level máximo] — os levels vêm
+    # dos spawns onde a criatura aparece; None quando ela não está em nenhum
+    creature_table = []
+    for n in referenced:
+        info = creature_info.get(n, {})
+        lv = levels.get(n) or []
+        creature_table.append([n, info.get("loc", ""), info.get("hp"),
+                               info.get("diff", ""),
+                               min(lv) if lv else None, max(lv) if lv else None])
 
     items = []
     for row in item_rows:
