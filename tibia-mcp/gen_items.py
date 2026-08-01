@@ -1,119 +1,167 @@
-"""Generate a paladin-focused item reference page from the TibiaWiki dump."""
-import html
+"""Generate the full item catalogue (items-data.js) from the TibiaWiki dump.
+
+Covers every item on the wiki, not just gear: quest and delivery-task items,
+creature products, tools, valuables and so on. Each item carries a reverse
+drop index (which creatures drop it, and where those creatures live) built by
+inverting every creature loot table, plus the NPCs that trade it.
+"""
 import json
 import os
 import re
-import sys
+from collections import defaultdict
 
-os.environ.setdefault("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
-sys.path.insert(0, "/tmp/claude-0/-home-user-teste-1/e3bdae15-d3b4-53c8-a918-f93caed4f72e/scratchpad/tibia_mcp")
-from src.db.connection import get_connection
-from src.parser.wikitext import extract_infobox
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-# category label -> matching primarytype values
-CATEGORIES = [
-    ("Arcos e Bestas", {"Distance Weapons"}),
-    ("Munição", {"Ammunition"}),
-    ("Aljavas", {"Quivers"}),
-    ("Capacetes", {"Helmets"}),
-    ("Armaduras", {"Armors"}),
-    ("Pernas", {"Legs"}),
-    ("Botas", {"Boots"}),
-    ("Escudos", {"Shields"}),
-    ("Amuletos", {"Amulets and Necklaces"}),
-    ("Anéis", {"Rings"}),
-    ("Slot Extra", {"Extra Slot Items", "Extra Slot"}),
-]
-OTHER_VOCS = ("knight", "sorcerer", "druid", "monk")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "items-data.js")
 
-# an item earns its place only if it carries one of these
-STAT_KEYS = ("attrib", "resist", "atk_mod", "hit_mod", "armor", "defense")
+# primarytype -> friendly category. Anything unmatched falls back to objectclass.
+CATEGORY = {
+    "Distance Weapons": "Armas de Distância", "Ammunition": "Munição",
+    "Quivers": "Aljavas", "Helmets": "Capacetes", "Armors": "Armaduras",
+    "Legs": "Pernas", "Boots": "Botas", "Shields": "Escudos",
+    "Amulets and Necklaces": "Amuletos", "Rings": "Anéis",
+    "Extra Slot Items": "Slot Extra", "Extra Slot": "Slot Extra",
+    "Sword Weapons": "Espadas", "Axe Weapons": "Machados",
+    "Club Weapons": "Clavas", "Wands": "Wands", "Rods": "Rods",
+    "Spellbooks": "Spellbooks", "Throwing Weapons": "Armas de Arremesso",
+    "Runes": "Runas", "Potions": "Poções", "Creature Products": "Produtos de Criatura",
+    "Quest Items": "Itens de Quest", "Valuables": "Valiosos", "Food": "Comida",
+    "Containers": "Containers", "Tools (Objects)": "Ferramentas",
+    "Light Sources": "Fontes de Luz", "Keys": "Chaves",
+    "Imbuement Scrolls": "Pergaminhos de Imbuement", "Soul Cores": "Soul Cores",
+    "Documents and Papers": "Documentos", "Musical Instruments": "Instrumentos",
+    "Decorations": "Decoração", "Furniture": "Mobília",
+}
+FALLBACK = {
+    "Household Items": "Casa e Decoração", "Plants, Animal Products, Food and Drink": "Plantas e Alimentos",
+    "Body Equipment": "Equipamento", "Weapons": "Armas", "Constructions": "Construções",
+    "Flora and Minerals": "Flora e Minerais", "Utilities": "Utilidades",
+    "Living and Dead": "Vivos e Mortos", "Tools and other Equipment": "Ferramentas",
+    "Flooring": "Pisos", "Wall Coverings": "Paredes", "Navigation": "Navegação",
+    "Functional Objects": "Objetos Funcionais", "Magical Effects": "Efeitos Mágicos",
+    "Signage": "Placas", "Rubbish": "Lixo", "Other Objects": "Outros",
+    "Other Items": "Outros",
+}
+
+RARITY_ORDER = ["always", "common", "uncommon", "semi-rare", "rare", "very rare"]
+
+
+def field(content, name):
+    m = re.search(r"\|\s*" + name + r"\s*=[ \t]*([^\n|]*)", content)
+    return m.group(1).strip() if m else ""
+
+
+def big_field(content, name):
+    m = re.search(r"\|\s*" + name + r"\s*=[ \t]*(.*?)(?=\n\s*\|\s+[a-zA-Z_]+\s*=|\n\s*\}\}\s*$)",
+                  content, re.S)
+    return m.group(1).strip() if m else ""
 
 
 def clean(text):
     if not text:
         return ""
+    text = re.sub(r"\{\{[Ii]link\|[^}]*\}\}", "", text)
     text = re.sub(r"\[\[([^|\]]*\|)?([^\]]+)\]\]", r"\2", text)
-    text = re.sub(r"\{\{[^}]*\}\}", "", text)
-    return text.replace("'''", "").strip(" .")
-
-
-def relevant(box):
-    """Keep only gear that actually changes a hunt."""
-    armor = to_int(box.get("armor"))
-    if box.get("attrib") or box.get("resist"):
-        return True
-    if box.get("atk_mod") or box.get("attack"):
-        return True
-    if armor and armor >= 5:
-        return True
-    return False
+    text = re.sub(r"\{\{[^{}]*\}\}", "", text)
+    text = text.replace("'''", "").replace("''", "").replace("<br/>", " ").replace("<br>", " ")
+    return re.sub(r"\s+", " ", text).strip(" .|")
 
 
 def to_int(value):
-    if not value:
-        return None
-    m = re.search(r"-?\d+", value)
+    m = re.search(r"-?\d+", (value or "").replace(",", ""))
     return int(m.group()) if m else None
 
 
-def usable_by_paladin(voc):
-    voc = (voc or "").lower()
-    if not voc.strip():
-        return "todas"
-    if "paladin" in voc:
-        return "paladin"
-    return None  # knight/sorcerer/druid only
+def build_drop_index(rows):
+    """creature loot tables -> {item name: [(creature, rarity)]}"""
+    index = defaultdict(list)
+    creatures = {}
+    for title, content in rows:
+        loc = clean(big_field(content, "location"))[:180]
+        creatures[title] = loc
+        block = re.search(r"\|\s*loot\s*=\s*\{\{Loot Table(.*?)\n\s*\}\}", content, re.S)
+        if not block:
+            continue
+        for m in re.finditer(r"\{\{Loot Item\|([^}|]+)(?:\|([^}|]+))?", block.group(1)):
+            item = m.group(1).strip()
+            if not item or item.isdigit():
+                continue
+            index[item].append((title, (m.group(2) or "common").strip().lower()))
+    return index, creatures
 
 
 def main():
-    conn = get_connection()
-    buckets = {label: [] for label, _ in CATEGORIES}
-    type_to_label = {t: label for label, types in CATEGORIES for t in types}
-
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     with conn.cursor() as cur:
-        cur.execute("SELECT title, content FROM raw_pages WHERE NOT is_redirect AND content LIKE %s",
-                    ("%Infobox Object%",))
-        for row in cur.fetchall():
-            box = extract_infobox(row["content"], "Infobox_Object")
-            if not box:
-                continue
-            label = type_to_label.get((box.get("primarytype") or "").strip())
-            if not label:
-                label = type_to_label.get((box.get("secondarytype") or "").strip())
-            if not label:
-                continue
-            voc = usable_by_paladin(box.get("vocrequired"))
-            if voc is None:
-                continue
-            if not relevant(box):
-                continue
-            buckets[label].append({
-                "name": row["title"],
-                "voc": voc,
-                "lvl": to_int(box.get("levelrequired")) or 0,
-                "armor": to_int(box.get("armor")),
-                "atk": clean(box.get("atk_mod") or box.get("attack")),
-                "hit": clean(box.get("hit_mod")),
-                "attrib": clean(box.get("attrib")),
-                "resist": clean(box.get("resist")),
-                "slots": to_int(box.get("imbueslots")),
-                "cls": to_int(box.get("upgradeclass")),
-                "weight": clean(box.get("weight")),
-            })
+        cur.execute("SELECT title, content FROM raw_pages "
+                    "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Creature%",))
+        drops, creature_loc = build_drop_index([(r["title"], r["content"]) for r in cur.fetchall()])
+
+        cur.execute("SELECT title, content FROM raw_pages "
+                    "WHERE NOT is_redirect AND content LIKE %s", ("%Infobox Object%",))
+        item_rows = cur.fetchall()
     conn.close()
 
-    data = [{"label": label, "items": sorted(buckets[label], key=lambda i: (-i["lvl"], i["name"]))}
-            for label, _ in CATEGORIES if buckets[label]]
-    total = sum(len(c["items"]) for c in data)
-    print(f"{total} itens em {len(data)} categorias")
-    for c in data:
-        print(f"  {c['label']}: {len(c['items'])}")
+    # creatures referenced by any drop, stored once and referenced by index
+    referenced = sorted({c for lst in drops.values() for c, _ in lst})
+    cidx = {name: i for i, name in enumerate(referenced)}
+    creature_table = [[n, creature_loc.get(n, "")] for n in referenced]
 
-    out = "/home/user/teste-1/items-data.js"
-    with open(out, "w") as fh:
-        fh.write("window.ITEMS = " + json.dumps(data, ensure_ascii=False) + ";\n")
-    print("->", out)
+    items = []
+    for row in item_rows:
+        c, title = row["content"], row["title"]
+        ptype = field(c, "primarytype")
+        oclass = field(c, "objectclass")
+        cat = CATEGORY.get(ptype) or FALLBACK.get(oclass) or (ptype or oclass or "Outros")
+
+        by = sorted(drops.get(title, []), key=lambda x: RARITY_ORDER.index(x[1])
+                    if x[1] in RARITY_ORDER else 9)
+        items.append({
+            "n": title,
+            "c": cat,
+            "t": ptype or oclass,
+            "lvl": to_int(field(c, "levelrequired")),
+            "voc": field(c, "vocrequired"),
+            "arm": to_int(field(c, "armor")),
+            "atk": clean(field(c, "atk_mod") or field(c, "attack")),
+            "hit": clean(field(c, "hit_mod")),
+            "def": clean(field(c, "defense")),
+            "at": clean(field(c, "attrib")),
+            "rs": clean(field(c, "resist")),
+            "sl": to_int(field(c, "imbueslots")),
+            "cl": to_int(field(c, "upgradeclass")),
+            "w": clean(field(c, "weight")),
+            "st": field(c, "stackable").lower() == "yes",
+            "v": clean(field(c, "value")),
+            "nv": to_int(field(c, "npcvalue")),
+            "bf": clean(field(c, "buyfrom"))[:200],
+            "sl_to": clean(field(c, "sellto"))[:200],
+            "by": [[cidx[n], r] for n, r in by],
+            "no": clean(big_field(c, "notes"))[:500],
+        })
+
+    # drop empty keys to keep the payload lean
+    slim = []
+    for it in items:
+        slim.append({k: v for k, v in it.items()
+                     if v not in (None, "", [], False)})
+
+    cats = defaultdict(int)
+    for it in items:
+        cats[it["c"]] += 1
+    order = [c for c, _ in sorted(cats.items(), key=lambda x: -x[1])]
+
+    payload = {"cats": order, "creatures": creature_table, "items": slim}
+    with open(OUT, "w") as fh:
+        fh.write("window.ITEMDATA = " + json.dumps(payload, ensure_ascii=False,
+                                                   separators=(",", ":")) + ";\n")
+
+    with_drops = sum(1 for it in items if it["by"])
+    print(f"{len(items)} itens em {len(order)} categorias — {with_drops} com fonte de drop, "
+          f"{len(creature_table)} criaturas indexadas")
+    print("->", OUT, f"({os.path.getsize(OUT)/1024:.0f} KB)")
 
 
 if __name__ == "__main__":

@@ -6,10 +6,15 @@ TibiaWiki inteiro.
 
 ## O que tem aqui
 
-- **`index.html`** — página de equipamento de paladin: 352 itens em 11
-  categorias, filtráveis por nome/atributo, vocação e level máximo.
-  Resistências negativas aparecem destacadas (são armadilha).
-- **`items-data.js`** — os dados da página, gerados do banco.
+- **`index.html`** — catálogo completo de itens: 9.894 itens em 56 categorias
+  (equipamento, itens de quest e delivery task, produtos de criatura, valiosos…).
+  Filtra por categoria, vocação, level e presença de drop/atributos; clicar num
+  item mostra propriedades, comércio e **quem dropa, com raridade e onde a
+  criatura vive**.
+- **`creatures.html`** — 1.629 criaturas com stats, resistências elementais e
+  gp/kill; clicar abre o detalhe completo (habilidades, comportamento,
+  localização, estratégia, bestiário e loot table).
+- **`items-data.js`** / **`creatures-data.js`** — os dados das páginas.
 - **`tibia-mcp/`** — tudo para recriar o servidor MCP com dados:
   - `tibiawiki.dump` — banco PostgreSQL populado (2.193 criaturas, 9.792
     itens, 1.246 NPCs, 443 caçadas, 371 quests, magias, mounts e o wikitext
