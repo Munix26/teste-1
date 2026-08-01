@@ -18,6 +18,10 @@ TibiaWiki inteiro.
 - **`spawns.html`** — 442 locais de caçada cruzados com suas criaturas, com
   exp média, exp/HP e ouro por kill **calculados** (o wiki não traz), ignorando
   bosses e objetos.
+
+Nada aqui é inventado: o que não está no wiki aparece como "não disponível", e
+o ouro por kill é sempre uma **faixa**, derivada das chances que o wiki
+documenta por raridade — não um número exato.
 - **`items-data.js`** / **`creatures-data.js`** / **`hunts-data.js`** — os dados das páginas.
 - **`tibia-mcp/`** — tudo para recriar o servidor MCP com dados:
   - `tibiawiki.dump` — banco PostgreSQL populado (2.193 criaturas, 9.792
@@ -25,7 +29,7 @@ TibiaWiki inteiro.
     completo de 28.967 páginas), crawleado de `tibia.fandom.com`.
   - `setup.sh` — restaura tudo do zero, sem refazer o crawl.
   - `gen_items.py` — regenera `items-data.js`.
-  - `loot_value.py` — calcula gp/kill de criaturas (loot table × preço de NPC).
+  - `loot.py` — parser das loot tables e cálculo da faixa de gp/kill.
   - `english-wiki-adaptation.patch` — adaptação do
     [miltonhit/tibia_mcp](https://github.com/miltonhit/tibia_mcp) para o wiki
     inglês (o wiki BR fica atrás de Cloudflare e é inacessível de datacenter),

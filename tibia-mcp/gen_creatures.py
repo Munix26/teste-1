@@ -7,22 +7,19 @@ tables — and prices each loot table so the page can show expected gold per kil
 import json
 import os
 import re
+import sys
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from loot import loot_items, gold_range
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "creatures-data.js")
 
 ELEMENTS = ["physical", "earth", "fire", "death", "energy", "holy", "ice",
             "drown", "hpDrain"]
-
-# same rarity model as loot_value.py
-RARITY = {"always": 1.0, "common": 0.20, "uncommon": 0.05,
-          "semi-rare": 0.01, "rare": 0.0025, "very rare": 0.0005}
-AMOUNT = {"Gold Coin": 100, "Platinum Coin": 25, "Small Diamond": 2, "Small Ruby": 2,
-          "Small Emerald": 2, "Small Sapphire": 2, "Small Amethyst": 3, "Small Topaz": 2,
-          "Small Enchanted Ruby": 2, "Small Enchanted Sapphire": 2, "Meat": 3, "Ham": 2}
 
 # infobox flag -> label shown in the detail panel
 FLAGS = [("pushable", "Empurrável"), ("pushobjects", "Empurra objetos"),
@@ -105,21 +102,12 @@ def parse_abilities(content):
 
 
 def parse_loot(content, prices):
-    """Return (items, expected_gold). Items carry rarity and NPC price."""
-    block = re.search(r"\|\s*loot\s*=\s*\{\{Loot Table(.*?)\n\s*\}\}", content, re.S)
-    if not block:
-        return [], None
-    items, total = [], 0.0
-    for m in re.finditer(r"\{\{Loot Item\|([^}|]+)(?:\|([^}|]+))?", block.group(1)):
-        name = m.group(1).strip()
-        if not name or name.isdigit():
-            continue
-        rarity = (m.group(2) or "common").strip().lower()
-        price = prices.get(name)
-        items.append({"n": name, "r": rarity, "p": price})
-        if price is not None:
-            total += RARITY.get(rarity, 0.05) * price * AMOUNT.get(name, 1)
-    return items, round(total)
+    """Return (items, gold_range). Items carry rarity, amount and NPC price."""
+    items = [{"n": it["name"], "r": it["rarity"], "p": prices.get(it["name"]),
+              "a": it["amount_lo"] if it["amount_lo"] == it["amount_hi"]
+                   else f"{it['amount_lo']}-{it['amount_hi']}"}
+             for it in loot_items(content)]
+    return items, gold_range(content, prices)
 
 
 def main():
@@ -182,7 +170,7 @@ def main():
                 "abil": parse_abilities(c),
                 "flags": {k: v for k, v in flags.items() if v},
                 "loot": loot,
-                "gold": gold,
+                "gold": gold,   # [mín, máx] pelas faixas de raridade do wiki
                 "loc": clean(big_field(c, "location"))[:400],
                 "behav": clean(big_field(c, "behaviour"))[:400],
                 "strat": clean(big_field(c, "strategy"))[:500],

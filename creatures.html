@@ -254,7 +254,10 @@
     <span class="plain">cinza = 100%</span> ·
     <span class="strong">laranja &lt; 100%</span> = resistente ·
     <span class="immune">vermelho = 0%</span> = imune.
-    Ouro é estimativa: itens sem preço de NPC (só Market) ficam de fora.
+    Ouro por kill é uma <b>faixa</b>, calculada com as chances de drop que o wiki
+    documenta por raridade (common 25–100%, uncommon 5–25%, semi-rare 1–5%,
+    rare 0,5–1%, very rare &lt;0,5%) e as quantidades da própria loot table.
+    Itens sem preço de NPC (só Market) não entram — o valor é um piso.
   </p>
 </div>
 
@@ -270,6 +273,11 @@
 
   let sortKey = 'exp';
   let sortDir = -1;
+
+  // ouro é faixa [mín, máx] — as chances de drop do wiki são faixas, não pontos
+  const fmt = (n) => n.toLocaleString('pt-BR');
+  const goldCell = (g) => !g ? '<span class="dim">—</span>'
+    : `${fmt(g[0])}<span class="dim">–</span>${fmt(g[1])}`;
 
   function modCell(v) {
     if (v === undefined) return '<span class="dim">—</span>';
@@ -298,7 +306,7 @@
       if (diff && c.diff !== diff) return false;
       if (rExp && !(c.exp >= rExp[0] && c.exp < rExp[1])) return false;
       if (rHp && !(c.hp >= rHp[0] && c.hp < rHp[1])) return false;
-      if (rGold && !(c.gold >= rGold[0] && c.gold < rGold[1])) return false;
+      if (rGold && !(c.gold && c.gold[0] >= rGold[0] && c.gold[0] < rGold[1])) return false;
       // "fraco a X" = toma mais de 100% de dano daquele elemento
       if (weak && !(c.mods[weak] > 100)) return false;
       if (boss === 'no' && c.boss) return false;
@@ -333,7 +341,7 @@
       <td class="num">${c.hp.toLocaleString('pt-BR')}</td>
       <td class="num">${c.exp.toLocaleString('pt-BR')}</td>
       <td class="num">${c.ratio.toFixed(2)}</td>
-      <td class="num">${c.gold ? c.gold.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
+      <td class="num">${goldCell(c.gold)}</td>
       <td class="num">${c.armor ?? '<span class="dim">—</span>'}</td>
       <td class="num">${c.maxdmg ? c.maxdmg.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
       ${ELEMENTS.map((e) => `<td class="num">${modCell(c.mods[e])}</td>`).join('')}
@@ -386,7 +394,8 @@
     const stats = [
       kv('HP', n(c.hp)), kv('Experiência', n(c.exp)), kv('Exp / HP', c.ratio.toFixed(3)),
       kv('Armor', c.armor), kv('Mitigação', c.mit), kv('Velocidade', c.speed),
-      kv('Dano máximo', n(c.maxdmg)), kv('Ouro esperado / kill', n(c.gold)),
+      kv('Dano máximo', n(c.maxdmg)),
+      kv('Ouro por kill (faixa)', c.gold ? `${fmt(c.gold[0])} – ${fmt(c.gold[1])} gp` : null),
       kv('Classe (bestiário)', c.cls), kv('Dificuldade', c.diff),
       kv('Ocorrência', c.occ), kv('Tipo', c.type),
       kv('Tipo de ataque', c.atktype), kv('Spawn', c.spawn),
@@ -421,7 +430,7 @@
     const loot = c.loot.length
       ? `<div class="loot-list">${c.loot.map((it) =>
           `<span class="loot-item r-${it.r.replace(/[ -]/g, '')}">${it.n}${
-            it.p ? ` <span class="price">${it.p.toLocaleString('pt-BR')} gp</span>`
+            it.p ? ` <span class="price">${it.a && it.a !== 1 ? it.a + '× ' : ''}${it.p.toLocaleString('pt-BR')} gp</span>`
                  : ' <span class="price">só Market</span>'}</span>`).join('')}</div>`
       : '';
 
@@ -475,7 +484,7 @@
             [0, 100, 500, 1000, 2000, 5000, 10000, 25000, 100000]);
   fillRange('hprange', C.map((c) => c.hp),
             [0, 500, 1000, 2500, 5000, 10000, 25000, 100000]);
-  fillRange('goldrange', C.map((c) => c.gold).filter(Boolean),
+  fillRange('goldrange', C.map((c) => c.gold && c.gold[0]).filter((v) => v != null),
             [0, 100, 250, 500, 1000, 2500, 10000]);
 
   const weakCounts = {};

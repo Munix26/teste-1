@@ -180,7 +180,8 @@
   <p class="legend">
     Clique num spawn para ver todas as criaturas com stats. Rating de exp/loot é o
     do wiki (★1–5) e existe em pouco mais da metade dos spawns — quando falta,
-    use as colunas calculadas de exp/HP e ouro.
+    use as colunas calculadas de exp/HP e ouro. O ouro é uma <b>faixa</b>, vinda
+    das chances de drop que o wiki documenta por raridade — não um valor exato.
   </p>
 </div>
 
@@ -195,6 +196,10 @@
   let sortKey = 'lvl';
   let sortDir = -1;
   let current = [];
+
+  const fmt = (n) => n.toLocaleString('pt-BR');
+  const goldCell = (g) => !g ? '<span class="dim">—</span>'
+    : `${fmt(g[0])}<span class="dim">–</span>${fmt(g[1])}`;
 
   const stars = (n) => (n ? '★'.repeat(n) + '<span class="dim">' + '☆'.repeat(5 - n) + '</span>' : null);
 
@@ -229,7 +234,7 @@
     let rows = H.filter((h) => {
       if (city && h.city !== city) return false;
       if (lvl && !(h.lvl >= lvl[0] && h.lvl < lvl[1])) return false;
-      if (gold && !(h.avggold >= gold[0] && h.avggold < gold[1])) return false;
+      if (gold && !(h.avggold && h.avggold[0] >= gold[0] && h.avggold[0] < gold[1])) return false;
       if (exps && h.exps !== +exps) return false;
       if (loots && h.loots !== +loots) return false;
       if (q) {
@@ -256,7 +261,7 @@
       <th data-k="loots" class="num">Loot ★</th>
       <th data-k="avgexp" class="num">Exp média</th>
       <th data-k="ratio" class="num">Exp/HP</th>
-      <th data-k="avggold" class="num">gp/kill</th>
+      <th class="num">gp/kill</th>
       <th>Criaturas</th>
     </tr></thead>`;
 
@@ -268,7 +273,7 @@
       <td class="num stars">${stars(h.loots) || '<span class="dim">—</span>'}</td>
       <td class="num">${h.avgexp ? h.avgexp.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
       <td class="num">${h.ratio ?? '<span class="dim">—</span>'}</td>
-      <td class="num gold">${h.avggold ? h.avggold.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
+      <td class="num gold">${goldCell(h.avggold)}</td>
       <td class="creatures">${h.cr.slice(0, 3).map((c) => c.n).join(', ')}${
         h.cr.length > 3 ? ` <span class="dim">+${h.cr.length - 3}</span>` : ''}</td>
     </tr>`).join('');
@@ -305,7 +310,7 @@
       kv('Exp média por kill', h.avgexp?.toLocaleString('pt-BR')),
       kv('HP médio', h.avghp?.toLocaleString('pt-BR')),
       kv('Exp/HP do spawn', h.ratio),
-      kv('Ouro médio por kill', h.avggold ? h.avggold.toLocaleString('pt-BR') + ' gp' : ''),
+      kv('Ouro por kill (faixa)', h.avggold ? fmt(h.avggold[0]) + ' – ' + fmt(h.avggold[1]) + ' gp' : ''),
       kv('Implementado', h.impl),
     ].join('');
 
@@ -317,7 +322,7 @@
         <span class="num">${c.hp.toLocaleString('pt-BR')}</span>
         <span class="num">${c.exp.toLocaleString('pt-BR')}</span>
         <span class="num">${c.hp ? (c.exp / c.hp).toFixed(2) : '—'}</span>
-        <span class="num gold">${c.gold ? c.gold.toLocaleString('pt-BR') : '—'}</span>`).join('')}
+        <span class="num gold">${c.gold ? fmt(c.gold[0]) + '–' + fmt(c.gold[1]) : '—'}</span>`).join('')}
     </div>` : '';
 
     const best = h.best.filter(Boolean);
@@ -354,7 +359,7 @@
 
   fillRange('lvl', H.map((h) => h.lvl).filter(Boolean),
             [1, 20, 50, 80, 100, 150, 200, 250, 300, 400, 500, 600]);
-  fillRange('gold', H.map((h) => h.avggold).filter(Boolean),
+  fillRange('gold', H.map((h) => h.avggold && h.avggold[0]).filter((v) => v != null),
             [0, 100, 250, 500, 1000, 2500, 5000, 10000]);
 
   [5, 4, 3, 2, 1].forEach((s) => {

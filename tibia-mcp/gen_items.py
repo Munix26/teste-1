@@ -8,10 +8,14 @@ inverting every creature loot table, plus the NPCs that trade it.
 import json
 import os
 import re
+import sys
 from collections import defaultdict
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from loot import loot_items
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "items-data.js")
@@ -138,14 +142,8 @@ def build_drop_index(rows):
             "diff": field(content, "bestiarylevel"),
             "boss": field(content, "isboss").lower() == "yes",
         }
-        block = re.search(r"\|\s*loot\s*=\s*\{\{Loot Table(.*?)\n\s*\}\}", content, re.S)
-        if not block:
-            continue
-        for m in re.finditer(r"\{\{Loot Item\|([^}|]+)(?:\|([^}|]+))?", block.group(1)):
-            item = m.group(1).strip()
-            if not item or item.isdigit():
-                continue
-            index[item].append((title, (m.group(2) or "common").strip().lower()))
+        for it in loot_items(content):
+            index[it["name"]].append((title, it["rarity"]))
     return index, info
 
 
