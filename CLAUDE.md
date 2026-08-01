@@ -38,10 +38,12 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 |---|---|
 | `index.html` + `items-data.js` | catálogo completo (9.894 itens, 56 categorias) com índice reverso de drops |
 | `creatures.html` + `creatures-data.js` | 1.629 criaturas com detalhe completo ao clicar |
+| `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
+| `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
 | `tibia-mcp/loot_value.py` | calcula gp/kill de criaturas (loot table × preço de NPC) |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |
 
@@ -70,8 +72,11 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   inglês estrutura de outro jeito).
 - **Charm points e contagens do bestiário: zerados** (ficam fora do infobox).
 - Rating de exp/loot das hunts: só ~57% preenchido **na origem** — o wiki
-  inglês deixa em branco. Ideia pendente: calcular rating próprio (exp/HP,
-  densidade, valor de loot) em vez de usar as estrelinhas.
+  inglês deixa em branco. Contornado em `spawns.html` calculando exp média,
+  exp/HP e ouro por kill a partir das criaturas de cada spawn (médias excluem
+  bosses e objetos de 0 exp, senão distorcem).
+- O índice reverso de drops cobre só loot table: itens vindos de quest, bag,
+  task ou NPC aparecem sem fonte (ex.: Soulbleeder, que vem da Bag You Desire).
 - **Sem preços de Market ao vivo.** 1.640 itens têm preço de NPC; os itens de
   endgame (Soul Set, Alicorn, forjados) são todos "negotiable" — sem valor.
 
