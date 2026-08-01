@@ -36,10 +36,12 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 
 | Caminho | O que é |
 |---|---|
-| `index.html` + `items-data.js` | página de equipamento de paladin (352 itens filtrados) |
+| `index.html` + `items-data.js` | catálogo completo (9.894 itens, 56 categorias) com índice reverso de drops |
+| `creatures.html` + `creatures-data.js` | 1.629 criaturas com detalhe completo ao clicar |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
-| `tibia-mcp/gen_items.py` | regenera `items-data.js` a partir do banco |
+| `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
+| `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
 | `tibia-mcp/loot_value.py` | calcula gp/kill de criaturas (loot table × preço de NPC) |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |
 
@@ -54,6 +56,11 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   Foi assim que saíram drops, requisitos de quest e stats de arma.
 - O `query_database` do MCP tem um guard de SQL ingênuo: bloqueia queries que
   contenham a substring "drop" (inclusive na coluna `dropped_by`).
+- **Armadilhas do parser de wikitext** (todas já corrigidas, mas fáceis de
+  reintroduzir): campos multi-linha terminam no próximo ` | chave =` com espaço
+  após o pipe (parâmetros aninhados usam `|chave=` sem espaço); usar `[ \t]*`
+  e não `\s*` depois do `=`, senão um campo vazio engole a linha seguinte; e
+  pipes dentro de `[[wikilinks]]` precisam ser protegidos antes de dar split.
 
 ## Lacunas conhecidas dos dados
 
