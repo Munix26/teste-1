@@ -44,6 +44,9 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
+| `sessions/*.txt` | exports crus do Hunt Analyzer (um arquivo por export) |
+| `tibia-mcp/session.py` | parser dos exports + normalização de nomes contra o wiki |
+| `tibia-mcp/analyze_session.py` | relatório de uma hunt (`python3 tibia-mcp/analyze_session.py sessions/*.txt`) |
 | `tibia-mcp/loot.py` | parser compartilhado das loot tables + faixa de gp/kill |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |
 
@@ -87,6 +90,17 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   task ou NPC aparecem sem fonte (ex.: Soulbleeder, que vem da Bag You Desire).
 - **Sem preços de Market ao vivo.** 1.640 itens têm preço de NPC; os itens de
   endgame (Soul Set, Alicorn, forjados) são todos "negotiable" — sem valor.
+  Sessões reais dão uma saída: cada export é a equação
+  `loot reportado = Σ (quantidade × preço)`. Com sessões de mix diferente o
+  sistema fica determinado e dá pra recuperar os preços que o jogo usa.
+- **O campo `p` do `creatures-data.js` guarda só o piso do preço.** No wiki o
+  valor é uma faixa (Haunted Blade = "8.000 – 20.000"), porque NPCs diferentes
+  pagam diferente. O gerador colapsou pro mínimo, então todo gp/kill do
+  `loot.py` está subestimado. `session.price_range()` lê a faixa inteira; o
+  `gen_creatures.py` ainda não foi corrigido.
+- **`creatures-data.js` e `items-data.js` discordam de preço.** Frazzle Tongue
+  tem `p: 700` num e `"Negotiable"` no outro; idem Frazzle Skin, Silencer
+  Claws, Red Crystal Fragment e Silencer Resonating Chamber.
 
 ## Modelo de simulação de hunt
 
@@ -116,6 +130,42 @@ max = 0,09 × skill × atk + level/5      min = level/5
   muda **densidade**, não exp por kill. Estimativa: −1 ≈ 583k raw xp/h e
   194k loot/h; −2 ≈ 1.079kk raw xp/h e 359k loot/h.
 
+## Sessão real medida: Guzzlemaw Valley, 2026-08-02 (2h40, 1.641 kills)
+
+Três exports cumulativos em `sessions/2026-08-02-guzzlemaw-valley-*.txt`.
+Primeira calibração com dados de verdade — o que ela fixou:
+
+- **O banco de criaturas está certo**: a exp prevista bate com a raw xp
+  reportada com **+0,14%** de erro em 1.641 kills.
+- **Overkill de 8,3%** — estável nos três trechos (8,5 / 8,6 / 7,7). É
+  característica do setup, não ruído.
+- **Cura = 17,2% do dano causado, ou ~144 hp/s.** O modelo assume ~200 hp/s de
+  leech duplo; ainda não sei se o contador do analyzer inclui leech, mas o
+  número medido é bem menor.
+- **O rendimento de drop confere**: 28 de 30 itens dentro da faixa de raridade
+  do wiki, e os 2 restantes explicados por ruído de Poisson. **O modelo de
+  raridade do `loot.py` está validado empiricamente.**
+- Comparar drop **stackável** por kill exige multiplicar chance × tamanho da
+  pilha. 77.257 gold coins em 1.641 kills não é 4.708% de chance — é chance
+  normal pagando pilha.
+
+Números do spawn (Frazzlemaw + Shock Head + Silencer):
+616 kills/h · **2.464k raw xp/h** · loot 1.410 gp/kill · supply 769 gp/kill ·
+**balance ~395k gp/h**. Contra os 1.079k raw xp/h estimados pro Werelion −2 —
+mas atenção: aquilo é teto de modelo e isto é medição, não são comparáveis
+até existir uma sessão real de Werelions.
+
+### Duas coisas em aberto nesta sessão
+
+- **O multiplicador de XP caiu de forma monótona**: 2,2500 → 2,0832 → 1,9561
+  por trecho. Testei degrau único 2,25→1,5 (erro de −7,3%) e bônus fixo somado
+  (erro de +2,0%); nenhum dos dois explica. Falta saber o estado de
+  boost/prey/stamina pra fechar.
+- **O trecho 2 acelerou 10% e ficou menos lucrativo**: supply/kill subiu 43%
+  contra 15% de loot/kill, e o balance/h caiu. No trecho 3 inverteu
+  (supply/kill −15%, cura/dano 15,5%→20,3%). Vale saber o que mudou — andar,
+  imbuement ou só ritmo de poção.
+
 ## Conclusões de equipamento já apuradas (spawn de Werelions)
 
 - **Imbuements > troca de equipamento.** Demon Presence + Dragon Hide valem
@@ -125,3 +175,24 @@ max = 0,09 × skill × atk + level/5      min = level/5
 - Falcon Bow, Falcon Coif e Falcon Greaves seguem imbatíveis até o level 400.
 - **Guardian Boots têm holy −2%** → pioram a defesa neste spawn.
 - Alicorn Headguard (400) e Sanguine Greaves (500) são os próximos saltos.
+
+## Conclusões de equipamento (Guzzlemaw Valley / Roshamuul)
+
+Tiradas dos `mods` das três criaturas — o inverso do que vale em Werelions.
+
+| | Frazzlemaw | Shock Head | Silencer |
+|---|---|---|---|
+| physical | 95% | 90% | 95% |
+| holy | 105% | 100% | **125%** |
+| earth | 80% | **0%** | **0%** |
+| fire | 90% | **0%** | 70% |
+| death | 90% | 80% | **35%** |
+
+- **Nenhum imbuement elemental serve aqui.** Venom e Scorch batem em imunidade
+  em duas das três; Frost, Electrify e Reap ficam abaixo do físico. Manter dano
+  físico + leech.
+- **Divine Wrath (holy) é o melhor charm do spawn**, não Icicle.
+- Os slots **defensivos rendem quase nada**: o dano recebido é físico + energy
+  + life/mana drain, e não existe imbuement de resistência física. Demon
+  Presence e Dragon Hide, que são a recomendação pra Werelions, são inúteis
+  aqui.
