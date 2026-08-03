@@ -111,7 +111,16 @@ fórmula de dano atual é desconhecida):
 max = 0,09 × skill × atk + level/5      min = level/5
 ```
 
-- Skill de distance assumida em **125** — nunca foi confirmada pelo dono.
+- **Distance skill real = 104 de base** (confirmado pelo dono, level 366,
+  magic level 29). O valor de 125 que este arquivo assumia era chute e
+  inflava tudo. Com equipamento o efetivo fica ~120–125.
+- **A munição é Diamond Arrow (atk 37), em área de 21 campos** — não flecha de
+  alvo único. Isso domina o modelo: no export de 2h40, Diamond Arrow pegando
+  5,5 alvos por tiro explica **99,3% do dano medido** sozinha. As magias somam
+  pouco, e por isso magic level quase não mexe no dano (mas mexe na cura).
+  Estimativas feitas com Crystalline Arrow (atk 65) subestimam o alvo errado.
+- O dono joga **sempre em área**, nunca alvo único — bestas e bolts estão fora
+  (não existe bolt de área).
 - Valores **absolutos** (exp/h, kills/h) são teto: assumem alvo sempre
   disponível e ignoram respawn, que na prática é o gargalo.
 - Comparações **relativas** entre equipamentos são confiáveis (o erro afeta
@@ -155,16 +164,35 @@ Números do spawn (Frazzlemaw + Shock Head + Silencer):
 mas atenção: aquilo é teto de modelo e isto é medição, não são comparáveis
 até existir uma sessão real de Werelions.
 
-### Duas coisas em aberto nesta sessão
+### O que a sessão da noite resolveu
 
-- **O multiplicador de XP caiu de forma monótona**: 2,2500 → 2,0832 → 1,9561
-  por trecho. Testei degrau único 2,25→1,5 (erro de −7,3%) e bônus fixo somado
-  (erro de +2,0%); nenhum dos dois explica. Falta saber o estado de
-  boost/prey/stamina pra fechar.
-- **O trecho 2 acelerou 10% e ficou menos lucrativo**: supply/kill subiu 43%
-  contra 15% de loot/kill, e o balance/h caiu. No trecho 3 inverteu
-  (supply/kill −15%, cura/dano 15,5%→20,3%). Vale saber o que mudou — andar,
-  imbuement ou só ritmo de poção.
+- **Multiplicador de XP, fechado.** A sessão de 21:00 (sem boost) deu
+  **1,5000 exato** — essa é a base (stamina verde + premium). O boost é +50%
+  multiplicativo: 1,5 × 1,5 = 2,25. Pelo ponto onde o trecho 3 quebra (61%
+  ainda boostado), o boost acabou ~08:57, 2h19 depois do início — foram
+  **2 boosts, não 1**. O dono não pretende comprar boost por ora, então
+  assuma 1,5× fixo.
+- **O trecho 2 gastou 185k gp a mais em supply** — 7,4 Stone Skin Amulets /
+  Might Rings a 25.000 gp cada explicam o excesso inteiro. Não foi poção nem
+  ritmo. O analyzer conta esses itens como supply quando quebram.
+
+### `Damage/h` mede tempo de combate, não o relógio
+
+Achado da sessão de 21:00, e é o jeito de medir utilização de graça:
+
+```
+tempo de combate = Damage ÷ (Damage/h)
+utilização = tempo de combate ÷ duração pelos timestamps
+```
+
+Na sessão de 2h40 os dois batiam (**100% de utilização**). Na de 27 min o
+`Damage/h` implicava 19,1 min de 26,8 — **71%**, os 7,7 min restantes foram
+deslocamento até o spawn. Comparar `Raw XP/h` entre sessões de duração
+diferente engana: sessão curta é dominada pelo overhead de setup. Compare
+sempre **kills por hora de combate**.
+
+Com utilização perto de 100% em combate, **prey de dano rende os ~34% cheios
+em xp e em loot** — ganha do prey de XP, que dá +37% só de xp.
 
 ## Conclusões de equipamento já apuradas (spawn de Werelions)
 
