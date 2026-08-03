@@ -1,0 +1,45 @@
+From 2026-08-02, 21:00:37 to 2026-08-02, 22:06:20
+Session: 01:05h
+Raw XP Gain: 2,923,576
+XP Gain: 4,385,363
+Raw XP/h: 2,669,057
+XP/h: 4,003,585
+Loot: 1,069,921
+Supplies: 481,905
+Balance: 588,016
+Damage: 3,512,195
+Damage/h: 3,633,218
+Healing: 617,969
+Healing/h: 639,263
+Killed Monsters:
+  425x frazzlemaw
+  67x shock head
+  232x silencer
+Looted Items:
+  119x a great mana potion
+  66x a great health potion
+  2x terra legs
+  6x a small sapphire
+  33355x a gold coin
+  2127x a platinum coin
+  7x a stealth ring
+  2x boots of haste
+  33x a banana skin
+  10x iron ore
+  16x a fish fin
+  4x a diamond sceptre
+  4x an assassin dagger
+  11x a haunted blade
+  4x a titan axe
+  5x a nightmare blade
+  4x a glorious axe
+  6x a gold ingot
+  6x traditional sai
+  12x a violet crystal shard
+  44x a brown crystal splinter
+  15x a red crystal fragment
+  39x crystal rubbish
+  60x a frazzle tongue
+  43x a frazzle skin
+  35x silencer claws
+  22x a silencer resonating chamber
