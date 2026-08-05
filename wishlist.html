@@ -1,0 +1,816 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Wishlist</title>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
+
+  nav { margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #1a1d26;
+    border: 1px solid #262b38;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  select, input {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  select:focus, input:focus { outline: 1px solid #d4af37; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
+  .chk input { width: auto; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  h2.group {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #d4af37;
+    margin: 28px 0 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #262b38;
+  }
+
+  .group-note { color: #8b93a7; font-size: 0.84rem; margin-bottom: 12px; }
+
+  .card {
+    background: #171a22;
+    border: 1px solid #262b38;
+    border-radius: 9px;
+    padding: 14px 16px 16px;
+    margin-bottom: 10px;
+  }
+
+  .card.done { opacity: 0.5; }
+
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    cursor: pointer;
+  }
+
+  .card-head h3 { font-size: 1.02rem; color: #e6e8ee; }
+  .card.done .card-head h3 { text-decoration: line-through; }
+
+  .tag {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid #303646;
+    color: #8b93a7;
+    white-space: nowrap;
+  }
+
+  .tag.ok { color: #4ade80; border-color: rgba(74,222,128,0.4); }
+  .tag.wait { color: #fb923c; border-color: rgba(251,146,60,0.4); }
+  .tag.hard { color: #f87171; border-color: rgba(248,113,113,0.4); }
+  .tag.tier { color: #d4af37; border-color: rgba(212,175,55,0.4); }
+
+  .card-head .toggle { margin-left: auto; color: #5c6478; font-size: 0.8rem; }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin-top: 8px;
+    font-size: 0.83rem;
+  }
+
+  .stats .k { color: #6b7385; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; margin-right: 4px; }
+
+  .attrib { color: #7dd3a0; }
+  .resist { color: #a5b4fc; }
+  .neg { color: #f87171; }
+  .dim { color: #5c6478; }
+  .na { color: #5c6478; font-style: italic; }
+
+  .body { display: none; margin-top: 14px; }
+  .card.open .body { display: block; }
+
+  .body h4 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8b93a7;
+    margin: 14px 0 6px;
+  }
+
+  .body ol, .body ul { margin: 0 0 0 18px; font-size: 0.87rem; color: #b8bfd0; }
+  .body li { margin-bottom: 4px; }
+
+  .body p { font-size: 0.87rem; color: #b8bfd0; }
+
+  .warn { color: #fbbf24; }
+
+  table.src { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 4px; }
+  table.src th {
+    text-align: left; color: #6b7385; font-weight: 600; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 4px 8px 4px 0; border-bottom: 1px solid #262b38; white-space: nowrap;
+  }
+  table.src td { padding: 4px 8px 4px 0; border-bottom: 1px solid #1c202a; vertical-align: top; }
+  table.src td.c { font-weight: 600; white-space: nowrap; }
+  table.src td.loc { color: #8b93a7; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .b-Bane { color: #4ade80; }
+  .b-Archfoe { color: #fbbf24; }
+  .b-Nemesis { color: #f87171; }
+
+  .r-always, .r-common { color: #94a3b8; }
+  .r-uncommon { color: #60a5fa; }
+  .r-semirare { color: #a78bfa; }
+  .r-rare { color: #fbbf24; }
+  .r-veryrare { color: #f0abfc; }
+
+  /* ── forja ── */
+  .forge {
+    background: #171a22;
+    border: 1px solid #262b38;
+    border-radius: 9px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+
+  .forge table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+  .forge th {
+    text-align: left; color: #6b7385; font-weight: 600; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 6px 10px 6px 0; border-bottom: 1px solid #262b38; white-space: nowrap;
+  }
+  .forge td { padding: 6px 10px 6px 0; border-bottom: 1px solid #1c202a; white-space: nowrap; }
+  .forge td.rota { font-weight: 600; white-space: normal; }
+  .forge .hint { color: #6b7385; font-size: 0.76rem; font-weight: 400; display: block; }
+
+  .gold { color: #d4af37; font-variant-numeric: tabular-nums; }
+  .dust { color: #a5b4fc; font-variant-numeric: tabular-nums; }
+  .item-n { color: #7dd3a0; font-variant-numeric: tabular-nums; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 14px; }
+  .legend strong { color: #8b93a7; font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <h1>Wishlist</h1>
+  <p class="sub">
+    Os itens que faltam, de onde cada um sai e o que custa. Clique num item para
+    abrir a rota completa. O que está marcado fica salvo neste navegador.
+  </p>
+
+  <nav>
+    <a href="index.html">Itens</a>
+    <a href="creatures.html">Criaturas</a>
+    <a href="spawns.html">Spawns</a>
+    <a href="wishlist.html" class="on">Wishlist</a>
+  </nav>
+
+  <div class="controls">
+    <label for="lvl">Meu level</label>
+    <input id="lvl" type="number" value="360" min="1" style="width:92px" />
+    <label for="ord">Ordenar por</label>
+    <select id="ord">
+      <option value="rota">Rota sugerida</option>
+      <option value="lvl">Level exigido</option>
+      <option value="nome">Nome</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="hidedone" /> Esconder os que já tenho</label>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div id="list"></div>
+
+  <h2 class="group">Custo dos tiers na Exaltation Forge</h2>
+  <p class="group-note">
+    Fusão é aposta: 50% de sucesso (65% gastando um Exalted Core) e, quando falha,
+    um dos dois itens cai um tier — 100% das vezes, ou 50% se o core foi usado.
+    Os números abaixo são a <strong>esperança matemática</strong> dessa cadeia de
+    tentativas, não um custo fixo; metade das vezes você gasta menos, metade gasta mais.
+  </p>
+
+  <div class="forge">
+    <div class="controls" style="margin-bottom:0">
+      <label for="fitem">Item</label>
+      <select id="fitem"></select>
+      <label for="ftier">Tier alvo</label>
+      <select id="ftier"></select>
+      <label class="chk"><input type="checkbox" id="fcore" checked /> Usar Exalted Core em toda tentativa</label>
+    </div>
+    <div id="ftable"></div>
+    <p class="legend" id="fnote"></p>
+  </div>
+
+  <div class="forge">
+    <h4 style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:#8b93a7;margin-bottom:8px">
+      Atalhos com o tier que você já tem
+    </h4>
+    <p class="group-note" style="margin-bottom:10px">
+      Transfer comum exige <b>mesmo slot e mesma classificação</b>, destrói o item de
+      origem e entrega ao destino o <b>tier de origem menos um</b>. Convergence transfer
+      atravessa slots e não perde tier, mas só existe para classificação 4 e custa de
+      3 a 4 vezes mais ouro. Cruzando isso com o que você tem hoje:
+    </p>
+    <table>
+      <thead><tr><th>Item tierado</th><th>Class</th><th>Para onde o tier pode ir</th></tr></thead>
+      <tbody>
+        <tr><td class="rota">Bow of Destruction t2</td><td>2</td>
+          <td>Só outra arma de distância <b>classe 2</b>. Nenhum alvo da wishlist é classe 2 — esse tier não migra para cá.</td></tr>
+        <tr><td class="rota">Guardian Boots t2</td><td>2</td>
+          <td>Só outra bota <b>classe 2</b>. Soulstalkers, Stoic Iks, Feverbloom e Stag são classe 4 — sem passagem.</td></tr>
+        <tr><td class="rota">Winged Boots t2</td><td>3</td>
+          <td>Só outra bota <b>classe 3</b>. Também não alcança as botas da lista.</td></tr>
+        <tr><td class="rota">Falcon Bow t1</td><td>4</td>
+          <td>Transferível para o <b>Soulbleeder</b> (mesma classe, mesmo slot) — mas t1 vira t0, ou seja, nada.
+            Se o Falcon Bow chegar a <b>t2</b>, aí sim vira um Soulbleeder t1 por 100 dust, 1 core e 20 kk,
+            sem aposta nenhuma.</td></tr>
+      </tbody>
+    </table>
+    <p class="legend">
+      Conclusão prática: nenhum dos tiers que você já pagou migra para os alvos da
+      wishlist hoje. O único caminho que se abre é subir o Falcon Bow — cada tier
+      acima do primeiro vale um tier a menos no Soulbleeder, quando ele aparecer.
+    </p>
+  </div>
+
+  <p class="legend">
+    <strong>Bosstiary:</strong>
+    <span class="b-Bane">Bane</span> (matável mais de uma vez em 20h) ·
+    <span class="b-Archfoe">Archfoe</span> (uma vez a cada 20–48h) ·
+    <span class="b-Nemesis">Nemesis</span> (mais raro ou cooldown acima de 48h).
+    <strong>Raridade do drop:</strong>
+    <span class="r-common">common</span> ·
+    <span class="r-uncommon">uncommon</span> ·
+    <span class="r-semirare">semi-rare</span> ·
+    <span class="r-rare">rare</span> ·
+    <span class="r-veryrare">very rare</span>.
+    Stats e drops vêm de <code>items-data.js</code> (TibiaWiki); a rota de obtenção
+    e os custos da forja vêm das páginas <em>Equipment Upgrade</em>,
+    <em>Soul War Quest</em>, <em>Primal Ordeal Quest</em> e
+    <em>Fiendish and Influenced Creatures</em> do mesmo wiki.
+  </p>
+</div>
+
+<script src="items-data.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const D = window.ITEMDATA;
+  const CR = D.creatures;          // [nome, localização, hp, dificuldade, lvlMin, lvlMax]
+  const byName = new Map(D.items.map((it) => [it.n, it]));
+
+  // ── tabelas da Exaltation Forge (wiki: Equipment Upgrade) ────────────────
+  // Ouro por fusão, do tier anterior para o tier indicado, por classificação.
+  const FUSAO = {
+    1: { 1: 25e3 },
+    2: { 1: 750e3, 2: 5e6 },
+    3: { 1: 4e6, 2: 10e6, 3: 20e6 },
+    4: { 1: 8e6, 2: 20e6, 3: 40e6, 4: 65e6, 5: 100e6,
+         6: 250e6, 7: 750e6, 8: 2.5e9, 9: 8e9, 10: 15e9 },
+  };
+
+  // Convergence fusion: só classificação 4, resultado garantido, itens
+  // diferentes do mesmo slot. 130 dust por fusão.
+  const CONVERGENCIA = {
+    1: 55e6, 2: 110e6, 3: 170e6, 4: 300e6, 5: 875e6,
+    6: 2.35e9, 7: 6.95e9, 8: 21.25e9, 9: 50e9, 10: 125e9,
+  };
+
+  // Transfer: destrói o item de origem e o destino recebe (tier de origem − 1).
+  // 100 dust sempre + cores e ouro conforme o tier.
+  const TRANSFER = {
+    1: { cores: 1, ouro: 20e6 }, 2: { cores: 2, ouro: 40e6 },
+    3: { cores: 5, ouro: 65e6 }, 4: { cores: 10, ouro: 100e6 },
+    5: { cores: 15, ouro: 250e6 },
+  };
+
+  const LIMITE_TIER = { 1: 1, 2: 2, 3: 3, 4: 10 };
+
+  const zero = () => ({ itens: 0, ouro: 0, dust: 0, cores: 0, tent: 0 });
+  const soma = (a, b) => ({
+    itens: a.itens + b.itens, ouro: a.ouro + b.ouro,
+    dust: a.dust + b.dust, cores: a.cores + b.cores, tent: a.tent + b.tent,
+  });
+  const escala = (a, k) => ({
+    itens: a.itens * k, ouro: a.ouro * k,
+    dust: a.dust * k, cores: a.cores * k, tent: a.tent * k,
+  });
+
+  /**
+   * Custo esperado da fusão comum até o tier alvo, para uma dada classificação.
+   *
+   * Modelo: a cada tentativa gasta-se 100 dust, o ouro do tier e (opcional) um
+   * core. Com probabilidade p a fusão sobe o item um tier consumindo o parceiro;
+   * com (1−p)·d um dos dois cai um tier (no tier 0, é destruído) e precisa ser
+   * reconstruído; com (1−p)·(1−d) nada acontece e a dupla tenta de novo.
+   *
+   *   T[n] = (custoTentativa + (1−p)·d·B[n−1]) / p     ← laço de tentativas
+   *   B[n] = R[n−1] + T[n]        subir UM item que já se tem de n−1 até n
+   *   R[n] = R[n−1] + B[n]        produzir um tier n do zero
+   *
+   * Retorna R (do zero) e B (a partir de um item que já está no tier anterior).
+   */
+  function custoFusao(cls, alvo, core) {
+    const p = core ? 0.65 : 0.50;
+    const d = core ? 0.50 : 1.00;
+    const ouro = FUSAO[cls] || {};
+    const R = [{ ...zero(), itens: 1 }];
+    const B = [{ ...zero(), itens: 1 }];   // B[0] = repor um item tier 0
+    for (let n = 1; n <= alvo; n++) {
+      const tentativa = { itens: 0, ouro: ouro[n] || 0, dust: 100, cores: core ? 1 : 0, tent: 1 };
+      const T = escala(soma(tentativa, escala(B[n - 1], (1 - p) * d)), 1 / p);
+      B[n] = soma(R[n - 1], T);
+      R[n] = soma(R[n - 1], B[n]);
+    }
+    return { doZero: R[alvo], apartirDoQueTenho: B[alvo], R, B };
+  }
+
+  /** Convergence fusion: determinística, 2^alvo itens do mesmo slot. */
+  function custoConvergencia(alvo) {
+    let R = { ...zero(), itens: 1 };
+    for (let n = 1; n <= alvo; n++) {
+      R = soma(escala(R, 2), { itens: 0, ouro: CONVERGENCIA[n], dust: 130, cores: 0, tent: 1 });
+    }
+    return R;
+  }
+
+  const gp = (n) => {
+    if (!n) return '0';
+    if (n >= 1e9) return (n / 1e9).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' kkk';
+    if (n >= 1e6) return (n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' kk';
+    return n.toLocaleString('pt-BR');
+  };
+  const n1 = (n) => n.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+
+  // ── a wishlist ───────────────────────────────────────────────────────────
+  // `rota` = ordem sugerida de ataque; `tiers` = tiers pedidos para o item.
+  const WISHLIST = [
+    {
+      n: 'Falcon Greaves', rota: 1, tiers: [1, 2, 3],
+      grupo: 'falcon',
+      tenho: true,
+      resumo: 'Já em uso — o que falta é subir tier. É o único item da lista que dá para forjar hoje.',
+      como: [
+        'Drop de <b>Grand Master Oberon</b> (Archfoe, cooldown de 20h) e <b>Preceptor Lazare</b> (Bane, spawn normal) no <b>Falcon Bastion</b>, nordeste da Zao Steppe, entrada por Farmine.',
+        'A entrada exige level 250 e o ritual descrito no livro do Falcon Outpost — parte da <b>Secret Library Quest</b>.',
+        'Também é comprável no Market: o wiki registra a faixa de <b>100kk a 220kk</b> por unidade em tier 0. Para tier 3 são ~21 unidades esperadas na fusão comum, então o caminho de mercado é o gargalo de gp, não o de boss.',
+        'Oberon é Archfoe: vale deixá-lo no boss slot do Bosstiary. O bônus de loot de equipamento dá rolagens extras de itens equipáveis, e as greaves entram nessa conta.',
+      ],
+      bosses: ['Grand Master Oberon', 'Preceptor Lazare'],
+      nota: 'Classificação 4, então o teto é tier 10 — mas cada tier dobra o número de itens-base. Veja a calculadora abaixo antes de decidir onde parar.',
+    },
+    {
+      n: 'Gnome Armor', rota: 2,
+      grupo: 'boss',
+      resumo: 'O alvo mais fácil da lista: level 200, e um dos dois bosses não tem cooldown nenhum.',
+      como: [
+        '<b>Ancient Spawn of Morgathla</b> (Archfoe), fundo do <b>Gnome Deep Hub</b> — <b>sem cooldown</b>, dá para repetir a luta imediatamente depois de matar. É a rota mais eficiente da lista inteira.',
+        '<b>The Baron from Below</b> (Bane, cooldown de 4h), na <b>Warzone 4</b>.',
+        'Os dois pertencem à <b>Dangerous Depths Quest</b>, que precisa estar em andamento para liberar o acesso.',
+        'No Baron o drop é <b>common</b> — não é item de sorte, é questão de repetição.',
+      ],
+      bosses: ['Ancient Spawn of Morgathla', 'The Baron from Below'],
+      nota: 'Classificação 3, então o teto é tier 3 e não 10. O energy +8% faz dela uma alternativa situacional; em Werelions a Mutated Skin continua melhor (holy/fire/physical). Vale mais para Cobra Bastion e spawns de energy.',
+      alerta: 'A página do item lista o Ancient Spawn of Morgathla como fonte, mas a loot table dele no wiki está praticamente vazia (só Mastermind Potion) — por isso a raridade aparece em branco na tabela abaixo. Antes de montar a rotina em cima dele, confirme o drop no jogo.',
+    },
+    {
+      n: 'Stoic Iks Boots', rota: 3,
+      grupo: 'boss',
+      resumo: 'Nível 250 e drop common do boss — barrada só pelo acesso a Iksupan.',
+      como: [
+        'Drop <b>common</b> de <b>Mitmah Vanguard</b> (Archfoe) no <b>Iksupan Occupied Sanctuary</b>.',
+        'O acesso vem da <b>Adventures of Galthen Quest</b>, missão "Galthen and the City of Gold Part II". Sem isso não há entrada.',
+        'O spawn é recomendado para level 400 nas três vocações — no seu level dá para entrar, mas o Vanguard bate <b>9.000+</b> de dano máximo, com Slash Explosion de 4.300–5.970 de energy. É luta de time.',
+      ],
+      bosses: ['Mitmah Vanguard'],
+      nota: 'Augment de <b>Divine Missile → +5% de dano crítico extra</b>, o que só rende se você usar a spell. Sem Swiftness imbuível: a bota já entrega speed +15 fixo.',
+    },
+    {
+      n: 'Feverbloom Boots', rota: 4,
+      grupo: 'boss',
+      resumo: 'Level 270, drop common, boss de 20h — a bota mais acessível com resistência de gelo.',
+      como: [
+        'Drop <b>common</b> de <b>Timira the Many-Headed</b> (Archfoe, cooldown de 20h), nos Emerald Gardens, ilha de <b>Marapur</b>.',
+        'Faz parte da <b>Within the Tides Quest</b>, que libera o acesso à ilha e ao boss.',
+        'Preço de referência do wiki: <b>5kk a 15kk</b>. Para esse valor, comprar pode sair mais barato do que 20h de cooldown por tentativa.',
+      ],
+      bosses: ['Timira the Many-Headed'],
+      nota: 'Ice +7% é a maior resistência de gelo entre as botas dessa faixa, mas em Werelions o dano recebido é holy/fire/physical — lá ela não ajuda. Serve para spawns de gelo, não para a sua rotação atual.',
+    },
+    {
+      n: 'Stag Shinguards', rota: 5,
+      grupo: 'boss',
+      resumo: 'Level 350 — dá para usar hoje. O problema é a raridade: very rare entre dez itens Stag.',
+      como: [
+        'Drop <b>very rare</b> de <b>Court Warlock</b> (Archfoe, 120.000 HP), boss final da <b>Order of the Stag Quest</b>, na Isle of Ada.',
+        'A quest exige level 250 (recomendado 400+ em time, 600+ solo) e passa por Bounac.',
+        'O cooldown do Court Warlock <b>pode ser resetado</b> com uma <b>Twisted Marionette</b>, que ele próprio dropa como rare. Isso é o que torna o farm viável.',
+        'Ele carrega dez peças Stag diferentes, todas very rare — a chance de sair justamente a shinguards é uma fração pequena de cada kill. Boss slot no Bosstiary ajuda de verdade aqui.',
+      ],
+      bosses: ['Court Warlock'],
+      nota: 'Augment de <b>Divine Grenade → +8% de dano crítico extra</b>. Energy +5% e physical +2%: comparado às Winged Boots t2 que você usa, é troca lateral fora de spawns de energy.',
+    },
+    {
+      n: 'Alicorn Headguard', rota: 6, tiers: [],
+      grupo: 'primal',
+      resumo: 'O salto de capacete depois da Falcon Coif — mas só a partir do level 400.',
+      como: [
+        'Recompensa garantida da <b>Primal Ordeal Quest</b>: ao chegar ao <b>Hazard 12</b>, o Gnomadness entrega um <b>Primal Bag</b>, que vira um item aleatório do Primal Set (o do paladin é o Alicorn).',
+        'Também dropa de <b>Magma Bubble</b> (Archfoe, 150.000 HP, cooldown de 20h) e do <b>Plunder Patriarch</b>.',
+        'O Plunder Patriarch é a rota repetível: ele tem uma chance de nascer sempre que você mata qualquer criatura em <b>Gnomprona</b>, e essa chance cresce com o hazard level. Quando morre, <b>sempre</b> larga pelo menos um item dos sets Arboreal, Arcanomancer, Spiritthorn, Alicorn ou Ethereal — ou seja, 1 em 5 de vir na sua vocação.',
+      ],
+      cadeia: 'hazard',
+      bosses: ['Magma Bubble', 'Plunder Patriarch'],
+      nota: 'Resistência de <b>+5% em todos os sete elementos</b> — inclusive holy, que nenhum outro equipamento seu cobre. Em Werelions (42% do dano recebido é holy) isso é o maior ganho defensivo isolado da lista.',
+    },
+    {
+      n: 'Alicorn Quiver', rota: 7,
+      grupo: 'primal',
+      resumo: 'Mesma rota do Headguard: sai do mesmo bag e dos mesmos bosses.',
+      como: [
+        'Idêntica à do Alicorn Headguard — Primal Bag no Hazard 12, ou drop de Magma Bubble e Plunder Patriarch.',
+        'O Primal Bag entrega <b>um</b> item do set, sorteado. Não dá para escolher entre headguard, quiver e ring: para as três peças é preciso repetir a rota do Plunder Patriarch.',
+      ],
+      cadeia: 'hazard',
+      bosses: ['Magma Bubble', 'Plunder Patriarch'],
+      nota: '<b>Perfect shot +20 no alcance 3</b> é um bônus condicional: só vale se você fica a exatamente 3 sqm do alvo. Em Werelions, com leech duplo segurando o HP, dá para jogar nessa distância — é aí que a quiver rende.',
+    },
+    {
+      n: 'Soulbleeder', rota: 8, tiers: [1, 2, 3],
+      grupo: 'soul',
+      resumo: 'O upgrade de arco. Level 400, e a rota é longa: Soul War inteira.',
+      como: [
+        'Não dropa de ninguém. Sai de uma <b>Bag You Desire</b>, que vira um item aleatório do Soul Set ao abrir o Reward Container.',
+        'A bag cai de qualquer criatura ou boss das cinco áreas da <b>Soul War Quest</b>, mas <b>só para quem tem pelo menos um Goshnar\'s Taint ativo</b> — e a chance cresce com o número de taints.',
+        'Os taints vêm de matar os bosses das áreas: são cinco, um por boss (Goshnar\'s Malice, Greed, Spite, Cruelty e Hatred). Matar o mesmo boss de novo não adiciona taint — é preciso matar os cinco.',
+        'A bag é uma <b>exceção</b> na regra do boss slot: os bosses de Soul War no slot do Bosstiary aumentam a chance dela cair, mesmo a bag não sendo equipável.',
+        'Contra a Megalomania a chance cresce a cada kill e zera quando uma bag cai.',
+      ],
+      cadeia: 'soulwar',
+      nota: 'A bag sorteia entre <b>18 itens</b> do Soul Set — os três seus (Soulbleeder, Soulshell, Soulstalkers) são 3 dessas 18 saídas. Vale contar com muitas bags, não com uma.',
+      alerta: 'O Summer Update 2025 nerfou atributos do Soulbleeder junto com a chegada do Weapon Proficiency. Os números aqui são os pós-nerf, direto do wiki.',
+    },
+    {
+      n: 'Soulshell', rota: 9, tiers: [3],
+      grupo: 'soul',
+      resumo: 'Mesma bag, mesma quest. Armor 18 e distance +4 — a melhor armadura de paladin do jogo.',
+      como: [
+        'Idêntica ao Soulbleeder: Bag You Desire nas áreas da Soul War, com taints ativos.',
+        'Uma cópia sai também como recompensa única da quest concluída — mas o item é sorteado dentro do set, então não há garantia de vir a Soulshell.',
+      ],
+      cadeia: 'soulwar',
+      nota: 'Fire +15% é a maior resistência de fogo entre as armaduras de paladin; em Werelions, 30% do dano recebido é fire. Contra a Mutated Skin, troca earth por fire — e nesse spawn isso é ganho direto.',
+    },
+    {
+      n: 'Pair of Soulstalkers', rota: 10, tiers: [1, 2, 3],
+      grupo: 'soul',
+      resumo: 'Fecha o Soul Set de paladin. Speed +20, o maior entre as botas do set.',
+      como: [
+        'Idêntica ao Soulbleeder e à Soulshell: Bag You Desire com taints ativos.',
+      ],
+      cadeia: 'soulwar',
+      nota: 'Physical +5% e speed +20 contra os +5% de holy que as Guardian Boots <em>não</em> têm (elas dão holy −2%, o que piora Werelions). Essa é a substituta direta das Winged Boots t2 no seu setup.',
+    },
+    {
+      n: 'Shrunken Head Necklace', rota: 11,
+      grupo: 'boss',
+      resumo: 'Level 150 e o maior speed entre os amuletos — mas a rota depende de raid.',
+      como: [
+        'Drop <b>rare</b> de <b>The Welter</b> (Nemesis, 25.000 HP), na Hydra Mountain.',
+        'The Welter é boss de <b>raid</b>: não tem cooldown pessoal para farmar, ele aparece quando a raid roda no servidor. Isso põe a rota fora do seu controle.',
+        'A luta tem oito ovos que chocam em Spawns of the Welter, que curam tudo em volta em massa. É preciso puxar todos para longe antes de bater no boss.',
+        'Pela raridade e pelo fato de ser cobiçado como decoração, o caminho realista é o <b>Market</b>.',
+      ],
+      bosses: ['The Welter'],
+      nota: 'Sem imbuement slot e sem resistência: é speed +10 puro. É item de conforto e de coleção, não de dano ou defesa — deixe por último.',
+    },
+  ];
+
+  const CADEIAS = {
+    soulwar: {
+      titulo: 'Pré-requisito: Soul War Quest',
+      itens: [
+        'Level mínimo 250, mas o wiki recomenda <b>600</b> — hoje você está bem abaixo disso.',
+        'Cinco áreas: Claustrophobic Inferno, Mirrored Nightmare, Ebb and Flow, Furious Crater e Rotten Wasteland; mais a batalha final contra Goshnar\'s Megalomania.',
+        'Cada boss morto dá um taint permanente <b>dentro das áreas da quest</b> (fora delas os taints não fazem nada). Eles são penalidade e benefício ao mesmo tempo: mais dano recebido e criaturas que se teleportam até você, em troca de mais exp e da chance de bag.',
+        'Como paladin você tende a ser o alvo escolhido do primeiro taint (a criatura teleporta para o personagem mais distante) — é posição de propósito, não acidente.',
+      ],
+    },
+    hazard: {
+      titulo: 'Pré-requisito: Primal Ordeal Quest + Hazard',
+      itens: [
+        'Level mínimo 250, recomendado 400.',
+        'Primeiro a linha principal da quest até matar o <b>Magma Bubble</b>; isso libera o Hazard System com o Gnomadness.',
+        'Cada nível de hazard sobe matando <b>The Primal Menace</b> no maior hazard já desbloqueado — cooldown de <b>20h</b> por tentativa. Do hazard 1 ao 12 são pelo menos 11 kills, ou seja, <b>11 dias</b> no melhor cenário.',
+        'Cada nível dá +4% de loot e exp em Gnomprona, e aumenta a chance do Plunder Patriarch nascer — mas também aumenta dano, crítico e esquiva das criaturas.',
+        'No Hazard 12 o Gnomadness entrega o Primal Bag. Antes disso, no Hazard 6, sai a montaria Ripptor.',
+      ],
+    },
+  };
+
+  // ── render ───────────────────────────────────────────────────────────────
+  const GRUPOS = [
+    ['falcon', 'Já em mãos — falta tier', 'A rota mais curta: o item existe, o custo é de forja e de cópias.'],
+    ['boss', 'Drop direto de boss', 'Cada um depende de um boss e do acesso a ele. Aqui o level não é a barreira — o cooldown e a raridade são.'],
+    ['primal', 'Primal Ordeal / Hazard', 'Mesma cadeia para os dois itens. Uso exige level 400.'],
+    ['soul', 'Soul War', 'Mesma bag, mesma quest, mesmos taints — os três saem do mesmo esforço. Uso exige level 400.'],
+  ];
+
+  const CHAVE = 'tibia-wishlist-tenho';
+  const tenho = new Set(JSON.parse(localStorage.getItem(CHAVE) || '[]'));
+  WISHLIST.forEach((w) => { if (w.tenho) tenho.add(w.n); });
+
+  const salvar = () => localStorage.setItem(CHAVE, JSON.stringify([...tenho]));
+  const paintNeg = (t) => t.replace(/([a-z ]+ -\d+%)/gi, '<span class="neg">$1</span>');
+  const rcls = (r) => 'r-' + r.replace(/[ -]/g, '');
+
+  // Bosses: o que o wiki traz sobre cada um, para a tabela de fontes.
+  const BOSS = {
+    'Grand Master Oberon':        ['Archfoe', '20h',        30000, 20000,  'Falcon Bastion'],
+    'Preceptor Lazare':           ['Bane',    'spawn normal', 16000, 10000,  'Falcon Bastion'],
+    'Ancient Spawn of Morgathla': ['Archfoe', 'nenhum',     null,  null,   'Gnome Deep Hub (fundo)'],
+    'The Baron from Below':       ['Bane',    '4h',         null,  300000, 'Warzone 4'],
+    'Mitmah Vanguard':            ['Archfoe', 'não listado', 50000, 300000, 'Iksupan Occupied Sanctuary'],
+    'Timira the Many-Headed':     ['Archfoe', '20h',        75000, 45500,  'Emerald Gardens, Marapur'],
+    'Court Warlock':              ['Archfoe', 'resetável',  120000, 147000, 'Isle of Ada'],
+    'Magma Bubble':               ['Archfoe', '20h',        150000, 80000, 'Sparkling Pools'],
+    'Plunder Patriarch':          ['—',       'por kill',   null,  0,      'Gnomprona'],
+    'The Welter':                 ['Nemesis', 'raid',       25000, 11000,  'Hydra Mountain'],
+  };
+
+  function raridadeDe(item, bossNome) {
+    if (!item.by) return null;
+    const i = CR.findIndex((c) => c[0] === bossNome);
+    const hit = item.by.find(([ci]) => ci === i);
+    return hit ? hit[1] : null;
+  }
+
+  function cardHTML(w, meuLvl) {
+    const it = byName.get(w.n);
+    if (!it) return `<div class="card"><div class="card-head"><h3>${w.n}</h3>
+      <span class="tag hard">fora do items-data.js</span></div></div>`;
+
+    const feito = tenho.has(w.n);
+    const lvl = it.lvl || 0;
+    const podeUsar = lvl <= meuLvl;
+
+    const tags = [
+      `<span class="tag">lvl ${lvl || '—'}</span>`,
+      `<span class="tag">class ${it.cl || '—'}</span>`,
+      it.sl ? `<span class="tag">${it.sl} slot${it.sl > 1 ? 's' : ''}</span>` : '',
+      podeUsar
+        ? '<span class="tag ok">usável hoje</span>'
+        : `<span class="tag wait">faltam ${lvl - meuLvl} levels</span>`,
+      (w.tiers && w.tiers.length)
+        ? `<span class="tag tier">tier ${w.tiers.join(', ')}</span>` : '',
+    ].filter(Boolean).join('');
+
+    const base = [
+      it.arm && ['Armor', it.arm], it.atk && ['Ataque', it.atk],
+      it.hit && ['Hit', it.hit], it.w && ['Peso', it.w + ' oz'],
+    ].filter(Boolean).map(([k, v]) => `<span><span class="k">${k}</span>${v}</span>`).join('');
+
+    const stats = `<div class="stats">
+      ${base}
+      ${it.at ? `<span><span class="k">Atributos</span><span class="attrib">${it.at}</span></span>` : ''}
+      ${it.rs ? `<span><span class="k">Resist</span><span class="resist">${paintNeg(it.rs)}</span></span>` : ''}
+    </div>`;
+
+    const fontes = (w.bosses || []).map((b) => {
+      const [cls, cd, hp, exp, loc] = BOSS[b] || ['—', '—', null, null, '—'];
+      const r = raridadeDe(it, b);
+      return `<tr>
+        <td class="c">${b}</td>
+        <td class="b-${cls}">${cls}</td>
+        <td>${cd}</td>
+        <td class="num">${hp ? hp.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
+        <td class="num">${exp !== null && exp !== undefined ? exp.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
+        <td>${r ? `<span class="${rcls(r)}">${r}</span>` : '<span class="dim">—</span>'}</td>
+        <td class="loc">${loc}</td>
+      </tr>`;
+    }).join('');
+
+    const cad = w.cadeia && CADEIAS[w.cadeia];
+
+    return `<div class="card ${feito ? 'done' : ''}" data-n="${w.n}">
+      <div class="card-head">
+        <label class="chk" onclick="event.stopPropagation()">
+          <input type="checkbox" ${feito ? 'checked' : ''} data-tenho="${w.n}" />
+        </label>
+        <h3>${w.n}</h3>
+        ${tags}
+        <span class="toggle">detalhes ▾</span>
+      </div>
+      <p class="sub" style="margin:6px 0 0">${w.resumo}</p>
+      ${stats}
+      <div class="body">
+        <h4>Como obter</h4>
+        <ol>${w.como.map((c) => `<li>${c}</li>`).join('')}</ol>
+        ${cad ? `<h4>${cad.titulo}</h4><ul>${cad.itens.map((c) => `<li>${c}</li>`).join('')}</ul>` : ''}
+        ${fontes ? `<h4>Quem dropa</h4><table class="src">
+          <thead><tr><th>Boss</th><th>Bosstiary</th><th>Cooldown</th><th class="num">HP</th>
+          <th class="num">Exp</th><th>Raridade</th><th>Onde</th></tr></thead>
+          <tbody>${fontes}</tbody></table>` : ''}
+        ${w.nota ? `<h4>Vale a pena?</h4><p>${w.nota}</p>` : ''}
+        ${w.alerta ? `<p class="warn" style="margin-top:8px">⚠ ${w.alerta}</p>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function render() {
+    const meuLvl = parseInt($('lvl').value, 10) || 0;
+    const ord = $('ord').value;
+    const esconder = $('hidedone').checked;
+
+    let lista = WISHLIST.filter((w) => !(esconder && tenho.has(w.n)));
+
+    if (ord === 'nome') lista = [...lista].sort((a, b) => a.n.localeCompare(b.n));
+    else if (ord === 'lvl') lista = [...lista].sort((a, b) =>
+      ((byName.get(a.n) || {}).lvl || 0) - ((byName.get(b.n) || {}).lvl || 0));
+    else lista = [...lista].sort((a, b) => a.rota - b.rota);
+
+    let html = '';
+    if (ord === 'rota') {
+      GRUPOS.forEach(([g, titulo, nota]) => {
+        const doGrupo = lista.filter((w) => w.grupo === g);
+        if (!doGrupo.length) return;
+        html += `<h2 class="group">${titulo}</h2><p class="group-note">${nota}</p>`;
+        html += doGrupo.map((w) => cardHTML(w, meuLvl)).join('');
+      });
+    } else {
+      html = lista.map((w) => cardHTML(w, meuLvl)).join('');
+    }
+
+    $('list').innerHTML = html;
+    const usaveis = WISHLIST.filter((w) => ((byName.get(w.n) || {}).lvl || 0) <= meuLvl).length;
+    $('count').textContent =
+      `${tenho.size} de ${WISHLIST.length} conquistados · ${usaveis} usáveis no level ${meuLvl}`;
+
+    $('list').querySelectorAll('.card-head').forEach((h) => {
+      h.onclick = () => h.parentElement.classList.toggle('open');
+    });
+    $('list').querySelectorAll('[data-tenho]').forEach((cb) => {
+      cb.onchange = () => {
+        cb.checked ? tenho.add(cb.dataset.tenho) : tenho.delete(cb.dataset.tenho);
+        salvar();
+        render();
+      };
+    });
+  }
+
+  // ── calculadora de tier ──────────────────────────────────────────────────
+  const forjaveis = WISHLIST
+    .map((w) => ({ w, it: byName.get(w.n) }))
+    .filter(({ it }) => it && it.cl);
+
+  $('fitem').innerHTML = forjaveis
+    .map(({ w, it }) => `<option value="${w.n}">${w.n} (class ${it.cl})</option>`).join('');
+
+  function preencherTiers() {
+    const it = byName.get($('fitem').value);
+    const teto = LIMITE_TIER[it.cl] || 1;
+    const alvoAtual = parseInt($('ftier').value, 10);
+    $('ftier').innerHTML = Array.from({ length: Math.min(teto, 5) }, (_, i) =>
+      `<option value="${i + 1}">tier ${i + 1}</option>`).join('');
+    if (alvoAtual && alvoAtual <= teto) $('ftier').value = alvoAtual;
+  }
+
+  function renderForja() {
+    const nome = $('fitem').value;
+    const it = byName.get(nome);
+    const w = WISHLIST.find((x) => x.n === nome);
+    const alvo = parseInt($('ftier').value, 10);
+    const core = $('fcore').checked;
+    const cls = it.cl;
+
+    const f = custoFusao(cls, alvo, core);
+    const semCore = custoFusao(cls, alvo, false);
+    const conv = cls === 4 ? custoConvergencia(alvo) : null;
+    const jaTem = tenho.has(nome);
+
+    const linha = (rota, hint, c, itensLabel) => `<tr>
+      <td class="rota">${rota}<span class="hint">${hint}</span></td>
+      <td class="item-n">${n1(c.itens)}</td>
+      <td class="gold">${gp(c.ouro)}</td>
+      <td class="dust">${n1(c.dust)}</td>
+      <td class="num">${c.cores ? n1(c.cores) : '<span class="dim">—</span>'}</td>
+      <td class="num">${n1(c.tent)}</td>
+    </tr>`;
+
+    let linhas = '';
+    if (jaTem) {
+      linhas += linha(`Fusão comum, partindo do que já tenho`,
+        `você já tem 1 ${nome} tier 0; a contagem é do que falta comprar`, f.apartirDoQueTenho);
+    }
+    linhas += linha('Fusão comum, do zero',
+      core ? '65% de sucesso, 50% de chance de perder tier ao falhar'
+           : '50% de sucesso, perde tier em 100% das falhas', f.doZero);
+    if (core) {
+      linhas += linha('Fusão comum, sem core',
+        'para comparar: mais barato por tentativa, muito mais tentativas', semCore.doZero);
+    }
+    if (conv) {
+      linhas += linha('Convergence fusion',
+        'garantida, aceita itens diferentes do mesmo slot, 130 dust por fusão', conv);
+    }
+
+    const tabela = `<table>
+      <thead><tr>
+        <th>Rota</th><th>Itens tier 0</th><th>Ouro</th><th>Dust</th>
+        <th>Cores</th><th>Tentativas</th>
+      </tr></thead>
+      <tbody>${linhas}</tbody>
+    </table>`;
+
+    // custo em gp dos itens-base, quando o wiki traz uma faixa de mercado
+    const faixa = (it.v || '').match(/[\d.,]+/g);
+    let mercado = '';
+    if (faixa && faixa.length >= 2) {
+      const lo = +faixa[0].replace(/[.,]/g, ''), hi = +faixa[1].replace(/[.,]/g, '');
+      const n = (jaTem ? f.apartirDoQueTenho : f.doZero).itens;
+      mercado = ` Comprando as cópias ao preço que o wiki registra (${gp(lo)}–${gp(hi)} cada),
+        as ${n1(n)} unidades saem por <span class="gold">${gp(n * lo)}–${gp(n * hi)}</span>,
+        fora o ouro da forja.`;
+    } else {
+      mercado = ` O wiki não traz preço para este item ("${it.v || 'negotiable'}"),
+        então o custo das cópias fica em aberto — é o número que mais pesa na conta.`;
+    }
+
+    const cores = (jaTem ? f.apartirDoQueTenho : f.doZero).cores;
+    const dust = (jaTem ? f.apartirDoQueTenho : f.doZero).dust;
+    const slivers = cores * 50;
+    const dustDosCores = slivers / 3 * 60;
+
+    $('ftable').innerHTML = tabela;
+    $('fnote').innerHTML = `
+      <strong>Como ler:</strong> "itens tier 0" é quantas cópias do item a cadeia
+      consome em média, contando as que se perdem nas falhas.${mercado}
+      ${core ? `Os <span class="dust">${n1(cores)}</span> cores custam
+        ${n1(slivers)} slivers, ou <span class="dust">${n1(dustDosCores)}</span> dust
+        a mais (60 dust = 3 slivers, 50 slivers = 1 core) — somados aos
+        <span class="dust">${n1(dust)}</span> dust das fusões, dá
+        <span class="dust">${n1(dust + dustDosCores)}</span> de dust total.` : ''}
+      Dust só cai de criaturas <em>influenced</em> (1–15 por kill, conforme os stacks)
+      e <em>fiendish</em> (15–45), e exige premium ativo. O limite de carga começa em
+      100 e sobe até 325 gastando o próprio dust.
+      ${cls === 4 ? `Alternativa que a tabela não cobre: <strong>transfer</strong> — comprar
+        um item já tierado e passar o tier para o seu, que recebe <em>o tier de origem menos um</em>.
+        Um tier ${alvo + 1} comprado vira tier ${alvo} no seu item por 100 dust,
+        ${TRANSFER[alvo] ? `${TRANSFER[alvo].cores} core(s) e ${gp(TRANSFER[alvo].ouro)}` : 'o custo da tabela de transfer'},
+        sem nenhuma aposta. Compensa sempre que o mercado tiver o item tierado.` : ''}`;
+  }
+
+  ['lvl', 'ord', 'hidedone'].forEach((id) => $(id).addEventListener('input', render));
+  $('fitem').addEventListener('change', () => { preencherTiers(); renderForja(); });
+  ['ftier', 'fcore'].forEach((id) => $(id).addEventListener('input', renderForja));
+
+  // abre já num item que tem tier pedido
+  $('fitem').value = 'Falcon Greaves';
+  preencherTiers();
+  $('ftier').value = '3';
+  render();
+  renderForja();
+</script>

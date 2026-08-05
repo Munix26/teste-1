@@ -19,6 +19,11 @@ TibiaWiki inteiro.
   exp média, exp/HP e ouro por kill **calculados** (o wiki não traz), ignorando
   bosses e objetos.
 
+- **`wishlist.html`** — os itens que ainda faltam, com a rota de obtenção de cada
+  um (boss, quest, cadeia de pré-requisitos e cooldown), quanto falta de level
+  para usá-los, e uma calculadora do custo esperado de subir tier na Exaltation
+  Forge — fusão com e sem Exalted Core, convergence fusion e transfer lado a lado.
+
 Nada aqui é inventado: o que não está no wiki aparece como "não disponível", e
 o ouro por kill é sempre uma **faixa**, derivada das chances que o wiki
 documenta por raridade — não um número exato.
