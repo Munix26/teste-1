@@ -39,6 +39,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `index.html` + `items-data.js` | catálogo completo (9.894 itens, 56 categorias) com índice reverso de drops |
 | `creatures.html` + `creatures-data.js` | 1.629 criaturas com detalhe completo ao clicar |
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
+| `wishlist.html` | itens que faltam, rota de obtenção de cada um e custo esperado dos tiers na forja |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
@@ -63,6 +64,13 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   uncommon 5–25%, semi-rare 1–5%, rare 0,5–1%, very rare <0,5%. Escolher um
   ponto dentro do intervalo seria inventar precisão. Todo o cálculo vive em
   `tibia-mcp/loot.py`; não reintroduzir tabelas de probabilidade fixas.
+- **Custo de tier é esperança matemática, não preço de tabela.** A fusão é
+  aposta (50%, ou 65% com Exalted Core; a falha derruba um tier em 100% dos
+  casos, ou 50% com core). `wishlist.html` resolve a recorrência
+  `T[n] = (custoTentativa + (1−p)·d·B[n−1]) / p`, `B[n] = R[n−1] + T[n]`,
+  `R[n] = R[n−1] + B[n]` em vez de chutar "umas 20 cópias". Confere com os
+  números conhecidos da comunidade: classe 4 sem core dá 3 itens para t1,
+  8 para t2 e 21 para t3. Não trocar por uma tabela fixa.
 - **`{{Loot Item}}` tem dois formatos**: `|Item|raridade` e `|1-8|Item|raridade`.
   Metade das páginas usa o segundo. Ler o primeiro parâmetro como nome do item
   perde esses drops silenciosamente (foi o que aconteceu até 2026-08).
