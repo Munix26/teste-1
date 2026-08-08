@@ -64,6 +64,10 @@
 
   label { font-size: 0.82rem; color: #8b93a7; }
 
+  /* par label+campo: nunca se separam na quebra de linha */
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
   .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
   .chk input { width: auto; }
 
@@ -204,6 +208,18 @@
   .r-semirare { color: #a78bfa; }
   .r-rare { color: #fbbf24; }
   .r-veryrare { color: #f0abfc; }
+
+  /* ── telas estreitas ── */
+  @media (max-width: 640px) {
+    /* a barra de filtros sticky comia metade do viewport */
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+
+    .overlay { padding: 10px 6px; }
+    .panel { padding: 16px 14px 20px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+  }
 </style>
 
 <div class="wrap">
@@ -222,9 +238,9 @@
 
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar item, atributo, resistência ou NPC…" />
-    <label for="cat">Categoria</label>
-    <select id="cat"><option value="">Todas</option></select>
-    <label for="voc">Vocação</label>
+    <span class="ctl"><label for="cat">Categoria</label>
+    <select id="cat"><option value="">Todas</option></select></span>
+    <span class="ctl"><label for="voc">Vocação</label>
     <select id="voc">
       <option value="">Todas</option>
       <option value="paladin">Paladin</option>
@@ -232,13 +248,13 @@
       <option value="sorcerer">Sorcerer</option>
       <option value="druid">Druid</option>
       <option value="none">Sem restrição</option>
-    </select>
-    <label for="attr">Atributo</label>
-    <select id="attr"><option value="">Qualquer</option></select>
-    <label for="res">Resistência</label>
-    <select id="res"><option value="">Qualquer</option></select>
-    <label for="lvl">Level até</label>
-    <input id="lvl" type="number" placeholder="360" min="0" />
+    </select></span>
+    <span class="ctl"><label for="attr">Atributo</label>
+    <select id="attr"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="res">Resistência</label>
+    <select id="res"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="lvl">Level até</label>
+    <input id="lvl" type="number" placeholder="360" min="0" /></span>
     <label class="chk"><input type="checkbox" id="onlydrop" /> Com drop</label>
     <label class="chk"><input type="checkbox" id="onlystats" /> Com atributos</label>
     <label class="chk"><input type="checkbox" id="onlytask" /> Delivery task</label>

@@ -63,6 +63,10 @@
 
   label { font-size: 0.82rem; color: #8b93a7; }
 
+  /* par label+campo: nunca se separam na quebra de linha */
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
   .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
 
   .scroll { overflow-x: auto; }
@@ -137,20 +141,26 @@
   .kv .k { color: #6b7385; font-size: 0.74rem; display: block; }
   .prose { font-size: 0.87rem; color: #b8bfd0; }
 
-  .crlist {
+  .crlist { font-size: 0.83rem; }
+
+  /* uma linha por criatura: nome elástico + colunas numéricas fixas,
+     para os números alinharem entre as linhas sem grid compartilhado */
+  .cr-line {
     display: grid;
-    grid-template-columns: 1fr repeat(4, minmax(64px, auto));
-    gap: 3px 14px; font-size: 0.83rem; align-items: baseline;
+    grid-template-columns: minmax(0, 1fr) 62px 68px 56px 116px;
+    gap: 0 12px; align-items: baseline;
   }
-  .crlist .h { color: #6b7385; font-size: 0.72rem; text-transform: uppercase; }
+  .cr-line.head {
+    color: #6b7385; font-size: 0.72rem; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .cr-name { overflow-wrap: anywhere; }
   .crlist .b { color: #f0abfc; font-size: 0.7rem; }
 
-  /* elementos: ocupam a linha inteira abaixo dos stats da criatura */
-  .crlist .els {
-    grid-column: 1 / -1;
-    display: flex; flex-wrap: wrap; gap: 4px;
-    padding: 1px 0 9px; border-bottom: 1px solid #1c202a; margin-bottom: 4px;
-  }
+  .cr { padding: 5px 0 8px; border-bottom: 1px solid #1c202a; }
+
+  /* elementos: linha própria abaixo dos stats da criatura */
+  .cr .els { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
 
   .el {
     display: inline-flex; align-items: center; gap: 3px;
@@ -171,6 +181,27 @@
   .plain-k  { color: #94a3b8; }
   .strong-k { color: #fb923c; }
   .immune-k { color: #ef4444; }
+
+  /* ── telas estreitas ── */
+  @media (max-width: 640px) {
+    /* a barra de filtros sticky comia metade do viewport */
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+
+    .overlay { padding: 10px 6px; }
+    .panel { padding: 16px 14px 20px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+
+    /* criaturas: nome numa linha, stats rotulados embaixo — nada cortado */
+    .cr-line.head { display: none; }
+    .cr-line { display: flex; flex-wrap: wrap; gap: 2px 14px; }
+    .cr-name { flex-basis: 100%; font-weight: 600; }
+    .cr-line .num::before {
+      content: attr(data-l) ' ';
+      color: #5c6478; font-size: 0.7rem;
+    }
+  }
 </style>
 
 <div class="wrap">
@@ -189,16 +220,16 @@
 
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar spawn, cidade ou criatura…" />
-    <label for="city">Cidade</label>
-    <select id="city"><option value="">Todas</option></select>
-    <label for="lvl">Level</label>
-    <select id="lvl"><option value="">Qualquer</option></select>
-    <label for="exps">Exp</label>
-    <select id="exps"><option value="">Qualquer</option></select>
-    <label for="loots">Loot</label>
-    <select id="loots"><option value="">Qualquer</option></select>
-    <label for="gold">Ouro/kill</label>
-    <select id="gold"><option value="">Qualquer</option></select>
+    <span class="ctl"><label for="city">Cidade</label>
+      <select id="city"><option value="">Todas</option></select></span>
+    <span class="ctl"><label for="lvl">Level</label>
+      <select id="lvl"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="exps">Exp</label>
+      <select id="exps"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="loots">Loot</label>
+      <select id="loots"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="gold">Ouro/kill</label>
+      <select id="gold"><option value="">Qualquer</option></select></span>
     <span class="count" id="count"></span>
   </div>
 
@@ -367,15 +398,20 @@
     ].join('');
 
     const cr = h.cr.length ? `<div class="crlist">
-      <span class="h">Criatura</span><span class="h num">HP</span><span class="h num">Exp</span>
-      <span class="h num">Exp/HP</span><span class="h num">gp/kill</span>
-      ${h.cr.map((c) => `
-        <span>${c.n}${c.boss ? ' <span class="b">boss</span>' : ''}</span>
-        <span class="num">${c.hp.toLocaleString('pt-BR')}</span>
-        <span class="num">${c.exp.toLocaleString('pt-BR')}</span>
-        <span class="num">${c.hp ? (c.exp / c.hp).toFixed(2) : '—'}</span>
-        <span class="num gold">${c.gold ? fmt(c.gold[0]) + '–' + fmt(c.gold[1]) : '—'}</span>
-        <span class="els">${elChips(c.m)}</span>`).join('')}
+      <div class="cr-line head">
+        <span>Criatura</span><span class="num">HP</span><span class="num">Exp</span>
+        <span class="num">Exp/HP</span><span class="num">gp/kill</span>
+      </div>
+      ${h.cr.map((c) => `<div class="cr">
+        <div class="cr-line">
+          <span class="cr-name">${c.n}${c.boss ? ' <span class="b">boss</span>' : ''}</span>
+          <span class="num" data-l="HP">${c.hp.toLocaleString('pt-BR')}</span>
+          <span class="num" data-l="Exp">${c.exp.toLocaleString('pt-BR')}</span>
+          <span class="num" data-l="Exp/HP">${c.hp ? (c.exp / c.hp).toFixed(2) : '—'}</span>
+          <span class="num gold" data-l="gp/kill">${c.gold ? fmt(c.gold[0]) + '–' + fmt(c.gold[1]) : '—'}</span>
+        </div>
+        <div class="els">${elChips(c.m)}</div>
+      </div>`).join('')}
     </div>
     <p class="legend" style="margin-top:10px">
       Elementos na ordem ⚔️ físico · 🔥 fogo · 🍂 terra · ⚡ energia · ❄️ gelo · ✨ holy · 💀 death.

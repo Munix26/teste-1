@@ -64,6 +64,10 @@
 
   label { font-size: 0.82rem; color: #8b93a7; }
 
+  /* par label+campo: nunca se separam na quebra de linha */
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
   .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
 
   .scroll { overflow-x: auto; }
@@ -206,6 +210,18 @@
   .r-veryrare { border-color: #7a2a4a; color: #f0abfc; }
 
   .price { color: #6b7385; }
+
+  /* ── telas estreitas ── */
+  @media (max-width: 640px) {
+    /* a barra de filtros sticky comia metade do viewport */
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+
+    .overlay { padding: 10px 6px; }
+    .panel { padding: 16px 14px 20px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+  }
 </style>
 
 <div class="wrap">
@@ -224,24 +240,24 @@
 
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar criatura ou classe…" />
-    <label for="cls">Classe</label>
-    <select id="cls"><option value="">Todas</option></select>
-    <label for="diff">Dificuldade</label>
-    <select id="diff"><option value="">Todas</option></select>
-    <label for="exprange">Exp</label>
-    <select id="exprange"><option value="">Qualquer</option></select>
-    <label for="hprange">HP</label>
-    <select id="hprange"><option value="">Qualquer</option></select>
-    <label for="goldrange">gp/kill</label>
-    <select id="goldrange"><option value="">Qualquer</option></select>
-    <label for="weak">Fraco a</label>
-    <select id="weak"><option value="">Qualquer</option></select>
-    <label for="boss">Bosses</label>
+    <span class="ctl"><label for="cls">Classe</label>
+    <select id="cls"><option value="">Todas</option></select></span>
+    <span class="ctl"><label for="diff">Dificuldade</label>
+    <select id="diff"><option value="">Todas</option></select></span>
+    <span class="ctl"><label for="exprange">Exp</label>
+    <select id="exprange"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="hprange">HP</label>
+    <select id="hprange"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="goldrange">gp/kill</label>
+    <select id="goldrange"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="weak">Fraco a</label>
+    <select id="weak"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="boss">Bosses</label>
     <select id="boss">
       <option value="">Incluir</option>
       <option value="no">Esconder</option>
       <option value="only">Só bosses</option>
-    </select>
+    </select></span>
     <span class="count" id="count"></span>
   </div>
 
