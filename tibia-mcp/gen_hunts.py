@@ -19,6 +19,10 @@ from loot import gold_range
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hunts-data.js")
 
+# ordem fixa dos elementos — spawns.html lê como posição, não como chave,
+# para não repetir sete nomes por criatura no arquivo de dados
+ELEMENTS = ["physical", "fire", "earth", "energy", "ice", "holy", "death"]
+
 
 def field(content, name):
     m = re.search(r"\|\s*" + name + r"\s*=[ \t]*([^\n|]*)", content)
@@ -46,15 +50,32 @@ def to_int(value):
     return int(m.group()) if m else None
 
 
+def to_pct(value):
+    """'110%' -> 110. Campos com '?' no wiki são palpite, não dado — viram None."""
+    if not value or "?" in value:
+        return None
+    return to_int(value)
+
+
+def elemental_mods(content):
+    """[física, fogo, terra, energia, gelo, holy, death] — None onde o wiki não traz.
+
+    Devolve None se a criatura não tem nenhuma resistência no infobox, para o
+    arquivo de dados não carregar sete nulos por criatura sem informação.
+    """
+    mods = [to_pct(field(content, e + "DmgMod")) for e in ELEMENTS]
+    return mods if any(v is not None for v in mods) else None
+
+
 def creature_stats(rows):
-    """name -> {hp, exp, gold} for every creature we can price."""
-    prices_needed = {}
+    """name -> {hp, exp, gold, mods} for every creature we can price."""
     out = {}
     for title, content in rows:
         hp, exp = to_int(field(content, "hp")), to_int(field(content, "exp"))
         if not hp or exp is None:
             continue
         out[title] = {"hp": hp, "exp": exp, "content": content,
+                      "mods": elemental_mods(content),
                       "boss": field(content, "isboss").lower() == "yes"}
     return out
 
@@ -122,6 +143,7 @@ def main():
             "loc": clean(big_field(c, "location"))[:300],
             "best": [clean(field(c, f"bestloot{s}")) for s in ("", "2", "3", "4", "5")],
             "cr": [{"n": n, "hp": k["hp"], "exp": k["exp"], "gold": k["gold"],
+                    **({"m": k["mods"]} if k["mods"] else {}),
                     **({"boss": 1} if k["boss"] else {})} for n, k in known],
             "miss": [n for n in names if n not in creatures],
             # médias do spawn — o wiki não calcula isso
@@ -138,11 +160,14 @@ def main():
         fh.write("window.HUNTS = " + json.dumps(hunts, ensure_ascii=False,
                                                 separators=(",", ":")) + ";\n")
 
+    crs = [c for h in hunts for c in h["cr"]]
     print(f"{len(hunts)} spawns — "
           f"{sum(1 for h in hunts if h['cr'])} com criaturas resolvidas, "
           f"{sum(1 for h in hunts if h['lvl'])} com level, "
           f"{sum(1 for h in hunts if h['exps'])} com rating de exp, "
           f"{sum(1 for h in hunts if h['ratio'])} com exp/HP calculado")
+    print(f"{len(crs)} criaturas listadas — "
+          f"{sum(1 for c in crs if c.get('m'))} com resistências elementais")
     print("->", OUT, f"({os.path.getsize(OUT)/1024:.0f} KB)")
 
 

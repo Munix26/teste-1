@@ -144,6 +144,33 @@
   }
   .crlist .h { color: #6b7385; font-size: 0.72rem; text-transform: uppercase; }
   .crlist .b { color: #f0abfc; font-size: 0.7rem; }
+
+  /* elementos: ocupam a linha inteira abaixo dos stats da criatura */
+  .crlist .els {
+    grid-column: 1 / -1;
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 1px 0 9px; border-bottom: 1px solid #1c202a; margin-bottom: 4px;
+  }
+
+  .el {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.71rem; font-variant-numeric: tabular-nums;
+    border: 1px solid #262b38; border-radius: 5px;
+    padding: 1px 5px; background: #12141a; cursor: help;
+  }
+  .el .g { font-size: 0.8rem; line-height: 1.2; }
+
+  /* mesma convenção de cor de creatures.html: quanto maior o número, mais dano entra */
+  .el.weak   { color: #4ade80; border-color: rgba(74,222,128,0.40); background: rgba(74,222,128,0.09); }
+  .el.plain  { color: #5c6478; }
+  .el.strong { color: #fb923c; border-color: rgba(251,146,60,0.32); }
+  .el.immune { color: #ef4444; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.10); }
+  .el.unk    { color: #3d4354; }
+
+  .weak-k   { color: #4ade80; }
+  .plain-k  { color: #94a3b8; }
+  .strong-k { color: #fb923c; }
+  .immune-k { color: #ef4444; }
 </style>
 
 <div class="wrap">
@@ -178,7 +205,8 @@
   <div class="scroll"><table id="tbl"></table></div>
 
   <p class="legend">
-    Clique num spawn para ver todas as criaturas com stats. Rating de exp/loot é o
+    Clique num spawn para ver todas as criaturas com stats e resistências
+    elementais. Rating de exp/loot é o
     do wiki (★1–5) e existe em pouco mais da metade dos spawns — quando falta,
     use as colunas calculadas de exp/HP e ouro. O ouro é uma <b>faixa</b>, vinda
     das chances de drop que o wiki documenta por raridade — não um valor exato.
@@ -301,6 +329,30 @@
     v === null || v === undefined || v === '' ? NA : v}</div>`;
   const section = (t, inner) => `<h3>${t}</h3>${inner || `<p class="prose">${NA}</p>`}`;
 
+  // ordem espelha a do array `m` gerado por gen_hunts.py — não reordenar sem mexer lá
+  const ELEMENTS = ['physical', 'fire', 'earth', 'energy', 'ice', 'holy', 'death'];
+  const EL_ICON = { physical: '⚔️', fire: '🔥', earth: '🍂', energy: '⚡', ice: '❄️', holy: '✨', death: '💀' };
+  const EL_PT = { physical: 'Físico', fire: 'Fogo', earth: 'Terra', energy: 'Energia',
+                  ice: 'Gelo', holy: 'Holy', death: 'Death' };
+
+  // 100% = neutro. Acima disso a criatura toma mais dano (fraqueza), abaixo toma
+  // menos (resistente), 0% não toma nada.
+  function elChips(m) {
+    if (!m) return '<span class="dim" style="font-size:0.72rem">resistências não disponíveis no wiki</span>';
+    return ELEMENTS.map((e, i) => {
+      const v = m[i];
+      if (v === null || v === undefined) {
+        return `<span class="el unk" title="${EL_PT[e]}: não disponível"
+          ><span class="g">${EL_ICON[e]}</span>—</span>`;
+      }
+      const cls = v === 0 ? 'immune' : v > 100 ? 'weak' : v < 100 ? 'strong' : 'plain';
+      const tip = v === 0 ? 'imune — não use' : v > 100 ? 'fraqueza — bata com isso'
+                : v < 100 ? 'resistente' : 'neutro';
+      return `<span class="el ${cls}" title="${EL_PT[e]} ${v}% — ${tip}"
+        ><span class="g">${EL_ICON[e]}</span>${v}</span>`;
+    }).join('');
+  }
+
   function openDetail(h) {
     const info = [
       kv('Cidade', h.city), kv('Level recomendado', h.lvl),
@@ -322,8 +374,17 @@
         <span class="num">${c.hp.toLocaleString('pt-BR')}</span>
         <span class="num">${c.exp.toLocaleString('pt-BR')}</span>
         <span class="num">${c.hp ? (c.exp / c.hp).toFixed(2) : '—'}</span>
-        <span class="num gold">${c.gold ? fmt(c.gold[0]) + '–' + fmt(c.gold[1]) : '—'}</span>`).join('')}
-    </div>` : '';
+        <span class="num gold">${c.gold ? fmt(c.gold[0]) + '–' + fmt(c.gold[1]) : '—'}</span>
+        <span class="els">${elChips(c.m)}</span>`).join('')}
+    </div>
+    <p class="legend" style="margin-top:10px">
+      Elementos na ordem ⚔️ físico · 🔥 fogo · 🍂 terra · ⚡ energia · ❄️ gelo · ✨ holy · 💀 death.
+      <span class="weak-k">Verde &gt; 100%</span> = fraqueza ·
+      <span class="plain-k">cinza = 100%</span> = neutro ·
+      <span class="strong-k">laranja &lt; 100%</span> = resistente ·
+      <span class="immune-k">vermelho = 0%</span> = imune.
+      Passe o mouse para ver o elemento e a leitura.
+    </p>` : '';
 
     const best = h.best.filter(Boolean);
 
