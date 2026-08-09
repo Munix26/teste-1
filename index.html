@@ -64,6 +64,10 @@
 
   label { font-size: 0.82rem; color: #8b93a7; }
 
+  /* par label+campo: nunca se separam na quebra de linha */
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
   .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
   .chk input { width: auto; }
 
@@ -187,6 +191,27 @@
     align-items: baseline;
   }
 
+  /* proficiência: um nível por linha, perks alternativos lado a lado */
+  .prof { display: flex; flex-direction: column; gap: 6px; }
+
+  .prof-lvl { display: flex; gap: 10px; align-items: baseline; }
+
+  .prof-n {
+    flex: 0 0 auto; width: 58px;
+    color: #6b7385; font-size: 0.72rem; text-transform: uppercase;
+  }
+
+  .prof-perks { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  .perk {
+    font-size: 0.8rem; color: #cbd3e4;
+    background: #12141a; border: 1px solid #2c3242;
+    border-radius: 5px; padding: 2px 8px;
+  }
+
+  /* níveis 8 e 9 só dão título/achievement, nenhum perk */
+  .prof-mastery { color: #5c6478; font-size: 0.76rem; }
+
   .src .c { font-weight: 600; }
   .src .loc { color: #8b93a7; font-size: 0.8rem; }
   .src .h { color: #6b7385; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -204,6 +229,22 @@
   .r-semirare { color: #a78bfa; }
   .r-rare { color: #fbbf24; }
   .r-veryrare { color: #f0abfc; }
+
+  /* ── telas estreitas ── */
+  @media (max-width: 640px) {
+    /* a barra de filtros sticky comia metade do viewport */
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+
+    .overlay { padding: 10px 6px; }
+    .panel { padding: 16px 14px 20px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+
+    /* o rótulo do nível comia 58px de largura útil dos perks */
+    .prof-lvl { flex-direction: column; gap: 3px; }
+    .prof-n { width: auto; }
+  }
 </style>
 
 <div class="wrap">
@@ -222,9 +263,9 @@
 
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar item, atributo, resistência ou NPC…" />
-    <label for="cat">Categoria</label>
-    <select id="cat"><option value="">Todas</option></select>
-    <label for="voc">Vocação</label>
+    <span class="ctl"><label for="cat">Categoria</label>
+    <select id="cat"><option value="">Todas</option></select></span>
+    <span class="ctl"><label for="voc">Vocação</label>
     <select id="voc">
       <option value="">Todas</option>
       <option value="paladin">Paladin</option>
@@ -232,13 +273,13 @@
       <option value="sorcerer">Sorcerer</option>
       <option value="druid">Druid</option>
       <option value="none">Sem restrição</option>
-    </select>
-    <label for="attr">Atributo</label>
-    <select id="attr"><option value="">Qualquer</option></select>
-    <label for="res">Resistência</label>
-    <select id="res"><option value="">Qualquer</option></select>
-    <label for="lvl">Level até</label>
-    <input id="lvl" type="number" placeholder="360" min="0" />
+    </select></span>
+    <span class="ctl"><label for="attr">Atributo</label>
+    <select id="attr"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="res">Resistência</label>
+    <select id="res"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="lvl">Level até</label>
+    <input id="lvl" type="number" placeholder="360" min="0" /></span>
     <label class="chk"><input type="checkbox" id="onlydrop" /> Com drop</label>
     <label class="chk"><input type="checkbox" id="onlystats" /> Com atributos</label>
     <label class="chk"><input type="checkbox" id="onlytask" /> Delivery task</label>
@@ -267,6 +308,7 @@
   const $ = (id) => document.getElementById(id);
   const D = window.ITEMDATA;
   const CR = D.creatures;         // [nome, localização]
+  const PROF = D.prof || [];      // [[perks nível 1], [nível 2], …] por tabela
   const NA = '<span class="na">não disponível</span>';
 
   let sortKey = 'n';
@@ -403,6 +445,18 @@
       <span class="loc">${c[1] || '—'}</span>`;
       }).join('')}</div>` : '';
 
+    // perks por nível de proficiência; só um perk de cada nível pode ficar ativo
+    const perks = it.p === undefined ? null : PROF[it.p];
+    const prof = perks ? `<div class="prof">
+      ${perks.map((lvl, i) => `<div class="prof-lvl">
+        <span class="prof-n">Nível ${i + 1}</span>
+        <span class="prof-perks">${lvl.map((p) => `<span class="perk">${p}</span>`).join('')}</span>
+      </div>`).join('')}
+    </div>
+    <p class="prof-mastery">${perks.length} ${perks.length === 1 ? 'nível' : 'níveis'} com perk ·
+      só um perk por nível fica ativo · trocar exige Protection Zone ·
+      maestria (2 níveis acima do último) rende só título e achievement.</p>` : '';
+
     $('panel').innerHTML = `
       <div class="panel-head">
         <h2>${it.n}</h2><span class="cat">${it.c}</span>
@@ -411,6 +465,7 @@
       ${section('Propriedades', `<div class="grid">${stats}</div>`)}
       ${section('Atributos', it.at ? `<p class="prose attrib">${it.at}</p>` : '')}
       ${section('Resistências', it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '')}
+      ${prof ? section('Proficiência', prof) : ''}
       ${section('Comércio', `<div class="grid">${value}</div>`)}
       ${it.dt ? section('Delivery task (semanal)', `<div class="grid">${
         kv('Quantidade pedida', `${it.dt[0]}–${it.dt[1]} unidades`) +
