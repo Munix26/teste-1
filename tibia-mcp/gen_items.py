@@ -16,6 +16,7 @@ from psycopg2.extras import RealDictCursor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from loot import loot_items
+import proficiency
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "items-data.js")
@@ -186,6 +187,10 @@ def main():
         cur.execute("SELECT content FROM raw_pages WHERE title = 'Delivery Task'")
         row = cur.fetchone()
         delivery = parse_delivery_tasks(row["content"]) if row else {}
+
+        cur.execute("SELECT content FROM raw_pages WHERE title = 'Weapon Proficiency Tables'")
+        row = cur.fetchone()
+        prof_tables = proficiency.parse_tables(row["content"]) if row else {}
     conn.close()
 
     # creatures referenced by any drop, stored once and referenced by index
@@ -201,12 +206,27 @@ def main():
                                info.get("diff", ""),
                                min(lv) if lv else None, max(lv) if lv else None])
 
+    # tabelas de proficiência guardadas uma vez e referenciadas por índice: um
+    # mesmo conjunto de perks serve todas as armas do mesmo set, tipo e mãos
+    prof_table, pidx = [], {}
+
     items = []
     for row in item_rows:
         c, title = row["content"], row["title"]
         ptype = field(c, "primarytype")
         oclass = field(c, "objectclass")
         cat = CATEGORY.get(ptype) or FALLBACK.get(oclass) or (ptype or oclass or "Outros")
+
+        prof = None
+        if oclass == "Weapons":
+            perks = proficiency.lookup(prof_tables, title, ptype,
+                                       field(c, "secondarytype"), field(c, "hands"))
+            if perks:
+                key = json.dumps(perks, ensure_ascii=False)
+                if key not in pidx:
+                    pidx[key] = len(prof_table)
+                    prof_table.append(perks)
+                prof = pidx[key]
 
         by = sorted(drops.get(title, []), key=lambda x: RARITY_ORDER.index(x[1])
                     if x[1] in RARITY_ORDER else 9)
@@ -236,28 +256,33 @@ def main():
             "bf": clean(field(c, "buyfrom"))[:200],
             "sl_to": clean(field(c, "sellto"))[:200],
             "by": [[cidx[n], r] for n, r in by],
+            "p": prof,
             "no": clean(big_field(c, "notes"))[:500],
         })
 
-    # drop empty keys to keep the payload lean
+    # drop empty keys to keep the payload lean — `p` pode ser 0, que é índice válido
     slim = []
     for it in items:
         slim.append({k: v for k, v in it.items()
-                     if v not in (None, "", [], False)})
+                     if v not in (None, "", [], False) or (k == "p" and v == 0)})
 
     cats = defaultdict(int)
     for it in items:
         cats[it["c"]] += 1
     order = [c for c, _ in sorted(cats.items(), key=lambda x: -x[1])]
 
-    payload = {"cats": order, "creatures": creature_table, "items": slim}
+    payload = {"cats": order, "creatures": creature_table,
+               "prof": prof_table, "items": slim}
     with open(OUT, "w") as fh:
         fh.write("window.ITEMDATA = " + json.dumps(payload, ensure_ascii=False,
                                                    separators=(",", ":")) + ";\n")
 
     with_drops = sum(1 for it in items if it["by"])
+    weapons = sum(1 for it in items if it["t"] and it["p"] is not None)
     print(f"{len(items)} itens em {len(order)} categorias — {with_drops} com fonte de drop, "
           f"{len(creature_table)} criaturas indexadas")
+    print(f"{weapons} armas com proficiência, {len(prof_table)} tabelas de perks distintas "
+          f"(de {len(prof_tables)} seções no wiki)")
     print("->", OUT, f"({os.path.getsize(OUT)/1024:.0f} KB)")
 
 
