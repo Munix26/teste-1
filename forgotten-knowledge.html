@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>Tibia-AI — Forgotten Knowledge</title>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.55;
+    padding: 18px 14px 80px;
+    font-size: 16px;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  h1 { font-size: 1.45rem; margin-bottom: 4px; letter-spacing: -0.01em; }
+
+  .sub { color: #8b93a7; font-size: 0.88rem; margin-bottom: 16px; }
+
+  nav { margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  nav a {
+    color: #8b93a7; text-decoration: none; font-size: 0.82rem;
+    padding: 5px 12px; border: 1px solid #262b38; border-radius: 6px;
+  }
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  /* ── barra de progresso global (sticky) ── */
+  .progress-bar {
+    position: sticky; top: 0; z-index: 20;
+    background: #12141a; padding: 8px 0 10px; margin-bottom: 14px;
+    border-bottom: 1px solid #1c202a;
+  }
+  .pline { display: flex; align-items: center; gap: 10px; font-size: 0.76rem; color: #8b93a7; }
+  .ptrack { flex: 1; height: 6px; background: #1c202a; border-radius: 3px; overflow: hidden; }
+  .pfill { height: 100%; width: 0%; background: linear-gradient(90deg,#8a7220,#d4af37); transition: width .25s; }
+  .preset {
+    background: none; border: 1px solid #262b38; color: #5c6478;
+    font: inherit; font-size: 0.7rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;
+  }
+  .preset:hover { color: #e6e8ee; border-color: #3a4152; }
+
+  /* ── atalhos ── */
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+  .chips a {
+    font-size: 0.76rem; color: #8b93a7; text-decoration: none;
+    border: 1px solid #262b38; border-radius: 999px; padding: 4px 11px;
+  }
+  .chips a:hover { color: #d4af37; border-color: rgba(212,175,55,0.4); }
+
+  /* ── seções ── */
+  section { margin-bottom: 30px; scroll-margin-top: 60px; }
+
+  h2 {
+    font-size: 1.05rem; margin-bottom: 4px; color: #e6e8ee;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  h2 .n {
+    color: #d4af37; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+    border: 1px solid rgba(212,175,55,0.35); border-radius: 4px; padding: 1px 6px;
+  }
+  h3 { font-size: 0.86rem; color: #d4af37; margin: 16px 0 6px; letter-spacing: 0.02em; }
+  .lead { color: #8b93a7; font-size: 0.85rem; margin-bottom: 12px; }
+
+  p { margin-bottom: 10px; font-size: 0.9rem; }
+  strong { color: #fff; font-weight: 600; }
+  em { color: #cbd2e1; font-style: normal; }
+
+  .card {
+    background: #171a22; border: 1px solid #262b38; border-radius: 10px;
+    padding: 14px 14px 16px; margin-bottom: 12px;
+  }
+
+  /* ── checklists ── */
+  ul.check { list-style: none; }
+  ul.check li { margin-bottom: 2px; }
+  ul.check label {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 9px 10px; border-radius: 7px; cursor: pointer;
+    font-size: 0.88rem; border: 1px solid transparent;
+  }
+  ul.check label:active { background: #1c202a; }
+  ul.check input { flex: none; width: 19px; height: 19px; margin-top: 1px; accent-color: #d4af37; }
+  ul.check input:checked + span { color: #5c6478; text-decoration: line-through; }
+  ul.check input:checked + span b { color: #5c6478; }
+  ul.check span b { color: #fff; font-weight: 600; }
+  ul.check span i { display: block; font-style: normal; color: #8b93a7; font-size: 0.78rem; margin-top: 2px; }
+  ul.check input:checked + span i { color: #454b5c; }
+
+  /* ── listas comuns ── */
+  ol.steps { list-style: none; counter-reset: s; }
+  ol.steps li {
+    counter-increment: s; position: relative;
+    padding: 0 0 12px 30px; font-size: 0.88rem;
+  }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 1px;
+    width: 21px; height: 21px; border-radius: 50%;
+    background: #1f2430; color: #d4af37;
+    font-size: 0.7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ul.bul { list-style: none; }
+  ul.bul li { position: relative; padding: 0 0 8px 15px; font-size: 0.88rem; }
+  ul.bul li::before { content: '·'; position: absolute; left: 3px; color: #d4af37; font-weight: 700; }
+
+  /* ── avisos ── */
+  .warn, .tip {
+    border-left: 3px solid; border-radius: 0 7px 7px 0;
+    padding: 10px 12px; margin: 12px 0; font-size: 0.85rem;
+  }
+  .warn { border-color: #ef4444; background: rgba(239,68,68,0.07); }
+  .tip  { border-color: #d4af37; background: rgba(212,175,55,0.06); }
+  .warn b, .tip b { color: #fff; }
+
+  /* ── bosses (accordion) ── */
+  details.boss {
+    background: #171a22; border: 1px solid #262b38;
+    border-radius: 10px; margin-bottom: 10px; overflow: hidden;
+  }
+  details.boss[open] { border-color: #3a4152; }
+  details.boss > summary {
+    list-style: none; cursor: pointer; padding: 13px 14px;
+    display: flex; gap: 11px; align-items: flex-start;
+  }
+  details.boss > summary::-webkit-details-marker { display: none; }
+  .b-num {
+    flex: none; width: 26px; height: 26px; border-radius: 7px;
+    background: #1f2430; color: #d4af37; font-size: 0.78rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .b-head { flex: 1; min-width: 0; }
+  .b-name { display: block; font-weight: 600; font-size: 0.97rem; }
+  .b-where { display: block; color: #8b93a7; font-size: 0.76rem; line-height: 1.35; }
+  .b-key { display: block; color: #fb923c; font-size: 0.78rem; line-height: 1.35; margin-top: 4px; }
+  .b-arrow { flex: none; color: #5c6478; font-size: 0.8rem; margin-top: 4px; transition: transform .2s; }
+  details.boss[open] .b-arrow { transform: rotate(90deg); }
+  .b-body { padding: 0 14px 16px; border-top: 1px solid #21262f; margin-top: 2px; padding-top: 12px; }
+
+  /* ── ficha de stats ── */
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: #21262f; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+  .stat { background: #1a1e27; padding: 8px 10px; }
+  .stat .k { color: #5c6478; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat .v { font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+  .stat .v.na { color: #5c6478; font-style: italic; font-size: 0.8rem; }
+
+  /* ── elementos ── */
+  .elems { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .el {
+    font-size: 0.75rem; padding: 4px 9px; border-radius: 6px;
+    border: 1px solid; font-variant-numeric: tabular-nums;
+  }
+  .el b { font-weight: 600; }
+  .el.good { color: #4ade80; border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.07); }
+  .el.mid  { color: #94a3b8; border-color: #2c3242; }
+  .el.bad  { color: #fb923c; border-color: rgba(251,146,60,0.35); background: rgba(251,146,60,0.06); }
+  .el.kill { color: #ef4444; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.09); }
+
+  /* ── linhas "boss → faça / não faça" ── */
+  .rows { border-top: 1px solid #21262f; margin-bottom: 6px; }
+  .row { border-bottom: 1px solid #21262f; padding: 10px 0; }
+  .row-t { font-weight: 600; font-size: 0.89rem; margin-bottom: 5px; }
+  .row-t small { font-weight: 400; color: #8b93a7; font-size: 0.76rem; }
+  .row p { font-size: 0.84rem; margin: 0 0 3px; padding-left: 54px; text-indent: -54px; }
+  .row p:last-child { margin-bottom: 0; }
+  .tag {
+    display: inline-block; width: 46px; margin-right: 8px; text-indent: 0;
+    font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em;
+    text-align: center; padding: 1px 0; border-radius: 4px; vertical-align: 1px;
+  }
+  .tag.yes { color: #4ade80; background: rgba(74,222,128,0.12); }
+  .tag.no  { color: #ef4444; background: rgba(239,68,68,0.13); }
+  .tag.is  { color: #8b93a7; background: #1f2430; }
+
+  /* ── tabelas ── */
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th {
+    text-align: left; color: #8b93a7; font-weight: 600; font-size: 0.68rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 6px 9px; border-bottom: 1px solid #262b38; white-space: nowrap;
+  }
+  td { padding: 7px 9px; border-bottom: 1px solid #1c202a; vertical-align: top; }
+  td.nw { white-space: nowrap; }
+  .gold { color: #fbbf24; }
+  .dim { color: #5c6478; }
+
+  code {
+    background: #1f2430; color: #d4af37; padding: 1px 6px;
+    border-radius: 4px; font-size: 0.82em; font-family: ui-monospace, monospace;
+  }
+
+  .legend { color: #5c6478; font-size: 0.74rem; margin-top: 26px; line-height: 1.6; }
+  .legend a { color: #8b93a7; }
+
+  .top {
+    display: block; text-align: center; color: #5c6478; font-size: 0.74rem;
+    text-decoration: none; margin-top: 10px;
+  }
+
+  /* ── telas maiores ── */
+  @media (min-width: 700px) {
+    body { padding: 26px 20px 90px; }
+    h1 { font-size: 1.6rem; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .card { padding: 16px 18px 18px; }
+    .b-body { padding: 12px 18px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <h1>Forgotten Knowledge</h1>
+  <p class="sub">
+    Guia de preparação para os 7 bosses — montado para <strong>Royal Paladin</strong>.
+    Marque as caixas conforme for cumprindo; o progresso fica salvo neste aparelho.
+  </p>
+
+  <nav>
+    <a href="index.html">Itens</a>
+    <a href="creatures.html">Criaturas</a>
+    <a href="spawns.html">Spawns</a>
+    <a href="forgotten-knowledge.html" class="on">Forgotten Knowledge</a>
+  </nav>
+
+  <div class="progress-bar">
+    <div class="pline">
+      <span id="ptext">0 / 0 concluído</span>
+      <span class="ptrack"><span class="pfill" id="pfill"></span></span>
+      <button class="preset" id="reset" type="button">zerar</button>
+    </div>
+  </div>
+
+  <div class="chips">
+    <a href="#visao">Visão geral</a>
+    <a href="#pre">Pré-requisitos</a>
+    <a href="#mat">Materiais</a>
+    <a href="#ordem">Ordem</a>
+    <a href="#kit">Kit do RP</a>
+    <a href="#bosses">Os 7 bosses</a>
+    <a href="#depois">Depois da quest</a>
+  </div>
+
+  <!-- ══════════════ VISÃO GERAL ══════════════ -->
+  <section id="visao">
+    <h2><span class="n">00</span> Como a quest funciona</h2>
+    <p class="lead">Leia isto uma vez e o resto do guia faz sentido sozinho.</p>
+
+    <div class="card">
+      <p>
+        O templo fica nas <strong>Halls of Hope</strong>, ao norte de Thais. Dentro dele há
+        <strong>6 portais elementais</strong>, cada um levando a uma área com um boss no fim.
+        Matar os 6 abre o <strong>Energy Gate</strong> do fight final contra
+        <strong>The Last Lore Keeper</strong>.
+      </p>
+      <p>
+        A recompensa não é loot — é <strong>imbuement</strong>. O NPC
+        <strong>Albinius</strong> libera os dois primeiros tiers (Basic e Intricate) só com
+        5&nbsp;Heavy Old Tomes. O tier <strong>Powerful</strong> só existe boss a boss:
+        cada um desbloqueia um conjunto próprio numa Abandoned Imbuing Shrine dentro da área dele.
+      </p>
+
+      <div class="tip">
+        <b>Por que isso te interessa direto:</b> os dois imbuements que você já roda no dia a dia —
+        <em>Powerful Vampirism</em> (25% de life leech) e <em>Powerful Void</em> (8% de mana leech) —
+        vêm respectivamente da <strong>Lady Tenebris</strong> e do <strong>Zyrtarch</strong>.
+        E <em>Powerful Precision</em> (+4 de distance) sai do <strong>Time Guardian</strong>.
+        Se algum desses três ainda estiver no tier Intricate, esses são os bosses prioritários.
+      </div>
+
+      <h3>Regras que definem o planejamento</h3>
+      <ul class="bul">
+        <li><strong>Cooldown de 20 horas por boss, por personagem.</strong> Errou a run, só amanhã. Isso é o que torna a preparação cara — não o custo dos supplies.</li>
+        <li><strong>Time de 1 a 5 jogadores</strong> nos 6 bosses elementais; <strong>até 15</strong> no Last Lore Keeper.</li>
+        <li><strong>Level recomendado pelo wiki: 200+.</strong> Nos seus 360 o problema deixa de ser sobreviver e passa a ser <em>DPS dentro do tempo limite</em>.</li>
+        <li><strong>Premium obrigatório.</strong></li>
+        <li>Todo boss precisa de <strong>alavanca + tiles</strong>: o time inteiro em cima das pedras, um puxa.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══════════════ PRÉ-REQUISITOS ══════════════ -->
+  <section id="pre">
+    <h2><span class="n">01</span> Pré-requisitos</h2>
+    <p class="lead">Sem isto você nem chega nos portais. Resolva antes de comprar supply.</p>
+
+    <div class="card">
+      <ul class="check" data-group="pre">
+        <li><label><input type="checkbox" id="pre1"><span><b>Premium ativo</b><i>A quest inteira é premium-only.</i></span></label></li>
+        <li><label><input type="checkbox" id="pre2"><span><b>The New Frontier Quest completa — incluindo a missão 9 (Mortal Combat)</b><i>É o que dá permissão de usar o Fire Portal (Zyrtarch). É o pré-requisito mais demorado da lista; comece por ele.</i></span></label></li>
+        <li><label><input type="checkbox" id="pre3"><span><b>The Ice Islands Quest até a missão "The Contactman"</b><i>Dá acesso às Formorgar Mines, por onde passa o Ice Portal (Frozen Horror).</i></span></label></li>
+        <li><label><input type="checkbox" id="pre4"><span><b>5× Heavy Old Tome entregues ao Albinius</b><i>Fale <code>temple</code> e depois <code>yes</code>. Ele pega todos os tomes da sua bag de uma vez — carregue só 5. Se o servidor for novo e o templo estiver em ruínas, ele pede muito mais até reconstruir.</i></span></label></li>
+        <li><label><input type="checkbox" id="pre5"><span><b>Já visitou Zao (estepes e selva) pelo menos uma vez</b><i>A Ivalisse só libera o Fire Portal para quem já conhece Zao.</i></span></label></li>
+      </ul>
+
+      <div class="tip">
+        <b>Onde caçar Heavy Old Tome:</b> cai de Cyclops, Orcs (todos os tipos), Ghouls, Skeletons e Trolls.
+        Também tem <strong>1 garantido por personagem</strong> em cada Brass-Shod Chest — são 5 baús,
+        exatamente os 5 tomes que você precisa: torre de Mount Sternum, casa fora da Mount Sternum Undead Cave,
+        cabana das Valkyries ao norte de Thais, caminho dos Orcs no Ancient Temple e abaixo do White Flower Temple.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MATERIAIS ══════════════ -->
+  <section id="mat">
+    <h2><span class="n">02</span> Materiais de entrada</h2>
+    <p class="lead">
+      Cada portal cobra um "pedágio" ao Albinius. Junte tudo <strong>antes</strong> —
+      é o que evita você chegar no templo e descobrir que falta um item.
+    </p>
+
+    <div class="card">
+      <ul class="check" data-group="mat">
+        <li><label><input type="checkbox" id="mat1"><span><b>50× Marsh Stalker Feather</b> <span class="dim">— Energy Portal / Lloyd</span><i>Cai de Marsh Stalker (pântanos de Venore / Carlin). Item leve (0.30 oz), fácil de estocar.</i></span></label></li>
+        <li><label><input type="checkbox" id="mat2"><span><b>50× Pelvis Bone</b> <span class="dim">— Death Portal / Lady Tenebris</span><i>Skeletons, Skeleton Warrior/Elite Warrior, Crypt Warrior, Undead Gladiator, Jailer, Honour Guard.</i></span></label></li>
+        <li><label><input type="checkbox" id="mat3"><span><b>50× Fish</b> <span class="dim">— Ice Portal / Frozen Horror</span><i>O mais barato: compre com qualquer NPC de comida (Alphonse, Bruno, Christine, Raffael a 3gp…). Não perca tempo pescando.</i></span></label></li>
+        <li><label><input type="checkbox" id="mat4"><span><b>50× Acorn</b> <span class="dim">— Earth Portal / Thorn Knight</span><i>Só cai de Squirrel e Badger. Parece bobo, mas é o mais chato de juntar — separe uma tarde ou compre no market.</i></span></label></li>
+        <li><label><input type="checkbox" id="mat5"><span><b>50× Incantation Notes</b> <span class="dim">— Holy Portal / Time Guardian</span><i>Blood Hand, Blood Priest e Shadow Pupil (Bloodhall / Orc Fortress area).</i></span></label></li>
+        <li><label><input type="checkbox" id="mat6"><span><b>Fire Portal: nenhum material</b><i>Ele não cobra item — cobra a New Frontier completa. Se você fez o passo 01, está liberado.</i></span></label></li>
+        <li><label><input type="checkbox" id="mat7"><span><b>1× Reinvigorating Seeds</b> <span class="dim">— dentro do Earth Portal</span><i>Cai de Orclops Ravager, lá dentro mesmo. Não dá pra comprar; loote enquanto atravessa a caverna.</i></span></label></li>
+        <li><label><input type="checkbox" id="mat8"><span><b>1× Phial of Fresh Water</b> <span class="dim">— dentro do Earth Portal</span><i>Você pega usando o Stony Pond ao lado da Weakened Forest Fury. Serve para regar as bétulas e curar a Giant Tree.</i></span></label></li>
+      </ul>
+
+      <div class="warn">
+        <b>Ordem de fala com o Albinius:</b> diga o nome do portal
+        (<code>energy portal</code>, <code>death portal</code>, <code>ice portal</code>,
+        <code>earth portal</code>, <code>holy portal</code>), entregue o material e só então o portal abre
+        para você. É por personagem, não por conta.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ ORDEM ══════════════ -->
+  <section id="ordem">
+    <h2><span class="n">03</span> Ordem recomendada</h2>
+    <p class="lead">
+      O wiki não define ordem — esta é uma sugestão minha, ordenada por
+      <strong>quanto a run depende de execução coordenada</strong>. Fazer nesta ordem significa
+      aprender a mecânica barata antes da mecânica cara.
+    </p>
+
+    <div class="card">
+      <ol class="steps">
+        <li><strong>Lloyd</strong> <span class="dim">— Energy Portal.</span> Mecânica mais simples: matar, matar prisma, repetir. Serve de teste de DPS do seu setup.</li>
+        <li><strong>Lady Tenebris</strong> <span class="dim">— Death Portal.</span> Uma única mecânica perigosa (a explosão), resolvida com um item no hotkey. Libera <em>Powerful Vampirism</em>.</li>
+        <li><strong>The Enraged Thorn Knight</strong> <span class="dim">— Earth Portal.</span> Fácil de matar, fácil de estragar: uma runa de death cura o boss.</li>
+        <li><strong>Melting Frozen Horror</strong> <span class="dim">— Ice Portal.</span> Primeira que exige o time trabalhando em papéis diferentes ao mesmo tempo. Aqui o paladino tem função definida.</li>
+        <li><strong>The Time Guardian</strong> <span class="dim">— Holy Portal.</span> Exige trocar de dano no meio da luta, sem errar. Libera <em>Powerful Precision</em>.</li>
+        <li><strong>Soul of Dragonking Zyrtarch</strong> <span class="dim">— Fire Portal.</span> A mais coreografada dos seis. Deixe para quando o time já se conhece. Libera <em>Powerful Void</em>.</li>
+        <li><strong>The Last Lore Keeper</strong> <span class="dim">— Energy Gate.</span> Só abre depois dos seis. Time grande, rotação cronometrada.</li>
+      </ol>
+
+      <div class="tip">
+        <b>Aproveitando o cooldown:</b> como cada boss trava 20h, o padrão eficiente é
+        <strong>um boss por dia</strong>, sempre no mesmo horário, enquanto junta material do próximo.
+        Uma semana fecha os seis.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ KIT ══════════════ -->
+  <section id="kit">
+    <h2><span class="n">04</span> Kit do Royal Paladin</h2>
+    <p class="lead">
+      O que muda de boss para boss não é o equipamento — é a <strong>munição</strong> e o
+      <strong>imbuement de conversão</strong>. Errar isso pode literalmente curar o boss.
+    </p>
+
+    <div class="card">
+      <h3>A regra de ouro do paladino aqui</h3>
+      <p>
+        Imbuements de conversão elemental (<em>Scorch</em> = fogo, <em>Frost</em> = gelo,
+        <em>Venom</em> = terra, <em>Reap</em> = death, <em>Electrify</em> = energia) convertem
+        <strong>50% do seu dano físico</strong>. Isso é excelente quando o boss é fraco ao elemento
+        e <strong>desastroso</strong> quando ele cura com aquele elemento — e três bosses desta quest curam.
+      </p>
+      <div class="warn">
+        <b>Nunca leve o arco com <em>Reap</em> (death)</b> no Thorn Knight: death cura ele em
+        <strong>10× o dano</strong>. E nunca leve <em>Scorch</em> (fogo) no Time Guardian: a forma
+        Blazing é <strong>curada por fogo</strong>. Em caso de dúvida, vá de arco limpo:
+        <em>Precision + Strike + Vampirism/Void</em> resolvem tudo sem risco.
+      </div>
+
+      <h3>Munição por boss</h3>
+      <div class="rows">
+        <div class="row">
+          <div class="row-t">1. Lloyd</div>
+          <p><span class="tag yes">leve</span>Crystalline Arrow (físico 90%) · Divine Missile (holy 90%)</p>
+          <p><span class="tag is">nada</span><span class="dim">nenhum elemento cura ele</span></p>
+        </div>
+        <div class="row">
+          <div class="row-t">2. Lady Tenebris</div>
+          <p><span class="tag yes">leve</span>Crystalline Arrow · Divine Missile · runas de fogo</p>
+          <p><span class="tag no">nunca</span>Death (só 40% entra) — inclusive SD</p>
+        </div>
+        <div class="row">
+          <div class="row-t">3. Thorn Knight</div>
+          <p><span class="tag yes">leve</span>Crystalline Arrow · Flaming Arrow · Great Fireball</p>
+          <p><span class="tag no">nunca</span>Death (cura 10×) <b>e</b> Earth (imune)</p>
+        </div>
+        <div class="row">
+          <div class="row-t">4. Frozen Horror</div>
+          <p><span class="tag yes">leve</span>Great Fireball Rune <span class="dim">— para aquecer o ovo</span></p>
+          <p><span class="tag no">nunca</span>Ice — cura o boss e mata o ovo</p>
+        </div>
+        <div class="row">
+          <div class="row-t">5. Time Guardian <small>— muda com a forma</small></div>
+          <p><span class="tag yes">leve</span>Físico/Explosion na normal · fogo na Freezing · gelo na Blazing</p>
+          <p><span class="tag no">nunca</span>Fogo na Blazing · gelo na Freezing</p>
+        </div>
+        <div class="row">
+          <div class="row-t">6. Zyrtarch</div>
+          <p><span class="tag yes">leve</span>Soulfire Rune <span class="dim">(só nos Soulcatchers)</span> · físico no boss</p>
+          <p><span class="tag no">nunca</span>Fogo no boss e nos servos — todos imunes</p>
+        </div>
+        <div class="row">
+          <div class="row-t">7. Last Lore Keeper</div>
+          <p><span class="tag yes">leve</span><b class="gold">Holy — 100% em tudo na sala</b></p>
+          <p><span class="tag no">nunca</span>Death (40%) · Ice (65%)</p>
+        </div>
+      </div>
+
+      <h3>Runas que você pode usar</h3>
+      <p>
+        Paladino usa runa de ataque normalmente, desde que a magic level alcance:
+        Great Fireball e Avalanche pedem <strong>ML 4</strong>, Explosion <strong>ML 6</strong>,
+        Soulfire <strong>ML 7</strong>, Magic Wall <strong>ML 9</strong> e Sudden Death
+        <strong>ML 15</strong>. Confira sua ML antes de contar com SD.
+      </p>
+
+      <h3>Checklist de supply</h3>
+      <ul class="check" data-group="kit">
+        <li><label><input type="checkbox" id="kit1"><span><b>Stone Skin Amulet no hotkey</b><i>−80% de dano físico e death. É <em>o</em> item da Lady Tenebris: derruba a explosão de ~2.500 para ~500. Leve 2 ou 3, cada um tem 5 cargas.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit2"><span><b>Might Ring</b><i>−20% em todos os elementos, 20 cargas. Coringa para as fases de dano pesado.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit3"><span><b>~50 Soulfire Runes</b> <span class="dim">— só para o Zyrtarch</span><i>Servem para acender os Soulcatchers, que são a única coisa não-imune a fogo naquela sala.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit4"><span><b>Great Fireball Runes</b><i>Frozen Horror (aquecer o ovo), Time Guardian na forma Freezing e limpeza de summons na Tenebris.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit5"><span><b>Avalanche Runes</b> <span class="dim">— para a forma Blazing do Time Guardian</span></span></label></li>
+        <li><label><input type="checkbox" id="kit6"><span><b>Magic Wall Runes</b><i>Protegem o Dragon Egg das torres de Icicle no Frozen Horror.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit7"><span><b>Ultimate Health + Great Spirit Potions cheias</b><i>Fights de 10–17 minutos ininterruptos. Calcule pelo tempo, não pelo número de kills.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit8"><span><b>Munição sobrando</b><i>Sem respawn e sem loot durante a luta: o que entrou é o que tem.</i></span></label></li>
+        <li><label><input type="checkbox" id="kit9"><span><b>Imbuements renovados antes de entrar</b><i>Imbuement expira por tempo real. Chegar com 10 minutos restantes é perder a run e o cooldown de 20h.</i></span></label></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══════════════ BOSSES ══════════════ -->
+  <section id="bosses">
+    <h2><span class="n">05</span> Os 7 bosses</h2>
+    <p class="lead">Toque para abrir. Cada card tem a mecânica, o que evitar e o que você desbloqueia.</p>
+
+    <!-- ─── LLOYD ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">1</span>
+        <span class="b-head">
+          <span class="b-name">Lloyd</span>
+          <span class="b-where">Energy Portal · Replica Dungeon</span>
+          <span class="b-key">Ele volta 5 vezes — é um teste puro de DPS</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">HP</div><div class="v">65.000</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v">50.000</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v">10 min</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–5</div></div>
+        </div>
+
+        <div class="elems">
+          <span class="el good">Energy <b>100%</b></span>
+          <span class="el mid">Earth 95%</span>
+          <span class="el mid">Fire 95%</span>
+          <span class="el mid">Físico 90%</span>
+          <span class="el mid">Holy 90%</span>
+          <span class="el bad">Ice 85%</span>
+          <span class="el bad">Death 40%</span>
+        </div>
+
+        <h3>Para chegar até ele</h3>
+        <ol class="steps">
+          <li>Entregue as <strong>50 Marsh Stalker Feathers</strong> e entre no Energy Portal.</li>
+          <li>Puxe as <strong>duas alavancas</strong> (uma em cada ponta do dungeon). Cada uma inicia um relógio de 10 minutos.</li>
+          <li>Mate <strong>5 Golden Servant Replicas e 5 Diamond Servant Replicas</strong> dentro desses 10 minutos.</li>
+          <li>Correntes de lava e água correm até o centro e abrem o <strong>Energy Gate</strong>.</li>
+          <li>Entre, suba nos 5 tiles com o time e puxe a alavanca.</li>
+        </ol>
+
+        <h3>A luta</h3>
+        <p>
+          Na sala há o Lloyd e <strong>4 prismas de energia imóveis</strong> (A, B, C e D).
+          Você mata o Lloyd → ele ressuscita → você mata <strong>um prisma</strong> → mata o Lloyd de novo.
+          Só depois dos 4 prismas destruídos ele morre de verdade.
+          Na prática são <strong>~5×65.000 de HP mais os 4 prismas em 10 minutos</strong> —
+          o gargalo é dano, não sobrevivência.
+        </p>
+        <ul class="bul">
+          <li>Prenda o Lloyd a <strong>nordeste do prisma D</strong>; uma Wild Growth ajuda a impedir que ele troque de alvo.</li>
+          <li>Ele tem um ataque de energia que acerta quem está <strong>perto de outro jogador</strong>. Espalhe o time.</li>
+          <li>Estourou o tempo, ele grita <em>"MY COSMIC HARNESS MAKES ME INVINCIBLE!"</em> e te expulsa.</li>
+        </ul>
+
+        <h3>Repetir depois</h3>
+        <p>
+          Passadas as 20h você precisa matar os <strong>5 Golden e 5 Diamond de novo</strong> para o
+          Energy Gate reabrir — mesmo ele já tendo sido aberto antes. O gate só existe se alguém matou
+          os servos nos últimos 10 minutos.
+        </p>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong>Cloud Fabric</strong> — −15% de dano de energia</li>
+          <li><strong>Electrify</strong> — converte 50% do físico em energia</li>
+          <li><strong>Swiftness</strong> — +30 de velocidade</li>
+          <li><strong>Punch</strong> — +4 de fist</li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          Boots of Haste, Demon Helmet, Lightning Legs, Magic Sulphur, Rift Lance,
+          Spellbook of Enlightenment, gems e <strong class="gold">Part of a Rune (Six)</strong>.
+        </p>
+      </div>
+    </details>
+
+    <!-- ─── TENEBRIS ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">2</span>
+        <span class="b-head">
+          <span class="b-name">Lady Tenebris</span>
+          <span class="b-where">Death Portal · Old Masonry</span>
+          <span class="b-key">Explosão de até 2.500 de death — Stone Skin Amulet obrigatório</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">HP</div><div class="v">250.000</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v">50.000</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–5</div></div>
+        </div>
+
+        <div class="elems">
+          <span class="el good">Físico ~100%</span>
+          <span class="el good">Holy ~99%</span>
+          <span class="el mid">Fire 95%</span>
+          <span class="el mid">Energy 95%</span>
+          <span class="el bad">Ice 85%</span>
+          <span class="el bad">Earth 80%</span>
+          <span class="el kill">Death 40%</span>
+        </div>
+
+        <h3>Para chegar até ela <span class="dim">(só na primeira vez)</span></h3>
+        <ol class="steps">
+          <li>Entregue as <strong>50 Pelvis Bones</strong> e entre no Death Portal.</li>
+          <li>Use a <strong>teia de aranha</strong> no canto noroeste da sala indicada — você ganha a <strong>Ghostsilver Lantern</strong>. Sem ela nada do resto acontece.</li>
+          <li>Use a <strong>Old Desk</strong> no meio da sala com portas de barras: sai um <strong>Old Note</strong>.</li>
+          <li>Use o <strong>Heap of Rubbish</strong> a sudeste: sai a <strong>Painting of a Girl</strong>.</li>
+          <li>Volte à Old Desk, <strong>use o quadro nela</strong>, e use a mesa de novo: sai a <strong>Old Silver Key</strong>.</li>
+          <li>Com a <strong>lanterna acesa</strong>, use a parede a leste — a porta invisível aparece.</li>
+        </ol>
+        <div class="tip">
+          Feito uma vez, nas próximas runs basta <strong>trazer a lanterna acesa</strong> e usar a parede.
+          Perdeu a lanterna, refaz a teia.
+        </div>
+
+        <h3>A luta</h3>
+        <ol class="steps">
+          <li><strong>Fase 1:</strong> ela + Shadow Tentacles. Mate as tentáculas.</li>
+          <li><strong>Fase 2:</strong> ela passa a invocar <strong>Shadow Fiends</strong> — dão pouco dano, mas <strong>paralisam</strong>. Foco continua nela; limpe os fiends com dano em área (Great Fireball).</li>
+          <li><strong>De tempos em tempos ela teleporta o time todo para o centro</strong> e, alguns segundos depois, solta uma explosão de até <strong>2.500 de death</strong>.</li>
+        </ol>
+        <div class="warn">
+          <b>O momento que decide a run:</b> assim que sentir o teleporte para o centro,
+          equipe o <strong>Stone Skin Amulet</strong> pelo hotkey. Os 2.500 viram ~500.
+          Death/Butterfly Ring e Moon Mirror empilham e derrubam ainda mais.
+        </div>
+        <div class="warn">
+          <b>Zero dano de death.</b> Ela resiste a 60% (recebe só 40%) — SD aqui é desperdício de gold.
+          Se o seu arco estiver com <em>Reap</em>, troque.
+        </div>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong class="gold">Vampirism</strong> — converte 25% do dano em HP, 100% de chance <span class="dim">(um dos dois que você roda)</span></li>
+          <li><strong>Lich Shroud</strong> — −10% de dano de death</li>
+          <li><strong>Reap</strong> — converte 50% do físico em death</li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          Umbral Spellbook, Shadow Sceptre, Abyss Hammer, Arcane Staff, Ring of the Sky,
+          Book of Lies (very rare), tokens e <strong class="gold">Part of a Rune (Four)</strong>.
+        </p>
+      </div>
+    </details>
+
+    <!-- ─── THORN KNIGHT ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">3</span>
+        <span class="b-head">
+          <span class="b-name">The Enraged Thorn Knight</span>
+          <span class="b-where">Earth Portal · Desecrated Glade</span>
+          <span class="b-key">Death cura ele em 10× o dano — uma SD errada acaba a run</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">HP</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v">30.000</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–5</div></div>
+        </div>
+
+        <div class="elems">
+          <span class="el good">Fire 100%</span>
+          <span class="el good">Físico 100%</span>
+          <span class="el bad">Ice ~60%</span>
+          <span class="el bad">Energy 50%</span>
+          <span class="el kill">Earth 0% (imune)</span>
+          <span class="el kill">Death −1000% (cura)</span>
+        </div>
+
+        <div class="warn">
+          <b>−1000% de death não é exagero de texto:</b> uma SD que bateria 500 <strong>cura 5.000</strong>.
+          Vale para as três formas. Tire <em>Reap</em> do arco e avise o time antes de puxar a alavanca.
+        </div>
+
+        <h3>Para chegar até ele <span class="dim">(só na primeira vez)</span></h3>
+        <ol class="steps">
+          <li>Fale com a <strong>Weakened Forest Fury</strong> (<code>hi</code>, <code>distress</code>, <code>yes</code>) e receba a <strong>Empty Birdcage</strong>.</li>
+          <li>Entre no <strong>Stony Pond</strong> ao lado dela para cair no Desecrated Glade.</li>
+          <li><strong>Capture 3 Cave Parrots</strong> com a gaiola e solte cada um na <strong>Giant Tree</strong> lá embaixo.</li>
+          <li>Loote <strong>Reinvigorating Seeds</strong> dos Orclops Ravagers e plante no <strong>Fertile Soil</strong>.</li>
+          <li>Encha uma <strong>Phial of Fresh Water</strong> no Stony Pond e regue a bétula. Repita até ter <strong>5 Blooming Birches</strong>.</li>
+          <li>Use a phial na <strong>Giant Tree</strong> para curá-la; entre na Mystic Flame que aparece.</li>
+          <li>Ande a noroeste até o teleporte, suba nos tiles e puxe a alavanca.</li>
+        </ol>
+
+        <h3>A luta — 3 fases</h3>
+        <ol class="steps">
+          <li><strong>Mounted Thorn Knight:</strong> montado, invocando Thorn Minions.</li>
+          <li><strong>The Shielded Thorn Knight:</strong> a montaria <strong>Thorn Steed</strong> tem que morrer primeiro.</li>
+          <li><strong>The Enraged Thorn Knight:</strong> forma final.</li>
+        </ol>
+        <ul class="bul">
+          <li>Ao entrar nascem <strong>8 Possessed Trees</strong> e até 4 Thorn Minions. As árvores, ao morrer, viram <strong>Unbound Blightwalkers / Defilers / Demons</strong>.</li>
+          <li>Duas escolas: matar as árvores uma a uma (o boss passa a receber mais dano depois) <em>ou</em> ficar ao sul e simplesmente não matá-las. Com time pequeno, a segunda é mais segura.</li>
+          <li>Fogo é a aposta limpa: 100% nas três formas, sem risco de cura.</li>
+        </ul>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong>Snake Skin</strong> — −15% de dano de earth <span class="dim">(o que a Mutated Skin complementa em Cobra Bastion)</span></li>
+          <li><strong>Venom</strong> — converte 50% do físico em earth</li>
+          <li><strong>Slash / Chop / Bash</strong> — +4 de sword, axe e club</li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          Sniper Gloves, Swamplair Armor, Medusa Shield, Ruthless Axe, Spiked Squelcher,
+          Thorn Seed (rare) e <strong class="gold">Part of a Rune (One)</strong>.
+        </p>
+      </div>
+    </details>
+
+    <!-- ─── FROZEN HORROR ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">4</span>
+        <span class="b-head">
+          <span class="b-name">Melting Frozen Horror</span>
+          <span class="b-where">Ice Portal · Formorgar Mines</span>
+          <span class="b-key">O wiki indica o paladino como quem segura os Frozen Minions</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">HP</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v">17 min</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–5</div></div>
+        </div>
+
+        <div class="elems">
+          <span class="el good">Fire 115%</span>
+          <span class="el good">Energy 105%</span>
+          <span class="el mid">Earth 100%</span>
+          <span class="el mid">Físico ~99%</span>
+          <span class="el kill">Ice −100% (cura)</span>
+        </div>
+
+        <h3>Antes de entrar</h3>
+        <p>
+          Fale com <strong>A Dragon Mother</strong> (<code>hi</code>, <code>assistance</code>,
+          <code>yes</code>, <code>egg</code>) — ela dá a permissão de entrar na sala do ovo.
+        </p>
+
+        <h3>A luta — como realmente funciona</h3>
+        <p>
+          O boss começa como <strong>Solid Frozen Horror</strong> e <strong>é invulnerável</strong> nesse estado.
+          A luta não é contra ele: é <strong>aquecer o Dragon Egg</strong> ao norte da sala.
+        </p>
+        <ol class="steps">
+          <li>O blocker segura o <strong>Solid Frozen Horror longe do ovo</strong> — ele tem uma área que cancela magic walls e ice waves que danificam o ovo.</li>
+          <li>O resto do time corre ao ovo e o <strong>aquece com dano de fogo</strong> (Great Fireball, Flame Strike). Fogo <em>cura</em> o ovo; gelo o mata.</li>
+          <li>Mantenha uma <strong>magic wall de cada lado</strong> do ovo para bloquear as duas torres de <strong>Icicle</strong>.</li>
+          <li>Nascem <strong>Frozen Minions</strong>. As magias de gelo deles curam o boss e ferem o ovo.</li>
+          <li>Ovo cheio → mensagem laranja, o boss vira <strong>Melting Frozen Horror</strong> e fica vulnerável por <strong>20 segundos</strong>. Descarregue tudo.</li>
+          <li>Passados os 20s ele solidifica de novo e você reaquece o ovo. Repete até matar.</li>
+        </ol>
+
+        <div class="tip">
+          <b>Seu papel:</b> o wiki recomenda explicitamente que <strong>um paladino segure os Frozen Minions</strong>,
+          correndo pela sala se precisar. É a função de maior valor no seu vocation — você tem velocidade
+          e dano à distância para manter os minions longe do ovo sem parar de atirar.
+        </div>
+        <div class="warn">
+          <b>Cuidado com Flaming Arrow no ovo:</b> ela é <em>metade fogo, metade físico</em> — a parte física
+          machuca o ovo. Para aquecer, use <strong>Great Fireball Rune</strong>, que é 100% fogo.
+        </div>
+
+        <h3>Depois de matar</h3>
+        <p>
+          Um <strong>Baby Dragon</strong> nasce. Reporte à Dragon Mother, saia da sala dela, siga a caverna
+          (sem subir) e entre na <strong>Mystic Flame</strong> — a shrine fica a nordeste do dungeon de Shapers.
+        </p>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong>Quara Scale</strong> — −15% de dano de ice</li>
+          <li><strong>Frost</strong> — converte 50% do físico em ice</li>
+          <li><strong>Blockade</strong> — +4 de shielding</li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          Ornate Crossbow, 0–100 Crystalline Arrows, Crystalline Armor, Frozen Plate, Runic Ice Shield,
+          Assassin Stars, Frosty Heart e Spark Sphere (sempre) e <strong class="gold">Part of a Rune (Five)</strong>.
+        </p>
+      </div>
+    </details>
+
+    <!-- ─── TIME GUARDIAN ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">5</span>
+        <span class="b-head">
+          <span class="b-name">The Time Guardian</span>
+          <span class="b-where">Holy Portal · Astral Shaper Dungeon</span>
+          <span class="b-key">3 formas — o elemento certo numa é cura na outra</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">HP</div><div class="v">290.000</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v">50.000</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–5</div></div>
+        </div>
+
+        <h3>As três formas</h3>
+        <div class="rows">
+          <div class="row">
+            <div class="row-t">The Time Guardian <small>— forma normal</small></div>
+            <p><span class="tag yes">leve</span>Físico <span class="dim">(qualquer elemento entra a só 20%)</span></p>
+            <p><span class="tag is">faz</span>Resiste a tudo que é elemental — é a forma "burra", só dano bruto</p>
+          </div>
+          <div class="row">
+            <div class="row-t">The Freezing Time Guardian</div>
+            <p><span class="tag yes">leve</span><b class="gold">Fogo</b> — Great Fireball</p>
+            <p><span class="tag no">nunca</span>Gelo — cura ele</p>
+            <p><span class="tag is">faz</span>Para de causar dano de ice; invoca <b>Lost Time</b> se levar dano suficiente</p>
+          </div>
+          <div class="row">
+            <div class="row-t">The Blazing Time Guardian</div>
+            <p><span class="tag yes">leve</span><b class="gold">Gelo</b> — Avalanche</p>
+            <p><span class="tag no">nunca</span>Fogo — cura ele</p>
+            <p><span class="tag is">faz</span>Invoca <b>Time Wasters</b>, que são <b>imortais</b></p>
+          </div>
+        </div>
+
+        <div class="warn">
+          <b>Não leve conversão elemental no arco aqui.</b> <em>Scorch</em> (fogo) cura a forma Blazing e
+          <em>Frost</em> (gelo) cura a Freezing — e você não controla quando ele troca. Arco limpo
+          (Precision + Strike) e troca de munição/runa na mão.
+        </div>
+
+        <h3>O ciclo que faz a luta funcionar</h3>
+        <ol class="steps">
+          <li>Na forma <strong>normal</strong>: dano físico puro. Explosion Runes são a opção de área.</li>
+          <li>Na <strong>Freezing</strong>: fogo pesado. <strong>Quanto mais Lost Time nascer, melhor</strong> — você precisa desses corpos.</li>
+          <li>Mate o <strong>Lost Time</strong> e <strong>use o corpo dele em um Time Waster vivo</strong>: é a única forma de se livrar dos Time Wasters.</li>
+          <li>Na <strong>Blazing</strong>: gelo, mas <strong>sem exagerar</strong> — dano demais gera Time Wasters que você não terá corpos para remover. Se a sala estiver cheia deles, pule essa forma e espere a próxima.</li>
+        </ol>
+
+        <h3>Dano que você vai tomar</h3>
+        <p>
+          Físico até <strong>~1.200–1.300</strong>, fogo até <strong>~900</strong> e death por volta de
+          <strong>~300</strong>. A prioridade de proteção é <strong>físico &gt; fogo &gt; death</strong>.
+          Energy protection ajuda contra os Time Keepers da sala.
+        </p>
+        <ul class="bul">
+          <li>Com 2 blockers prendendo o boss num canto, os shooters ficam seguros — evite as ondas e os feixes.</li>
+          <li>Os <strong>Time Keepers</strong> renascem sempre; limpar de vez em quando reduz o dano recebido, mas não vale gastar a run neles.</li>
+        </ul>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong class="gold">Precision</strong> — +4 de distance <span class="dim">(direto no seu dano)</span></li>
+          <li><strong>Demon Presence</strong> — −15% de dano holy <span class="dim">(o único jeito de mitigar holy nos Werelions)</span></li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          <strong class="gold">Guardian Boots</strong>, Frozen Time, Stone Skin Amulet, Magma Legs,
+          Phoenix Shield, Glacier Robe/Kilt, Ancient Watch e <strong class="gold">Part of a Rune (Three)</strong>.
+        </p>
+      </div>
+    </details>
+
+    <!-- ─── ZYRTARCH ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">6</span>
+        <span class="b-head">
+          <span class="b-name">Soul of Dragonking Zyrtarch</span>
+          <span class="b-where">Fire Portal · Zao / Temple Complex</span>
+          <span class="b-key">A mais coreografada: vórtices empilhados e janelas de 30s</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">HP</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v na">não documentado</div></div>
+          <div class="stat"><div class="k">Tempo</div><div class="v">17 min</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–5</div></div>
+        </div>
+
+        <div class="elems">
+          <span class="el kill">Fire 0% — boss, servos e Dragon Wraths são imunes</span>
+        </div>
+
+        <h3>Para chegar até ele <span class="dim">(só na primeira vez)</span></h3>
+        <ol class="steps">
+          <li>Fale com a <strong>Ivalisse</strong> nas Halls of Hope: <code>temple</code>, <code>father</code>, <code>yes</code>, <code>yes</code>.</li>
+          <li>Entre no Fire Portal (exige a New Frontier completa) e atravesse o Temple Complex, o setor de High Class Lizards e desça um andar.</li>
+          <li>Ache <strong>A Strange Chalice</strong> e fale: <code>hi</code>, <code>chalice</code>, <code>daughter</code>, <code>story</code>, <code>disguised</code>, <code>thirsty</code>, <code>learned</code>.</li>
+          <li>Ele entrega a senha do teleporte: <strong><code>zzubaran</code></strong> — grite dentro do teleporter.</li>
+          <li>Desça pela área dos Draken Warmasters/Spellweavers até a sala dos tiles e da alavanca.</li>
+        </ol>
+        <div class="tip">
+          Se um grupo já está na sala do boss, você não entra. E se sair no meio da luta, também
+          não volta na hora.
+        </div>
+
+        <h3>A luta — sala de cima</h3>
+        <ol class="steps">
+          <li>Entram: <strong>4 Soulcatchers</strong> (fixos), 2 Dragon Servants e o <strong>Dragonking Zyrtarch imortal</strong>.</li>
+          <li>O blocker mantém o Dragonking <strong>no centro, longe dos Soulcatchers</strong> — perto deles, o boss é curado.</li>
+          <li>O time acende os Soulcatchers com <strong>dano ao longo do tempo</strong>. Eles são <strong>a única coisa da sala não-imune a fogo</strong>: por isso as ~50 <strong>Soulfire Runes</strong>. Sem elas, você espera cooldown de spells de DoT.</li>
+          <li>Isso gera <strong>Corrupted Souls</strong>. Mate <strong>3 delas no mesmo tile</strong> — o vórtice fica verde, depois roxo, depois <strong>vermelho</strong>.</li>
+          <li>No vermelho, <strong>os shooters descem primeiro</strong>. Só então o blocker leva o boss por cima do vórtice e desce.</li>
+        </ol>
+        <div class="warn">
+          <b>O erro clássico:</b> os 5 descem sem o boss. Dá para consertar — use o teleporte de volta —
+          mas você queima minutos do limite de 17. O blocker desce <em>por último e com o boss em cima do vórtice</em>.
+        </div>
+
+        <h3>A luta — sala de baixo</h3>
+        <ul class="bul">
+          <li>Lá está a versão mortal: <strong>Soul of Dragonking Zyrtarch</strong>, mais <strong>2 Dragon Wraths</strong>.</li>
+          <li>Você tem <strong>30 segundos por rodada</strong> a partir do momento em que o Dragonking entra. Passou, todo mundo volta para cima e o ciclo recomeça.</li>
+          <li>Os shooters devem largar <strong>Fire Bombs ou Energy Bombs</strong> fora do centro: os Dragon Wraths não pisam nesses campos, criando uma zona segura.</li>
+        </ul>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong class="gold">Void</strong> — converte 8% do dano em mana <span class="dim">(o outro que você roda)</span></li>
+          <li><strong>Dragon Hide</strong> — −15% de dano de fogo <span class="dim">(11% de mitigação nos Werelions junto com Demon Presence)</span></li>
+          <li><strong>Scorch</strong> — converte 50% do físico em fogo</li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          <strong class="gold">Modified Crossbow</strong>, Draken Boots, Dragon Scale Helmet (very rare),
+          Great Shield (very rare), Golden Talon, Drachaku, Gold Ingot e <strong class="gold">Part of a Rune (Two)</strong>.
+        </p>
+      </div>
+    </details>
+
+    <!-- ─── LORE KEEPER ─── -->
+    <details class="boss">
+      <summary>
+        <span class="b-num">7</span>
+        <span class="b-head">
+          <span class="b-name">The Last Lore Keeper</span>
+          <span class="b-where">Energy Gate · Astral Shaper Boss Dungeon</span>
+          <span class="b-key">Holy bate 100% em tudo — a sala é feita para paladino</span>
+        </span>
+        <span class="b-arrow">›</span>
+      </summary>
+      <div class="b-body">
+        <div class="stats">
+          <div class="stat"><div class="k">Classe</div><div class="v">Nemesis</div></div>
+          <div class="stat"><div class="k">Exp</div><div class="v">~45.000</div></div>
+          <div class="stat"><div class="k">Requisito</div><div class="v">6 bosses</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v">1–15</div></div>
+        </div>
+
+        <div class="tip">
+          <b>Sua sala.</b> Holy causa <strong>100% do dano</strong> nos quatro alvos principais —
+          Bound Astral Powers, The Astral Source, o Astral Glyph e o próprio Lore Keeper.
+          Todos são resistentes a físico (o Lore Keeper recebe 75%, as Powers 55%) e ao resto.
+          Divine Missile, Divine Grenade e Divine Caldera são o seu kit aqui.
+        </div>
+
+        <div class="elems">
+          <span class="el good">Holy 100%</span>
+          <span class="el mid">Fire 85%</span>
+          <span class="el mid">Energy 85%</span>
+          <span class="el bad">Earth 80%</span>
+          <span class="el bad">Físico 75%</span>
+          <span class="el bad">Ice 65%</span>
+          <span class="el kill">Death 40%</span>
+        </div>
+        <p class="dim" style="font-size:0.78rem; margin-top:-4px">Valores do The Last Lore Keeper.</p>
+
+        <h3>O relógio da sala</h3>
+        <p>
+          Ao entrar, o <strong>Astral Glyph começa a acumular energia para te expulsar</strong>.
+          Matar as <strong>Bound Astral Powers</strong> compra tempo. É isso que a luta inteira gira em torno:
+          tempo, não HP.
+        </p>
+
+        <h3>Rotação das Astral Powers</h3>
+        <ol class="steps">
+          <li>Há <strong>4 vórtices verdes</strong>, um em cada canto, levando a salas laterais com uma Bound Astral Power cada.</li>
+          <li>O time entra na primeira e bate até ela ficar em <strong>HP vermelho</strong>.</li>
+          <li><strong>Todos saem menos um jogador</strong>, que fica batendo até o HP preto.</li>
+          <li>Quando a <strong>segunda</strong> Power chegar a ~40% de vida, o jogador que ficou na primeira <strong>finaliza a dele</strong>.</li>
+          <li>Mesma coisa na segunda e na terceira. A <strong>quarta é morta na hora</strong>.</li>
+        </ol>
+        <div class="warn">
+          <b>Quem fica para trás não sai da sala lateral</b> até o time voltar à sala principal.
+          Se você sair depois de matar a Power, <strong>não pode mais entrar em outra sala lateral</strong> —
+          fica preso na sala principal com o Glyph e as Animated Swords.
+        </div>
+
+        <h3>The Astral Source</h3>
+        <ol class="steps">
+          <li>Com as 4 Powers mortas, o time todo bate na <strong>Astral Source</strong>. Cuidado com a <strong>Drown Wave</strong>, que dá dano físico alto.</li>
+          <li>Em HP preto ela vira <strong>Distorted Astral Source</strong> e o Glyph <strong>perde o escudo</strong>.</li>
+          <li>Bata <strong>no Glyph e na Source ao mesmo tempo</strong> — senão a Source se cura e o escudo volta.</li>
+          <li><strong>2 a 2,5 minutos</strong> depois, as Powers renascem. Alguém precisa estar vigiando a primeira sala e chamando o time. Repita a rotação.</li>
+          <li>Na segunda passada normalmente dá tempo de <strong>matar o Glyph</strong> — aí o Lore Keeper aparece.</li>
+        </ol>
+
+        <h3>O Lore Keeper</h3>
+        <ul class="bul">
+          <li>A partir daqui acabaram Source e Powers. É só prender e bater — a shrine é um bom canto para travá-lo.</li>
+          <li>Cuidado com a <strong>Energy Wave</strong> dele: quem está na linha da onda toma pesado.</li>
+          <li>A sala enche de <strong>Animated Swords</strong>. Os membros mais frágeis ficam junto às paredes; UEs limpam quando acumular.</li>
+        </ul>
+
+        <h3>Desbloqueia <span class="dim">(Powerful)</span></h3>
+        <ul class="bul">
+          <li><strong class="gold">Strike</strong> — +50% de dano crítico e +10% de chance</li>
+          <li><strong>Epiphany</strong> — +4 de magic level</li>
+        </ul>
+
+        <h3>Loot que interessa</h3>
+        <p class="dim" style="font-size:0.85rem">
+          <strong class="gold">Silkweaver Bow</strong>, Umbral Hammer, Nightmare Blade, Golden Armor,
+          Voltage Armor, Hammer of Prophecy, Forbidden Tome e <strong class="gold">as 6 Parts of a Rune</strong>
+          (ele pode dropar qualquer uma).
+        </p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ══════════════ DEPOIS ══════════════ -->
+  <section id="depois">
+    <h2><span class="n">06</span> Depois de cada kill</h2>
+
+    <div class="card">
+      <ul class="check" data-group="pos">
+        <li><label><input type="checkbox" id="pos1"><span><b>Usar a Abandoned Imbuing Shrine da área</b><i>Matar o boss não desbloqueia nada sozinho — você precisa usar a shrine daquela área. Ela fica <em>fora</em> da sala do boss, no caminho de saída. Não saia correndo depois do kill.</i></span></label></li>
+        <li><label><input type="checkbox" id="pos2"><span><b>Guardar a Part of a Rune</b><i>São 6 peças, uma por boss elemental. Juntas viram a <b>Astral Shaper Rune</b>, que doma o <b>Stone Rhino (mount)</b>. Se falhar a domação a runa vira Inert Astral Shaper Rune — e você recomeça.</i></span></label></li>
+        <li><label><input type="checkbox" id="pos3"><span><b>Anotar o horário do kill</b><i>O cooldown é de 20 horas exatas por boss. Anotar é o que permite encaixar dois bosses no mesmo dia ao longo da semana.</i></span></label></li>
+        <li><label><input type="checkbox" id="pos4"><span><b>Reportar aos NPCs quando houver</b><i>Zyrtarch: volte à Ivalisse com <code>temple</code> e <code>father</code>. Frozen Horror: volte à Dragon Mother — é ela quem derrete o gelo do caminho da shrine.</i></span></label></li>
+      </ul>
+
+      <h3>O que você tem no fim</h3>
+      <p>
+        Os <strong>13 imbuements no tier Powerful</strong> — incluindo Vampirism, Void, Precision,
+        Strike, Demon Presence e Dragon Hide, que são exatamente os que sustentam o seu ritmo de
+        caçada — mais a <strong>Astral Shaper Rune</strong> para o Stone Rhino.
+      </p>
+      <p>
+        E os bosses continuam repetíveis a cada 20h: Lloyd e Time Guardian dão <strong>50.000 de exp</strong>
+        cada um, e o Time Guardian é fonte de <strong>Guardian Boots</strong>.
+      </p>
+    </div>
+  </section>
+
+  <p class="legend">
+    Mecânicas, resistências, HP e loot vêm do dump do TibiaWiki inglês incluído neste repositório
+    (páginas <em>Forgotten Knowledge Quest/Spoiler</em> e as fichas de cada criatura).
+    Campos marcados como “não documentado” estão em branco na origem — não foram estimados.
+    A <strong>ordem recomendada</strong> e as escolhas de munição/imbuement são leitura minha
+    sobre esses dados, não texto do wiki. Valores de resistência com “~” aparecem como incertos na fonte.
+  </p>
+
+  <a class="top" href="#">↑ voltar ao topo</a>
+
+</div>
+
+<script>
+(function () {
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('ul.check input[type=checkbox]'));
+  var fill  = document.getElementById('pfill');
+  var text  = document.getElementById('ptext');
+  var KEY   = 'fk-';
+
+  function render() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    fill.style.width = boxes.length ? (done / boxes.length * 100) + '%' : '0%';
+    text.textContent = done + ' / ' + boxes.length + ' concluído';
+  }
+
+  boxes.forEach(function (b) {
+    try { b.checked = localStorage.getItem(KEY + b.id) === '1'; } catch (e) {}
+    b.addEventListener('change', function () {
+      try { localStorage.setItem(KEY + b.id, b.checked ? '1' : '0'); } catch (e) {}
+      render();
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function () {
+    boxes.forEach(function (b) {
+      b.checked = false;
+      try { localStorage.removeItem(KEY + b.id); } catch (e) {}
+    });
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
