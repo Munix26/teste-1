@@ -1,0 +1,158 @@
+/* Componentes compartilhados pelas três páginas: topbar, chips de preset,
+   sprites do TibiaWiki, botão de limpar filtros e links cruzados.
+   O CSS de cada página continua inline nela — aqui só entra o que é novo. */
+
+/* ── topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.brand {
+  color: #d4af37;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.12rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.topbar nav { margin: 0; display: flex; gap: 6px; }
+
+.topbar .hint {
+  margin-left: auto;
+  color: #5c6478;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+kbd {
+  background: #1a1d26;
+  border: 1px solid #303646;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  color: #8b93a7;
+}
+
+/* ── chips de preset (consultas de 1 clique) ── */
+.chipsbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.chipsbar .lbl { color: #5c6478; font-size: 0.76rem; margin-right: 2px; }
+
+.pchip {
+  background: #1a1d26;
+  border: 1px solid #2c3242;
+  color: #cbd3e4;
+  border-radius: 999px;
+  padding: 4px 13px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.pchip:hover { border-color: rgba(212, 175, 55, 0.55); color: #d4af37; }
+
+/* ── botão limpar filtros ── */
+.clearbtn {
+  background: none;
+  border: 1px solid #303646;
+  color: #8b93a7;
+  border-radius: 6px;
+  padding: 6px 11px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.clearbtn:hover { color: #f87171; border-color: rgba(248, 113, 113, 0.4); }
+
+/* ── sprites (GIFs do TibiaWiki) ── */
+/* caixa fixa: a imagem carrega depois e nada pula de lugar */
+.spr {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.spr img { max-width: 34px; max-height: 34px; }
+
+/* sem imagem no wiki (ou offline): esconde e mantém o espaço */
+.spr.noimg img { display: none; }
+.spr.noimg::after { content: '·'; color: #2c3242; }
+
+.spr-big { width: 72px; height: 72px; }
+.spr-big img { max-width: 72px; max-height: 72px; }
+
+/* nome + sprite na mesma célula, alinhados */
+.namecell { display: flex; align-items: center; gap: 9px; }
+
+/* linhas de tabela com sprite ficam mais altas — compensa o padding */
+tr.has-spr td { padding-top: 3px; padding-bottom: 3px; }
+
+/* ── links cruzados entre páginas (item → criatura → spawn) ── */
+.xlink {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted #4a5266;
+}
+
+.xlink:hover { color: #d4af37; border-bottom-color: #d4af37; }
+
+/* base para as páginas que não têm .loot-item próprio (spawns);
+   creatures.html redefine cores por raridade por cima */
+.loot-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.loot-item {
+  font-size: 0.78rem;
+  border: 1px solid #2c3242;
+  border-radius: 6px;
+  padding: 3px 9px;
+  background: #12141a;
+}
+
+a.loot-item { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; }
+a.loot-item:hover { border-color: #d4af37; }
+a.loot-item .spr, .loot-item .spr { width: 22px; height: 22px; }
+a.loot-item .spr img, .loot-item .spr img { max-width: 22px; max-height: 22px; }
+
+/* ── painel: cabeçalho com sprite grande ── */
+.panel-head { align-items: center !important; }
+.panel-head .spr-big { margin-right: 4px; }
+
+.panel-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.panel-link {
+  color: #8b93a7;
+  font-size: 0.8rem;
+  text-decoration: none;
+  border: 1px solid #303646;
+  border-radius: 6px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+.panel-link:hover { color: #d4af37; border-color: rgba(212, 175, 55, 0.45); }
+
+@media (max-width: 640px) {
+  .topbar .hint { display: none; }
+  .chipsbar { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .panel-head { flex-wrap: wrap; }
+}
