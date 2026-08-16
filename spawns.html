@@ -1,6 +1,10 @@
+<!doctype html>
+<html lang="pt-BR">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tibia-AI — Spawns</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,8 +22,6 @@
   h1 { font-size: 1.5rem; margin-bottom: 4px; }
 
   .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
-
-  nav { margin-bottom: 20px; display: flex; gap: 8px; }
 
   nav a {
     color: #8b93a7;
@@ -102,6 +104,11 @@
   .gold { color: #fbbf24; }
   .creatures { color: #8b93a7; font-size: 0.8rem; }
 
+  /* pilha de mini-sprites das criaturas do spawn */
+  .crspr { display: inline-flex; align-items: center; gap: 2px; margin-right: 8px; vertical-align: middle; }
+  .crspr .spr { width: 26px; height: 26px; }
+  .crspr .spr img { max-width: 26px; max-height: 26px; }
+
   .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
 
   /* ── painel ── */
@@ -125,7 +132,7 @@
   .panel-head .city { color: #6b7385; font-size: 0.82rem; }
 
   .close {
-    margin-left: auto; background: none; border: 1px solid #303646;
+    background: none; border: 1px solid #303646;
     color: #8b93a7; border-radius: 6px; padding: 4px 12px;
     cursor: pointer; font-size: 0.85rem;
   }
@@ -143,12 +150,12 @@
 
   .crlist { font-size: 0.83rem; }
 
-  /* uma linha por criatura: nome elástico + colunas numéricas fixas,
+  /* uma linha por criatura: sprite + nome elástico + colunas numéricas fixas,
      para os números alinharem entre as linhas sem grid compartilhado */
   .cr-line {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 62px 68px 56px 116px;
-    gap: 0 12px; align-items: baseline;
+    grid-template-columns: 34px minmax(0, 1fr) 62px 68px 56px 116px;
+    gap: 0 12px; align-items: center;
   }
   .cr-line.head {
     color: #6b7385; font-size: 0.72rem; text-transform: uppercase;
@@ -193,10 +200,11 @@
     .panel { padding: 16px 14px 20px; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
 
-    /* criaturas: nome numa linha, stats rotulados embaixo — nada cortado */
+    /* criaturas: sprite+nome numa linha, stats rotulados embaixo — nada cortado */
     .cr-line.head { display: none; }
-    .cr-line { display: flex; flex-wrap: wrap; gap: 2px 14px; }
-    .cr-name { flex-basis: 100%; font-weight: 600; }
+    .cr-line { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: center; }
+    .cr-name { flex: 1; font-weight: 600; }
+    .cr-line .num { flex-basis: auto; }
     .cr-line .num::before {
       content: attr(data-l) ' ';
       color: #5c6478; font-size: 0.7rem;
@@ -205,6 +213,16 @@
 </style>
 
 <div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html">🐲 Criaturas</a>
+      <a href="spawns.html" class="on">🗺️ Spawns</a>
+    </nav>
+    <span class="hint"><kbd>/</kbd> busca · <kbd>Esc</kbd> fecha · <kbd>a|b</kbd> busca “a ou b”</span>
+  </header>
+
   <h1>Spawns</h1>
   <p class="sub">
     Locais de caçada do TibiaWiki, cruzados com as criaturas de cada um. As médias
@@ -212,14 +230,16 @@
     bosses e objetos, para refletir o alvo real do farm.
   </p>
 
-  <nav>
-    <a href="index.html">Itens</a>
-    <a href="creatures.html">Criaturas</a>
-    <a href="spawns.html" class="on">Spawns</a>
-  </nav>
+  <div class="chipsbar" id="chips">
+    <span class="lbl">Consultas rápidas:</span>
+    <button class="pchip" data-p="mine">🦁 Minhas hunts</button>
+    <button class="pchip" data-p="mylvl">🎯 Meu level (300–399)</button>
+    <button class="pchip" data-p="next">📈 Próximo passo (400+)</button>
+    <button class="pchip" data-p="richest">💰 Melhor ouro</button>
+  </div>
 
   <div class="controls">
-    <input id="q" type="search" placeholder="Buscar spawn, cidade ou criatura…" />
+    <input id="q" type="search" placeholder="Buscar spawn, cidade ou criatura… (use | para “ou”)" />
     <span class="ctl"><label for="city">Cidade</label>
       <select id="city"><option value="">Todas</option></select></span>
     <span class="ctl"><label for="lvl">Level</label>
@@ -230,6 +250,7 @@
       <select id="loots"><option value="">Qualquer</option></select></span>
     <span class="ctl"><label for="gold">Ouro/kill</label>
       <select id="gold"><option value="">Qualquer</option></select></span>
+    <button class="clearbtn" id="clear" title="Limpar todos os filtros">✕ limpar</button>
     <span class="count" id="count"></span>
   </div>
 
@@ -241,12 +262,14 @@
     do wiki (★1–5) e existe em pouco mais da metade dos spawns — quando falta,
     use as colunas calculadas de exp/HP e ouro. O ouro é uma <b>faixa</b>, vinda
     das chances de drop que o wiki documenta por raridade — não um valor exato.
+    Os filtros ficam salvos no navegador; <b>✕ limpar</b> zera tudo.
   </p>
 </div>
 
 <div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
 
 <script src="hunts-data.js"></script>
+<script src="ui.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   const H = window.HUNTS;
@@ -298,13 +321,15 @@
       if (loots && h.loots !== +loots) return false;
       if (q) {
         const hay = [h.n, h.city, h.loc, ...h.cr.map((c) => c.n)].join(' ').toLowerCase();
-        if (!hay.includes(q)) return false;
+        if (!matchQuery(hay, q)) return false;
       }
       return true;
     });
 
+    // avggold é faixa [mín, máx]: ordena pelo mínimo
+    const sortVal = (h) => sortKey === 'avggold' ? (h.avggold ? h.avggold[0] : null) : h[sortKey];
     rows.sort((a, b) => {
-      const x = a[sortKey], y = b[sortKey];
+      const x = sortVal(a), y = sortVal(b);
       if (x === null || x === undefined) return 1;
       if (y === null || y === undefined) return -1;
       return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
@@ -320,11 +345,11 @@
       <th data-k="loots" class="num">Loot ★</th>
       <th data-k="avgexp" class="num">Exp média</th>
       <th data-k="ratio" class="num">Exp/HP</th>
-      <th class="num">gp/kill</th>
+      <th data-k="avggold" class="num">gp/kill</th>
       <th>Criaturas</th>
     </tr></thead>`;
 
-    const body = current.map((h, i) => `<tr data-i="${i}">
+    const body = current.map((h, i) => `<tr data-i="${i}" class="has-spr">
       <td class="name">${h.n}</td>
       <td class="dim">${h.city || '—'}</td>
       <td class="num">${h.lvl ?? '<span class="dim">—</span>'}</td>
@@ -333,7 +358,9 @@
       <td class="num">${h.avgexp ? h.avgexp.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
       <td class="num">${h.ratio ?? '<span class="dim">—</span>'}</td>
       <td class="num gold">${goldCell(h.avggold)}</td>
-      <td class="creatures">${h.cr.slice(0, 3).map((c) => c.n).join(', ')}${
+      <td class="creatures"><span class="crspr">${
+        h.cr.slice(0, 3).map((c) => spr(c.n)).join('')}</span>${
+        h.cr.slice(0, 3).map((c) => c.n).join(', ')}${
         h.cr.length > 3 ? ` <span class="dim">+${h.cr.length - 3}</span>` : ''}</td>
     </tr>`).join('');
 
@@ -399,12 +426,14 @@
 
     const cr = h.cr.length ? `<div class="crlist">
       <div class="cr-line head">
-        <span>Criatura</span><span class="num">HP</span><span class="num">Exp</span>
+        <span></span><span>Criatura</span><span class="num">HP</span><span class="num">Exp</span>
         <span class="num">Exp/HP</span><span class="num">gp/kill</span>
       </div>
       ${h.cr.map((c) => `<div class="cr">
         <div class="cr-line">
-          <span class="cr-name">${c.n}${c.boss ? ' <span class="b">boss</span>' : ''}</span>
+          ${spr(c.n)}
+          <span class="cr-name"><a class="xlink" href="creatures.html?open=${encodeURIComponent(c.n)}"
+            >${c.n}</a>${c.boss ? ' <span class="b">boss</span>' : ''}</span>
           <span class="num" data-l="HP">${c.hp.toLocaleString('pt-BR')}</span>
           <span class="num" data-l="Exp">${c.exp.toLocaleString('pt-BR')}</span>
           <span class="num" data-l="Exp/HP">${c.hp ? (c.exp / c.hp).toFixed(2) : '—'}</span>
@@ -414,6 +443,7 @@
       </div>`).join('')}
     </div>
     <p class="legend" style="margin-top:10px">
+      Clique na criatura para abrir a ficha completa dela.
       Elementos na ordem ⚔️ físico · 🔥 fogo · 🍂 terra · ⚡ energia · ❄️ gelo · ✨ holy · 💀 death.
       <span class="weak-k">Verde &gt; 100%</span> = fraqueza ·
       <span class="plain-k">cinza = 100%</span> = neutro ·
@@ -427,14 +457,19 @@
     $('panel').innerHTML = `
       <div class="panel-head">
         <h2>${h.n}</h2><span class="city">${h.city || ''}</span>
-        <button class="close" onclick="closeDetail()">fechar ✕</button>
+        <span class="panel-actions">
+          <button class="close" onclick="closeDetail()">fechar ✕</button>
+        </span>
       </div>
       ${section('Informações', `<div class="grid">${info}</div>`)}
       ${section('Localização', h.loc ? `<p class="prose">${h.loc}</p>` : '')}
       ${section(`Criaturas (${h.cr.length})`, cr)}
       ${h.miss.length ? section('Criaturas sem dados no wiki',
         `<p class="prose">${h.miss.join(', ')}</p>`) : ''}
-      ${section('Melhores drops', best.length ? `<p class="prose">${best.join(' · ')}</p>` : '')}
+      ${section('Melhores drops', best.length
+        ? `<div class="loot-list">${best.map((b) =>
+            `<a class="loot-item" href="index.html?open=${encodeURIComponent(b)}">${spr(b)}${b}</a>`).join('')}</div>`
+        : '')}
     `;
     $('overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -446,7 +481,7 @@
   }
 
   $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
-  document.onkeydown = (e) => { if (e.key === 'Escape') closeDetail(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 
   // filtros populados a partir dos dados
   const cities = {};
@@ -466,7 +501,40 @@
     if (nl) $('loots').innerHTML += `<option value="${s}">${'★'.repeat(s)} (${nl})</option>`;
   });
 
-  ['q', 'city', 'lvl', 'exps', 'loots', 'gold']
-    .forEach((id) => $(id).addEventListener('input', render));
+  // ── estado, presets e deep-links ─────────────────────────────────────────
+  const FILTER_IDS = ['q', 'city', 'lvl', 'exps', 'loots', 'gold'];
+  const state = filterState(FILTER_IDS, 'spawns');
+
+  const PRESETS = {
+    mine:    { f: { q: 'lion sanctum|cobra bastion' } },
+    mylvl:   { f: { lvl: '300|400' }, sort: ['ratio', -1] },
+    next:    { f: { lvl: '400|500' }, sort: ['ratio', -1] },
+    richest: { f: {}, sort: ['avggold', -1] },
+  };
+  $('chips').querySelectorAll('.pchip').forEach((b) => {
+    b.onclick = () => {
+      const p = PRESETS[b.dataset.p];
+      state.apply(p.f);
+      if (p.sort) { sortKey = p.sort[0]; sortDir = p.sort[1]; }
+      render();
+    };
+  });
+
+  $('clear').onclick = () => { state.clear(); render(); };
+
+  FILTER_IDS.forEach((id) => $(id).addEventListener('input', render));
+
+  // volta na consulta em que se estava; ?q= e ?open= (deep-links) têm prioridade
+  state.restore();
+  const qParam = urlParam('q');
+  if (qParam !== null) { state.clear(); $('q').value = qParam; }
   render();
+
+  const openParam = urlParam('open');
+  if (openParam) {
+    const h = H.find((x) => x.n.toLowerCase() === openParam.toLowerCase());
+    if (h) openDetail(h);
+    else { $('q').value = openParam; render(); }
+  }
 </script>
+</html>

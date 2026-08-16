@@ -1,6 +1,10 @@
+<!doctype html>
+<html lang="pt-BR">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tibia-AI — Criaturas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,8 +22,6 @@
   h1 { font-size: 1.5rem; margin-bottom: 4px; }
 
   .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
-
-  nav { margin-bottom: 20px; display: flex; gap: 8px; }
 
   nav a {
     color: #8b93a7;
@@ -60,7 +62,6 @@
   input:focus, select:focus { outline: 1px solid #d4af37; }
 
   #q { flex: 1; min-width: 170px; }
-  #minexp, #maxexp, #minhp, #maxhp { width: 82px; }
 
   label { font-size: 0.82rem; color: #8b93a7; }
 
@@ -149,7 +150,6 @@
   .panel-head h2 { font-size: 1.3rem; color: #d4af37; margin: 0; border: 0; padding: 0; }
 
   .close {
-    margin-left: auto;
     background: none;
     border: 1px solid #303646;
     color: #8b93a7;
@@ -225,6 +225,16 @@
 </style>
 
 <div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html" class="on">🐲 Criaturas</a>
+      <a href="spawns.html">🗺️ Spawns</a>
+    </nav>
+    <span class="hint"><kbd>/</kbd> busca · <kbd>Esc</kbd> fecha · <kbd>a|b</kbd> busca “a ou b”</span>
+  </header>
+
   <h1>Criaturas</h1>
   <p class="sub">
     Stats, resistências elementais e valor esperado de loot. As resistências
@@ -232,14 +242,17 @@
     loot table pesada por raridade, a preço de NPC.
   </p>
 
-  <nav>
-    <a href="index.html">Itens</a>
-    <a href="creatures.html" class="on">Criaturas</a>
-    <a href="spawns.html">Spawns</a>
-  </nav>
+  <div class="chipsbar" id="chips">
+    <span class="lbl">Consultas rápidas:</span>
+    <button class="pchip" data-p="hunts">🦁 Minhas hunts</button>
+    <button class="pchip" data-p="ice">❄️ Fracos a gelo</button>
+    <button class="pchip" data-p="holy">✨ Fracos a holy</button>
+    <button class="pchip" data-p="rich">💰 Melhor gp/kill</button>
+    <button class="pchip" data-p="bosses">👑 Só bosses</button>
+  </div>
 
   <div class="controls">
-    <input id="q" type="search" placeholder="Buscar criatura ou classe…" />
+    <input id="q" type="search" placeholder="Buscar criatura ou classe… (use | para “ou”)" />
     <span class="ctl"><label for="cls">Classe</label>
     <select id="cls"><option value="">Todas</option></select></span>
     <span class="ctl"><label for="diff">Dificuldade</label>
@@ -258,12 +271,14 @@
       <option value="no">Esconder</option>
       <option value="only">Só bosses</option>
     </select></span>
+    <button class="clearbtn" id="clear" title="Limpar todos os filtros">✕ limpar</button>
     <span class="count" id="count"></span>
   </div>
 
   <div class="scroll"><table id="tbl"></table></div>
 
-  <p class="legend">Clique numa criatura para ver todos os dados disponíveis.</p>
+  <p class="legend">Clique numa criatura para ver todos os dados disponíveis.
+    Os filtros ficam salvos no navegador; <b>✕ limpar</b> zera tudo.</p>
 
   <p class="legend">
     Resistência: <span class="weak">verde &gt; 100%</span> = fraqueza (bata com esse elemento) ·
@@ -282,6 +297,7 @@
 </div>
 
 <script src="creatures-data.js"></script>
+<script src="ui.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   const ELEMENTS = ['physical', 'fire', 'earth', 'energy', 'ice', 'holy', 'death'];
@@ -327,12 +343,14 @@
       if (weak && !(c.mods[weak] > 100)) return false;
       if (boss === 'no' && c.boss) return false;
       if (boss === 'only' && !c.boss) return false;
-      if (q && !(c.name + ' ' + (c.cls || '')).toLowerCase().includes(q)) return false;
+      if (q && !matchQuery((c.name + ' ' + (c.cls || '')).toLowerCase(), q)) return false;
       return true;
     });
 
+    // gold é faixa [mín, máx]: ordena pelo mínimo (comparar o array direto dava NaN)
+    const sortVal = (c) => sortKey === 'gold' ? (c.gold ? c.gold[0] : null) : c[sortKey];
     rows.sort((a, b) => {
-      const x = a[sortKey], y = b[sortKey];
+      const x = sortVal(a), y = sortVal(b);
       if (x === null || x === undefined) return 1;
       if (y === null || y === undefined) return -1;
       return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
@@ -352,8 +370,8 @@
     </tr></thead>`;
 
     current = rows.slice(0, 400);
-    const body = current.map((c, i) => `<tr data-i="${i}">
-      <td class="name">${c.name}${c.boss ? '<span class="boss">boss</span>' : ''}</td>
+    const body = current.map((c, i) => `<tr data-i="${i}" class="has-spr">
+      <td class="name"><span class="namecell">${spr(c.name)}${c.name}${c.boss ? '<span class="boss">boss</span>' : ''}</span></td>
       <td class="num">${c.hp.toLocaleString('pt-BR')}</td>
       <td class="num">${c.exp.toLocaleString('pt-BR')}</td>
       <td class="num">${c.ratio.toFixed(2)}</td>
@@ -443,18 +461,26 @@
           `<span class="chip">${FLAG_PT[k] || k}: ${v}</span>`).join('')}</div>`
       : '';
 
+    // cada item do loot abre a ficha dele na página de itens
     const loot = c.loot.length
       ? `<div class="loot-list">${c.loot.map((it) =>
-          `<span class="loot-item r-${it.r.replace(/[ -]/g, '')}">${it.n}${
+          `<a class="loot-item r-${it.r.replace(/[ -]/g, '')}"
+              href="index.html?open=${encodeURIComponent(it.n)}">${spr(it.n)}${it.n}${
             it.p ? ` <span class="price">${it.a && it.a !== 1 ? it.a + '× ' : ''}${it.p.toLocaleString('pt-BR')} gp</span>`
-                 : ' <span class="price">só Market</span>'}</span>`).join('')}</div>`
+                 : ' <span class="price">só Market</span>'}</a>`).join('')}</div>`
       : '';
 
     $('panel').innerHTML = `
       <div class="panel-head">
+        ${spr(c.name, true)}
         <h2>${c.name}</h2>
         ${c.boss ? '<span class="boss">boss</span>' : ''}
-        <button class="close" onclick="closeDetail()">fechar ✕</button>
+        <span class="panel-actions">
+          <a class="panel-link" href="spawns.html?q=${encodeURIComponent(c.name)}">ver spawns 🗺️</a>
+          <a class="panel-link" target="_blank" rel="noopener"
+             href="https://tibia.fandom.com/wiki/${encodeURIComponent(c.name.replace(/ /g, '_'))}">wiki ↗</a>
+          <button class="close" onclick="closeDetail()">fechar ✕</button>
+        </span>
       </div>
       ${section('Stats', `<div class="grid">${stats}</div>`)}
       ${section('Resistências', `<div class="grid">${mods}</div>`)}
@@ -465,6 +491,7 @@
       ${section('Estratégia', c.strat && c.strat !== 'Unknown' ? `<p class="prose">${c.strat}</p>` : '')}
       ${section('Bestiário', c.text ? `<p class="prose">${c.text}</p>` : '')}
       ${section(`Loot (${c.loot.length} itens)`, loot)}
+      ${c.loot.length ? '<p class="legend" style="margin-top:6px">Clique num item para abrir a ficha dele.</p>' : ''}
     `;
     $('overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -476,7 +503,7 @@
   }
 
   $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
-  document.onkeydown = (e) => { if (e.key === 'Escape') closeDetail(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 
   // popula os filtros com o que existe nos dados
   const uniq = (key) => [...new Set(window.CREATURES.map((c) => c[key]).filter(Boolean))].sort();
@@ -510,7 +537,41 @@
   $('weak').innerHTML += Object.entries(weakCounts).sort((a, b) => b[1] - a[1])
     .map(([e, n]) => `<option value="${e}">${EL_PT[e] || e} (${n})</option>`).join('');
 
-  ['q', 'cls', 'diff', 'exprange', 'hprange', 'goldrange', 'weak', 'boss']
-    .forEach((id) => $(id).addEventListener('input', render));
+  // ── estado, presets e deep-links ─────────────────────────────────────────
+  const FILTER_IDS = ['q', 'cls', 'diff', 'exprange', 'hprange', 'goldrange', 'weak', 'boss'];
+  const state = filterState(FILTER_IDS, 'creatures');
+
+  const PRESETS = {
+    hunts:  { f: { q: 'werelion|cobra' }, sort: ['exp', -1] },
+    ice:    { f: { weak: 'ice', boss: 'no' }, sort: ['exp', -1] },
+    holy:   { f: { weak: 'holy', boss: 'no' }, sort: ['exp', -1] },
+    rich:   { f: { boss: 'no' }, sort: ['gold', -1] },
+    bosses: { f: { boss: 'only' }, sort: ['hp', -1] },
+  };
+  $('chips').querySelectorAll('.pchip').forEach((b) => {
+    b.onclick = () => {
+      const p = PRESETS[b.dataset.p];
+      state.apply(p.f);
+      if (p.sort) { sortKey = p.sort[0]; sortDir = p.sort[1]; }
+      render();
+    };
+  });
+
+  $('clear').onclick = () => { state.clear(); render(); };
+
+  FILTER_IDS.forEach((id) => $(id).addEventListener('input', render));
+
+  // volta na consulta em que se estava; ?q= e ?open= (deep-links) têm prioridade
+  state.restore();
+  const qParam = urlParam('q');
+  if (qParam !== null) { state.clear(); $('q').value = qParam; }
   render();
+
+  const openParam = urlParam('open');
+  if (openParam) {
+    const c = C.find((x) => x.name.toLowerCase() === openParam.toLowerCase());
+    if (c) openDetail(c);
+    else { $('q').value = openParam; render(); }
+  }
 </script>
+</html>
