@@ -210,6 +210,11 @@
     border-radius: 5px; padding: 2px 8px;
   }
 
+  .perk .pi { margin-right: 5px; }
+
+  /* marcador de proficiência na tabela */
+  .profmark { color: #d4af37; white-space: nowrap; }
+
   /* níveis 8 e 9 só dão título/achievement, nenhum perk */
   .prof-mastery { color: #5c6478; font-size: 0.76rem; }
 
@@ -274,6 +279,7 @@
     <button class="pchip" data-p="bows">🏹 Armas de distância</button>
     <button class="pchip" data-p="ammo">🎯 Munição</button>
     <button class="pchip" data-p="imbue">💠 Imbuíveis (RP)</button>
+    <button class="pchip" data-p="prof">🗡️ Com proficiência</button>
     <button class="pchip" data-p="goals">🌟 Meus objetivos</button>
   </div>
 
@@ -301,6 +307,7 @@
     <label class="chk"><input type="checkbox" id="onlydrop" /> Com drop</label>
     <label class="chk"><input type="checkbox" id="onlystats" /> Com atributos</label>
     <label class="chk"><input type="checkbox" id="onlyimb" /> Imbuível</label>
+    <label class="chk"><input type="checkbox" id="onlyprof" /> Proficiência</label>
     <label class="chk"><input type="checkbox" id="onlytask" /> Delivery task</label>
     <button class="clearbtn" id="clear" title="Limpar todos os filtros">✕ limpar</button>
     <span class="count" id="count"></span>
@@ -346,6 +353,30 @@
   let sortDir = 1;
   let current = [];
 
+  // nº de níveis de proficiência por item (só armas têm) — vira a coluna
+  // "Prof." ordenável e o filtro "Proficiência"
+  D.items.forEach((it) => {
+    if (it.p !== undefined && PROF[it.p]) it.pn = PROF[it.p].length;
+  });
+
+  // ícone por tipo de perk, para bater o olho e achar o que interessa
+  function perkIcon(p) {
+    const t = p.toLowerCase();
+    if (t.includes('critical')) return '🎯';
+    if (t.includes('life leech')) return '🩸';
+    if (t.includes('mana leech')) return '💧';
+    if (t.includes('damage against')) return '💀';
+    if (t.includes('hit points on kill')) return '❤️';
+    if (t.includes('mana on kill')) return '🔷';
+    if (t.includes('healing')) return '💚';
+    if (t.includes('defence') || t.includes('shielding') || t.includes('armor')) return '🛡️';
+    if (t.includes('magic level')) return '✨';
+    if (t.includes('fighting')) return '📈';
+    if (t.includes('hit chance')) return '🎯';
+    if (t.includes('damage') || t.includes('attack')) return '⚔️';
+    return '✦';
+  }
+
   const rcls = (r) => 'r-' + r.replace(/[ -]/g, '');
   const paintNeg = (t) => t.replace(/([a-z ]+ -\d+%)/gi, '<span class="neg">$1</span>');
 
@@ -365,6 +396,7 @@
     const onlyDrop = $('onlydrop').checked;
     const onlyStats = $('onlystats').checked;
     const onlyImb = $('onlyimb').checked;
+    const onlyProf = $('onlyprof').checked;
     const onlyTask = $('onlytask').checked;
     const attr = $('attr').value;
     const res = $('res').value;
@@ -379,6 +411,7 @@
       if (onlyDrop && !it.by) return false;
       if (onlyTask && !it.dt) return false;
       if (onlyImb && !it.sl) return false;
+      if (onlyProf && !it.pn) return false;
       if (onlyStats && !(it.at || it.rs || it.arm || it.atk)) return false;
       if (q) {
         const hay = [it.n, it.at, it.rs, it.bf, it.sl_to, it.c].join(' ').toLowerCase();
@@ -403,6 +436,7 @@
       <th data-k="arm" class="num">Base</th>
       <th>Atributos</th>
       <th>Resistências</th>
+      <th data-k="pn" class="num" title="Níveis de weapon proficiency">Prof.</th>
       <th data-k="nv" class="num">NPC</th>
       <th class="num">Drops</th>
     </tr></thead>`;
@@ -417,6 +451,7 @@
         <td class="num">${base || '<span class="dim">—</span>'}</td>
         <td class="attrib">${it.at || '<span class="dim">—</span>'}</td>
         <td class="resist">${it.rs ? paintNeg(it.rs) : '<span class="dim">—</span>'}</td>
+        <td class="num">${it.pn ? `<span class="profmark">✦ ${it.pn}</span>` : '<span class="dim">—</span>'}</td>
         <td class="num">${it.nv ? it.nv.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
         <td class="num drops">${it.by ? it.by.length : '<span class="dim">—</span>'}</td>
       </tr>`;
@@ -485,7 +520,8 @@
     const prof = perks ? `<div class="prof">
       ${perks.map((lvl, i) => `<div class="prof-lvl">
         <span class="prof-n">Nível ${i + 1}</span>
-        <span class="prof-perks">${lvl.map((p) => `<span class="perk">${p}</span>`).join('')}</span>
+        <span class="prof-perks">${lvl.map((p) =>
+          `<span class="perk"><span class="pi">${perkIcon(p)}</span>${p}</span>`).join('')}</span>
       </div>`).join('')}
     </div>
     <p class="prof-mastery">${perks.length} ${perks.length === 1 ? 'nível' : 'níveis'} com perk ·
@@ -505,7 +541,7 @@
       ${section('Propriedades', `<div class="grid">${stats}</div>`)}
       ${section('Atributos', it.at ? `<p class="prose attrib">${it.at}</p>` : '')}
       ${section('Resistências', it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '')}
-      ${prof ? section('Proficiência', prof) : ''}
+      ${prof ? section(`Weapon proficiency (${perks.length} níveis)`, prof) : ''}
       ${section('Comércio', `<div class="grid">${value}</div>`)}
       ${it.dt ? section('Delivery task (semanal)', `<div class="grid">${
         kv('Quantidade pedida', `${it.dt[0]}–${it.dt[1]} unidades`) +
@@ -548,7 +584,7 @@
 
   // ── estado, presets e deep-links ─────────────────────────────────────────
   const FILTER_IDS = ['q', 'cat', 'voc', 'attr', 'res', 'lvl',
-                      'onlydrop', 'onlystats', 'onlyimb', 'onlytask'];
+                      'onlydrop', 'onlystats', 'onlyimb', 'onlyprof', 'onlytask'];
   const state = filterState(FILTER_IDS, 'items');
 
   // consultas de 1 clique — cada chip limpa os filtros e monta a consulta
@@ -557,6 +593,7 @@
     bows:       { f: { cat: 'Armas de Distância' }, sort: ['lvl', -1] },
     ammo:       { f: { cat: 'Munição' } },
     imbue:      { f: { cat: '__equip', voc: 'paladin_any', onlyimb: true }, sort: ['lvl', -1] },
+    prof:       { f: { voc: 'paladin_any', onlyprof: true }, sort: ['pn', -1] },
     goals:      { f: { q: 'soulbleeder|soulshell|soulstalkers|alicorn headguard|sanguine greaves' } },
   };
   $('chips').querySelectorAll('.pchip').forEach((b) => {
