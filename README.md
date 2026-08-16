@@ -18,6 +18,11 @@ TibiaWiki inteiro.
 - **`spawns.html`** — 442 locais de caçada cruzados com suas criaturas, com
   exp média, exp/HP e ouro por kill **calculados** (o wiki não traz), ignorando
   bosses e objetos.
+- **`spells.html`** — 216 spells com palavras, level, mana, pontos de alma,
+  cooldown próprio **e de grupo**, basepower e efeito. Filtra por vocação
+  (Knight, Paladin, Druid, Sorcerer e Monk) e por "meu level", que mostra só o
+  que o personagem já consegue conjurar. As 22 spells descontinuadas ou de
+  test server ficam escondidas por padrão.
 
 Nada aqui é inventado: o que não está no wiki aparece como "não disponível", e
 o ouro por kill é sempre uma **faixa**, derivada das chances que o wiki
@@ -29,6 +34,8 @@ documenta por raridade — não um número exato.
     completo de 28.967 páginas), crawleado de `tibia.fandom.com`.
   - `setup.sh` — restaura tudo do zero, sem refazer o crawl.
   - `gen_items.py` — regenera `items-data.js`.
+  - `gen_spells.py` — regenera `spells-data.js` a partir do wikitext (level,
+    cooldown, alcance e magic type não importaram para a tabela `spells`).
   - `loot.py` — parser das loot tables e cálculo da faixa de gp/kill.
   - `english-wiki-adaptation.patch` — adaptação do
     [miltonhit/tibia_mcp](https://github.com/miltonhit/tibia_mcp) para o wiki
@@ -58,5 +65,7 @@ onde obter/vender itens, caçadas recomendadas, SQL livre) assim que ele subir.
   esses campos em branco na origem.
 - Não há preços de Market ao vivo: 1.640 itens têm preço de NPC, mas o
   endgame (Soul Set, Alicorn, itens forjados) é todo "negotiable".
+- Spells não têm preço em gp nem alcance: o infobox do wiki não guarda nenhum
+  dos dois. Quatro spells não têm vocação na origem e aparecem como "todas".
 
 Ver `CLAUDE.md` para o contexto completo do projeto e as decisões técnicas.

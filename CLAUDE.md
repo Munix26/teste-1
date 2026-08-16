@@ -41,6 +41,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
 | `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
+| `spells.html` + `spells-data.js` | 216 spells com palavras, level, mana, alma, cooldown próprio e de grupo, basepower e efeito; filtra por vocação (5, incluindo **Monk**) e por "meu level" |
 | `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
@@ -48,6 +49,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
 | `tibia-mcp/gen_imbuements.py` | regenera `imbuements-data.js` (slots, efeitos e materiais saem do wikitext — a tabela `imbuements` importou vazia) |
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
+| `tibia-mcp/gen_spells.py` | regenera `spells-data.js` (level e cooldown não importaram para a tabela `spells` — saem do wikitext) |
 | `tibia-mcp/loot.py` | parser compartilhado das loot tables + faixa de gp/kill |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |
 
@@ -75,6 +77,22 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   após o pipe (parâmetros aninhados usam `|chave=` sem espaço); usar `[ \t]*`
   e não `\s*` depois do `=`, senão um campo vazio engole a linha seguinte; e
   pipes dentro de `[[wikilinks]]` precisam ser protegidos antes de dar split.
+- **Nas spells a regra do "pipe + espaço" não vale** e `gen_spells.py` usa
+  whitelist de nomes de campo. Ela quebra nos dois sentidos: Whirlwind Throw
+  escreve `|basepower= 32` e Levitate `|promotion=` colados no pipe (campos
+  reais que a regra perderia), enquanto o `{{Scene}}` do campo `animation` abre
+  `|caster=`, `|missile=` e até `|effect=` no começo da linha (aninhados que a
+  regra aceitaria). Casar por nome conhecido resolve os dois de uma vez.
+- **`cooldowngroup` é duração em segundos, não id de grupo.** Confirmado por
+  Ultimate Healing (grupo de cura = 1s), Groundshaker (ataque = 2s) e pelo
+  histórico do Annihilation, que registra a troca "de 4 segundos para 2". O
+  grupo em si (Ataque/Cura/Suporte) sai do `subclass`. É esse número que define
+  o ritmo de uma rotação: as spells de ataque de knight travam uma à outra por
+  2s, independente do cooldown próprio de cada uma.
+- **Spells têm campo `status`**: 22 são `deprecated` (saíram do jogo, como
+  Conjure Bolt e Enchant Staff) ou `ts-only` (só existiram no test server, como
+  Sniper). Ignorar esse campo faz spells mortas aparecerem como utilizáveis —
+  `spells.html` esconde as duas categorias por padrão.
 
 ## Lacunas conhecidas dos dados
 
@@ -91,6 +109,12 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   task ou NPC aparecem sem fonte (ex.: Soulbleeder, que vem da Bag You Desire).
 - **Sem preços de Market ao vivo.** 1.640 itens têm preço de NPC; os itens de
   endgame (Soul Set, Alicorn, forjados) são todos "negotiable" — sem valor.
+- Spells: a tabela `spells` importou `exp_level`, `cooldown_own`,
+  `cooldown_group`, `spell_range`, `magic_type`, `scale_with` e `mag_level`
+  **todas vazias** (0 de 218) — daí `gen_spells.py` ler tudo do wikitext. O
+  infobox do wiki não tem preço em gp nem alcance da spell, então esses dois
+  não existem em lugar nenhum. Quatro spells (as `Practise *` e Second Wind)
+  não têm vocação na origem.
 
 ## Modelo de simulação de hunt
 
