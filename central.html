@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Central de Hunts</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 12px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  /* caixa de fontes: de onde os números vieram */
+  .srcbox {
+    background: #171a22;
+    border: 1px solid #2c3242;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 0.82rem;
+    color: #8b93a7;
+  }
+
+  .srcbox b { color: #b8bfd0; }
+
+  .srcbox a { color: #d4af37; text-decoration: none; }
+  .srcbox a:hover { text-decoration: underline; }
+
+  .srcbox .s-line { margin-top: 3px; }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #1a1d26;
+    border: 1px solid #262b38;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  input, select {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus { outline: 1px solid #d4af37; }
+
+  #q { flex: 1; min-width: 170px; }
+  #mylvl { width: 92px; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  .scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+  th {
+    text-align: left;
+    color: #8b93a7;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 6px 8px;
+    border-bottom: 1px solid #262b38;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover, th.sorted { color: #d4af37; }
+
+  td { padding: 6px 8px; border-bottom: 1px solid #1c202a; }
+
+  .name { font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dim { color: #5c6478; }
+  .na { color: #5c6478; font-style: italic; }
+  .gold { color: #fbbf24; }
+  .negv { color: #f87171; }
+  .cr { color: #8b93a7; font-size: 0.78rem; }
+  .el { color: #a5b4fc; font-size: 0.8rem; white-space: nowrap; }
+
+  .voc-P { color: #7dd3a0; }
+  .voc-K { color: #fb923c; }
+  .voc-M { color: #a5b4fc; }
+  .voc-F { color: #f0abfc; }
+
+  .srcb {
+    font-size: 0.72rem;
+    border: 1px solid #2c3242;
+    border-radius: 5px;
+    padding: 1px 7px;
+    text-decoration: none;
+    color: #8b93a7;
+    white-space: nowrap;
+  }
+
+  .srcb:hover { color: #d4af37; border-color: rgba(212,175,55,0.5); }
+
+  .wikilink { color: #d4af37; text-decoration: none; font-size: 0.78rem; white-space: nowrap; }
+  .wikilink:hover { text-decoration: underline; }
+
+  .mine { color: #d4af37; font-size: 0.72rem; margin-left: 5px; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+
+  @media (max-width: 640px) {
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html">🐲 Criaturas</a>
+      <a href="spawns.html">🗺️ Spawns</a>
+      <a href="central.html" class="on">⭐ Central</a>
+      <a href="quests.html">📜 Quests</a>
+    </nav>
+    <span class="hint"><kbd>/</kbd> busca · <kbd>a|b</kbd> busca “a ou b”</span>
+  </header>
+
+  <h1>Central de Hunts</h1>
+  <p class="sub">
+    Recomendações de hunt por level e vocação vindas de bases mantidas por
+    jogadores — <b>nada aqui foi inventado</b>: cada linha tem a fonte ao lado,
+    com os números exatamente como a comunidade reportou. Quando o spawn existe
+    no TibiaWiki, o link 🗺️ abre a ficha dele (criaturas, resistências, faixas de ouro).
+  </p>
+
+  <div class="srcbox" id="srcbox"></div>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="Buscar hunt ou criatura… (use | para “ou”)" />
+    <span class="ctl"><label for="voc">Vocação</label>
+      <select id="voc">
+        <option value="">Todas</option>
+        <option value="P" selected>Paladin</option>
+        <option value="K">Knight</option>
+        <option value="M">Mage (MS/ED)</option>
+        <option value="F">Monk</option>
+      </select></span>
+    <span class="ctl"><label for="mylvl">Seu level</label>
+      <input id="mylvl" type="number" placeholder="360" min="8" /></span>
+    <span class="ctl"><label for="src">Fonte</label>
+      <select id="src"><option value="">Todas</option></select></span>
+    <button class="clearbtn" id="clear" title="Limpar todos os filtros">✕ limpar</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="scroll"><table id="tbl"></table></div>
+
+  <p class="legend">
+    “Seu level” esconde hunts acima do seu alcance (e as que você já passou muito,
+    quando a fonte dá faixa). XP/h e loot/h são <b>raw</b> reportados pela fonte —
+    variam com equip, bônus e ocupação do respawn; use como ordem de grandeza e
+    compare com as suas sessões do Hunt Analyzer. Loot/h em
+    <span class="negv">vermelho</span> = waste (custo maior que o loot).
+    🦁 marca as suas hunts atuais.
+  </p>
+</div>
+
+<script src="hunt-recs-data.js"></script>
+<script src="hunts-data.js"></script>
+<script src="ui.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const R = window.HUNTRECS;
+  const VOC_PT = { P: 'Paladin', K: 'Knight', M: 'Mage', F: 'Monk' };
+  const MINE = /werelion|lion sanctum|cobra/i;   // hunts atuais do dono
+
+  // "2.75kk" → 2750000; "2-3.5kk" e "6kk+" usam o maior número (para ordenar);
+  // negativo (waste) preserva o sinal
+  function val(s) {
+    if (!s) return null;
+    const t = String(s).toLowerCase();
+    const nums = t.match(/-?[\d.]+/g);
+    if (!nums) return null;
+    const n = parseFloat(nums[nums.length - 1]);
+    const unit = t.includes('kk') ? 1e6 : t.includes('k') ? 1e3 : 1;
+    const neg = t.trim().startsWith('-') ? -1 : 1;
+    return Math.abs(n) * unit * neg;
+  }
+
+  R.recs.forEach((r) => { r.xpv = val(r.xp); r.lov = val(r.lo); });
+
+  // cruza com os spawns do wiki para linkar a ficha (nome normalizado contido)
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const WIKI = (window.HUNTS || []).map((h) => ({ n: h.n, k: norm(h.n) }));
+  function wikiMatch(name) {
+    const k = norm(name);
+    if (k.length < 4) return null;
+    const hit = WIKI.find((w) => w.k === k) ||
+      WIKI.find((w) => w.k.length >= 6 && (k.includes(w.k) || w.k.includes(k)));
+    return hit ? hit.n : null;
+  }
+  R.recs.forEach((r) => { r.wiki = wikiMatch(r.n); });
+
+  let sortKey = 'xpv';
+  let sortDir = -1;
+
+  const money = (raw, v) => raw === undefined || raw === null || raw === ''
+    ? '<span class="dim">—</span>'
+    : `<span class="${v !== null && v < 0 ? 'negv' : 'gold'}">${raw}</span>`;
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const voc = $('voc').value;
+    const lvl = parseInt($('mylvl').value, 10);
+    const src = $('src').value;
+
+    let rows = R.recs.filter((r) => {
+      if (voc && !r.v.includes(voc)) return false;
+      if (src && r.s !== src) return false;
+      if (!isNaN(lvl)) {
+        if (r.l > lvl) return false;
+        if (r.lm && lvl > r.lm) return false;
+      }
+      if (q && !matchQuery((r.n + ' ' + (r.cr || '')).toLowerCase(), q)) return false;
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (x === null || x === undefined) return 1;
+      if (y === null || y === undefined) return -1;
+      return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
+    });
+
+    const head = `<thead><tr>
+      <th data-k="l" class="num">Lvl</th>
+      <th data-k="n">Hunt</th>
+      <th data-k="xpv" class="num">XP/h</th>
+      <th data-k="lov" class="num">Loot/h</th>
+      <th>Elem. / Munição</th>
+      <th>Voc</th>
+      <th>Criaturas</th>
+      <th>Fonte</th>
+    </tr></thead>`;
+
+    const body = rows.map((r) => `<tr>
+      <td class="num">${r.l}${r.lm ? '<span class="dim">–' + r.lm + '</span>' : '+'}</td>
+      <td class="name">${r.n}${MINE.test(r.n) ? '<span class="mine" title="sua hunt atual">🦁</span>' : ''}
+        ${r.wiki ? ` <a class="wikilink" href="spawns.html?open=${encodeURIComponent(r.wiki)}" title="ficha do spawn no wiki">🗺️</a>` : ''}</td>
+      <td class="num">${r.xp ? r.xp : '<span class="dim">—</span>'}</td>
+      <td class="num">${money(r.lo, r.lov)}</td>
+      <td class="el">${r.el || '<span class="dim">—</span>'}</td>
+      <td>${r.v.split('').map((v) => `<span class="voc-${v}" title="${VOC_PT[v]}">${v}</span>`).join(' ')}</td>
+      <td class="cr">${r.cr || '<span class="dim">—</span>'}</td>
+      <td><a class="srcb" target="_blank" rel="noopener" href="${R.sources[r.s].url}"
+             title="${R.sources[r.s].note}">${R.sources[r.s].name.split(' ')[0]}</a></td>
+    </tr>`).join('');
+
+    $('tbl').innerHTML = rows.length ? head + `<tbody>${body}</tbody>`
+      : '<caption class="na" style="padding:32px">Nenhuma hunt com esses filtros.</caption>';
+    $('count').textContent = `${rows.length} hunts`;
+
+    $('tbl').querySelectorAll('th[data-k]').forEach((th) => {
+      if (th.dataset.k === sortKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (sortKey === th.dataset.k) sortDir *= -1;
+        else { sortKey = th.dataset.k; sortDir = th.dataset.k === 'n' ? 1 : -1; }
+        render();
+      };
+    });
+  }
+
+  // caixa de fontes
+  $('srcbox').innerHTML = '<b>Fontes</b> (coletadas em ' + R.updated + '): ' +
+    Object.entries(R.sources).map(([k, s]) =>
+      `<div class="s-line">• <a target="_blank" rel="noopener" href="${s.url}">${s.name}</a> — ${s.note}</div>`).join('');
+
+  // fonte no filtro (só as que têm linhas)
+  {
+    const counts = {};
+    R.recs.forEach((r) => { counts[r.s] = (counts[r.s] || 0) + 1; });
+    $('src').innerHTML += Object.entries(counts)
+      .map(([k, n]) => `<option value="${k}">${R.sources[k].name} (${n})</option>`).join('');
+  }
+
+  const FILTER_IDS = ['q', 'voc', 'mylvl', 'src'];
+  const state = filterState(FILTER_IDS, 'central');
+  $('clear').onclick = () => { state.clear(); $('voc').value = 'P'; render(); };
+  FILTER_IDS.forEach((id) => $(id).addEventListener('input', render));
+
+  state.restore();
+  const qParam = urlParam('q');
+  if (qParam !== null) { state.clear(); $('voc').value = ''; $('q').value = qParam; }
+  render();
+</script>
+</html>
