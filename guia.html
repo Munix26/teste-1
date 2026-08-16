@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Meu Guia</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 14px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  input, select, button.act {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  input:focus { outline: 1px solid #d4af37; }
+
+  button.act { cursor: pointer; }
+  button.act:hover { border-color: rgba(212,175,55,0.5); color: #d4af37; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  /* ── card do personagem ── */
+  .charbox {
+    background: #171a22;
+    border: 1px solid #2c3242;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .charbox .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+  #charname { min-width: 220px; }
+
+  .charcard {
+    display: flex; flex-wrap: wrap; gap: 8px 22px;
+    margin-top: 10px; font-size: 0.87rem;
+  }
+
+  .charcard .kv .k { color: #6b7385; font-size: 0.72rem; display: block; }
+  .charcard .lvl { color: #d4af37; font-weight: 700; }
+
+  .apierr { color: #f87171; font-size: 0.82rem; margin-top: 8px; }
+
+  .apinote { color: #5c6478; font-size: 0.76rem; margin-top: 8px; }
+
+  /* ── seções curadas ── */
+  .goalbox {
+    background: #171a22;
+    border: 1px solid #2c3242;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .goalbox h3 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #d4af37; margin-bottom: 8px;
+  }
+
+  .goal { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid #1c202a; flex-wrap: wrap; }
+  .goal:last-child { border-bottom: none; }
+
+  .goal input { width: auto; accent-color: #d4af37; }
+
+  .goal .g-name { font-weight: 600; }
+  .goal .g-name a { color: inherit; text-decoration: none; border-bottom: 1px dotted #4a5266; }
+  .goal .g-name a:hover { color: #d4af37; }
+  .goal .g-what { color: #8b93a7; font-size: 0.82rem; }
+  .goal.done .g-name, .goal.done .g-what { color: #4ade80; text-decoration: line-through; opacity: 0.6; }
+
+  .goal .g-items { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+
+  /* ── barra de progresso ── */
+  .progress { margin: 4px 0 12px; }
+  .pbar { height: 8px; background: #1c202a; border-radius: 999px; overflow: hidden; }
+  .pbar > div { height: 100%; background: linear-gradient(90deg, #d4af37, #7dd3a0); border-radius: 999px; }
+  .ptext { color: #8b93a7; font-size: 0.8rem; margin-top: 4px; }
+
+  /* ── controles do checklist ── */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    background: #1a1d26; border: 1px solid #262b38; border-radius: 8px;
+    padding: 12px; margin-bottom: 12px; position: sticky; top: 0; z-index: 10;
+  }
+
+  #q { flex: 1; min-width: 170px; }
+
+  .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
+  .chk input { width: auto; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  .scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+  th {
+    text-align: left; color: #8b93a7; font-weight: 600; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 8px;
+    border-bottom: 1px solid #262b38; white-space: nowrap; cursor: pointer; user-select: none;
+  }
+
+  th:hover, th.sorted { color: #d4af37; }
+
+  td { padding: 5px 8px; border-bottom: 1px solid #1c202a; }
+
+  td.ck { width: 30px; }
+  td.ck input { width: auto; accent-color: #d4af37; cursor: pointer; }
+
+  .name a { color: inherit; font-weight: 600; text-decoration: none; border-bottom: 1px dotted #3d4354; }
+  .name a:hover { color: #d4af37; }
+
+  tr.qdone .name a, tr.qdone td { color: #4ade80; opacity: 0.55; }
+  tr.qdone .name a { text-decoration: line-through; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dim { color: #5c6478; }
+  .na { color: #5c6478; font-style: italic; }
+  .prem { color: #d4af37; font-size: 0.75rem; }
+  .ritems { color: #7dd3a0; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+
+  @media (max-width: 640px) {
+    .controls { position: static; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html">🐲 Criaturas</a>
+      <a href="spawns.html">🗺️ Spawns</a>
+      <a href="central.html">⭐ Central</a>
+      <a href="quests.html">📜 Quests</a>
+      <a href="guia.html" class="on">🎯 Guia</a>
+    </nav>
+    <span class="hint"><kbd>/</kbd> busca · <kbd>a|b</kbd> busca “a ou b”</span>
+  </header>
+
+  <h1>Meu Guia de Quests</h1>
+  <p class="sub">
+    Guia pessoal: o level e a vocação vêm do seu personagem via
+    <a href="https://tibiadata.com" target="_blank" rel="noopener" style="color:#d4af37">TibiaData</a>
+    (espelho do tibia.com). O quest log em si a CipSoft não expõe em API nenhuma —
+    então o “já fiz” é marcado aqui com 1 clique e fica salvo no seu navegador.
+  </p>
+
+  <div class="charbox">
+    <div class="row">
+      <label for="charname">Personagem</label>
+      <input id="charname" type="text" placeholder="nome exato do char" />
+      <button class="act" id="loadchar">Carregar do tibia.com</button>
+      <span class="ctl" style="display:flex;align-items:center;gap:6px">
+        <label for="manuallvl">ou level manual</label>
+        <input id="manuallvl" type="number" placeholder="360" min="8" style="width:90px" />
+      </span>
+    </div>
+    <div class="charcard" id="charcard"></div>
+    <div class="apierr" id="apierr" hidden></div>
+    <p class="apinote">Os dados vêm da API pública da TibiaData (v4) direto do seu navegador —
+      nada é enviado a lugar nenhum além dela.</p>
+  </div>
+
+  <div class="goalbox">
+    <h3>🌟 Objetivos de equipamento</h3>
+    <div id="goals"></div>
+  </div>
+
+  <div class="goalbox">
+    <h3>💠 Desbloqueio dos imbuements powerful (sua estratégia: 2× Vampirism + 2× Void)</h3>
+    <div id="imbgoals"></div>
+    <p class="apinote" style="margin-top:8px">Requisitos conforme as notas do TibiaWiki nas páginas de cada imbuement.</p>
+  </div>
+
+  <div class="progress">
+    <div class="pbar"><div id="pfill" style="width:0%"></div></div>
+    <div class="ptext" id="ptext"></div>
+  </div>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="Buscar quest… (use | para “ou”)" />
+    <label class="chk"><input type="checkbox" id="onlylvl" checked /> Só até meu level</label>
+    <label class="chk"><input type="checkbox" id="hidedone" /> Esconder feitas</label>
+    <label class="chk"><input type="checkbox" id="onlyitems" /> Com item de recompensa</label>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="scroll"><table id="tbl"></table></div>
+
+  <p class="legend">
+    Marque a caixa quando terminar uma quest — o progresso fica no navegador
+    (localStorage), junto com o nome do personagem. Clique no nome da quest para
+    abrir a ficha completa com recompensas e perigos.
+  </p>
+</div>
+
+<script src="quests-data.js"></script>
+<script src="ui.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const Q = window.QUESTS;
+
+  // ── estado persistido: char + quests feitas ────────────────────────────
+  const DONE_KEY = 'tibia-ai:quests-done';
+  const CHAR_KEY = 'tibia-ai:char';
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(DONE_KEY) || '{}'); } catch (_) {}
+  const saveDone = () => { try { localStorage.setItem(DONE_KEY, JSON.stringify(done)); } catch (_) {} };
+
+  let charData = null;
+  try { charData = JSON.parse(localStorage.getItem(CHAR_KEY) || 'null'); } catch (_) {}
+
+  const myLevel = () => {
+    const manual = parseInt($('manuallvl').value, 10);
+    if (!isNaN(manual)) return manual;
+    return charData ? charData.level : NaN;
+  };
+
+  function renderChar() {
+    if (!charData) { $('charcard').innerHTML = ''; return; }
+    $('charname').value = charData.name;
+    const kv = (k, v) => `<span class="kv"><span class="k">${k}</span>${v ?? '—'}</span>`;
+    $('charcard').innerHTML =
+      kv('Level', `<span class="lvl">${charData.level}</span>`) +
+      kv('Vocação', charData.vocation) +
+      kv('Mundo', charData.world) +
+      kv('Guild', charData.guild || '—') +
+      kv('Achievement points', charData.achievement_points) +
+      kv('Último login', charData.last_login ? charData.last_login.slice(0, 10) : '—') +
+      kv('Atualizado', charData.fetched);
+  }
+
+  async function loadChar() {
+    const name = $('charname').value.trim();
+    if (!name) return;
+    $('apierr').hidden = true;
+    $('loadchar').textContent = 'carregando…';
+    try {
+      const res = await fetch('https://api.tibiadata.com/v4/character/' + encodeURIComponent(name));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const c = j.character && j.character.character;
+      if (!c || !c.name) throw new Error('personagem não encontrado');
+      charData = {
+        name: c.name, level: c.level, vocation: c.vocation, world: c.world,
+        guild: c.guild && c.guild.name, achievement_points: c.achievement_points,
+        last_login: c.last_login, fetched: new Date().toISOString().slice(0, 10),
+      };
+      try { localStorage.setItem(CHAR_KEY, JSON.stringify(charData)); } catch (_) {}
+      renderChar();
+      render();
+    } catch (e) {
+      $('apierr').hidden = false;
+      $('apierr').textContent = 'Não consegui carregar "' + name + '": ' + e.message +
+        '. Confira o nome exato ou use o level manual.';
+    }
+    $('loadchar').textContent = 'Carregar do tibia.com';
+  }
+  $('loadchar').onclick = loadChar;
+  $('charname').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadChar(); });
+
+  // ── objetivos curados (reais — ver CLAUDE.md e notas do wiki) ──────────
+  const GOALS = [
+    { q: 'Soul War Quest', what: 'Soul Set — o caminho do Soulbleeder, Soulshell e Pair of Soulstalkers (1 item aleatório do set por conclusão)', items: ['Soulbleeder', 'Soulshell', 'Pair of Soulstalkers'] },
+    { q: 'Primal Ordeal Quest', what: 'acesso ao conteúdo Primal/Hazard — o caminho do Alicorn Headguard (level 400)', items: ['Alicorn Headguard'] },
+  ];
+  const IMB_GOALS = [
+    { q: 'Heart of Destruction Quest', what: 'terminar libera Powerful Vampirism, Powerful Void e Powerful Strike' },
+    { q: 'Forgotten Knowledge Quest', what: 'Lady Tenebris → Vampirism · Zyrtarch → Void e Dragon Hide · Time Guardian → Demon Presence e Precision' },
+  ];
+
+  function goalRow(g) {
+    const isDone = !!done[g.q];
+    const items = (g.items || []).map((n) =>
+      `<a class="loot-item" href="index.html?open=${encodeURIComponent(n)}">${spr(n)}${n}</a>`).join('');
+    return `<div class="goal ${isDone ? 'done' : ''}">
+      <input type="checkbox" data-q="${g.q.replace(/"/g, '&quot;')}" ${isDone ? 'checked' : ''} />
+      <span class="g-name"><a href="quests.html?open=${encodeURIComponent(g.q)}">${g.q}</a></span>
+      <span class="g-what">${g.what}</span>
+      ${items ? `<span class="g-items">${items}</span>` : ''}
+    </div>`;
+  }
+
+  function renderGoals() {
+    $('goals').innerHTML = GOALS.map(goalRow).join('');
+    $('imbgoals').innerHTML = IMB_GOALS.map(goalRow).join('');
+    document.querySelectorAll('.goal input[data-q]').forEach((cb) => {
+      cb.onchange = () => { toggle(cb.dataset.q, cb.checked); };
+    });
+  }
+
+  function toggle(name, isDone) {
+    if (isDone) done[name] = true; else delete done[name];
+    saveDone();
+    renderGoals();
+    render();
+  }
+
+  // ── checklist geral ────────────────────────────────────────────────────
+  let sortKey = 'lvl';
+  let sortDir = -1;
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const lvl = myLevel();
+    const onlyLvl = $('onlylvl').checked && !isNaN(lvl);
+    const hideDone = $('hidedone').checked;
+    const onlyItems = $('onlyitems').checked;
+
+    let rows = Q.filter((it) => {
+      if (onlyLvl && (it.lvl || 0) > lvl) return false;
+      if (hideDone && done[it.n]) return false;
+      if (onlyItems && !(it.ri && it.ri.length)) return false;
+      if (q && !matchQuery([it.n, it.rw, it.loc].join(' ').toLowerCase(), q)) return false;
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (x === null || x === undefined) return 1;
+      if (y === null || y === undefined) return -1;
+      return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
+    });
+
+    // progresso conta sobre as elegíveis por level (feitas incluídas)
+    const eligible = Q.filter((it) => !onlyLvl || (it.lvl || 0) <= lvl);
+    const doneCount = eligible.filter((it) => done[it.n]).length;
+    const pct = eligible.length ? Math.round(100 * doneCount / eligible.length) : 0;
+    $('pfill').style.width = pct + '%';
+    $('ptext').textContent = `${doneCount} de ${eligible.length} quests feitas` +
+      (onlyLvl ? ` (até o level ${lvl})` : '') + ` — ${pct}%`;
+
+    const head = `<thead><tr>
+      <th></th>
+      <th data-k="n">Quest</th>
+      <th data-k="lvl" class="num">Lvl</th>
+      <th>Conta</th>
+      <th class="num">Itens</th>
+    </tr></thead>`;
+
+    const body = rows.map((it) => `<tr class="${done[it.n] ? 'qdone' : ''}">
+      <td class="ck"><input type="checkbox" data-q="${it.n.replace(/"/g, '&quot;')}" ${done[it.n] ? 'checked' : ''} /></td>
+      <td class="name"><a href="quests.html?open=${encodeURIComponent(it.n)}">${it.n}</a></td>
+      <td class="num">${it.lvl ?? '<span class="dim">—</span>'}</td>
+      <td>${it.prem ? '<span class="prem">premium</span>' : '<span class="dim">free</span>'}</td>
+      <td class="num ritems">${it.ri ? it.ri.length : '<span class="dim">—</span>'}</td>
+    </tr>`).join('');
+
+    $('tbl').innerHTML = rows.length ? head + `<tbody>${body}</tbody>`
+      : '<caption class="na" style="padding:32px">Nenhuma quest com esses filtros.</caption>';
+    $('count').textContent = `${rows.length} quests`;
+
+    $('tbl').querySelectorAll('th[data-k]').forEach((th) => {
+      if (th.dataset.k === sortKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (sortKey === th.dataset.k) sortDir *= -1;
+        else { sortKey = th.dataset.k; sortDir = th.dataset.k === 'n' ? 1 : -1; }
+        render();
+      };
+    });
+    $('tbl').querySelectorAll('td.ck input').forEach((cb) => {
+      cb.onchange = () => toggle(cb.dataset.q, cb.checked);
+    });
+  }
+
+  ['q', 'onlylvl', 'hidedone', 'onlyitems', 'manuallvl']
+    .forEach((id) => $(id).addEventListener('input', render));
+
+  renderChar();
+  renderGoals();
+  render();
+</script>
+</html>
