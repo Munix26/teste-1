@@ -43,6 +43,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
+| `tibia-mcp/gen_imbuements.py` | regenera `imbuements-data.js` (slots, efeitos e materiais saem do wikitext — a tabela `imbuements` importou vazia) |
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
 | `tibia-mcp/loot.py` | parser compartilhado das loot tables + faixa de gp/kill |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |

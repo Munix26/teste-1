@@ -230,14 +230,6 @@
     bosses e objetos, para refletir o alvo real do farm.
   </p>
 
-  <div class="chipsbar" id="chips">
-    <span class="lbl">Consultas rápidas:</span>
-    <button class="pchip" data-p="mine">🦁 Minhas hunts</button>
-    <button class="pchip" data-p="mylvl">🎯 Meu level (300–399)</button>
-    <button class="pchip" data-p="next">📈 Próximo passo (400+)</button>
-    <button class="pchip" data-p="richest">💰 Melhor ouro</button>
-  </div>
-
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar spawn, cidade ou criatura… (use | para “ou”)" />
     <span class="ctl"><label for="city">Cidade</label>
@@ -504,21 +496,6 @@
   // ── estado, presets e deep-links ─────────────────────────────────────────
   const FILTER_IDS = ['q', 'city', 'lvl', 'exps', 'loots', 'gold'];
   const state = filterState(FILTER_IDS, 'spawns');
-
-  const PRESETS = {
-    mine:    { f: { q: 'lion sanctum|cobra bastion' } },
-    mylvl:   { f: { lvl: '300|400' }, sort: ['ratio', -1] },
-    next:    { f: { lvl: '400|500' }, sort: ['ratio', -1] },
-    richest: { f: {}, sort: ['avggold', -1] },
-  };
-  $('chips').querySelectorAll('.pchip').forEach((b) => {
-    b.onclick = () => {
-      const p = PRESETS[b.dataset.p];
-      state.apply(p.f);
-      if (p.sort) { sortKey = p.sort[0]; sortDir = p.sort[1]; }
-      render();
-    };
-  });
 
   $('clear').onclick = () => { state.clear(); render(); };
 

@@ -212,8 +212,34 @@
 
   .perk .pi { margin-right: 5px; }
 
-  /* marcador de proficiência na tabela */
-  .profmark { color: #d4af37; white-space: nowrap; }
+  /* marcador de proficiência na tabela (tooltip lista os perks) */
+  .profmark { color: #d4af37; white-space: nowrap; cursor: help; }
+
+  /* ── imbuements do item ── */
+  .imbu { font-size: 0.84rem; }
+
+  .imb-line {
+    display: grid;
+    grid-template-columns: minmax(110px, auto) minmax(200px, 1.4fr) 1fr;
+    gap: 2px 14px;
+    padding: 4px 0;
+    border-bottom: 1px solid #1c202a;
+    align-items: baseline;
+  }
+
+  .imb-line.head {
+    color: #6b7385; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.03em; border-bottom: 1px solid #262b38;
+  }
+
+  .imb-n { color: #7dd3a0; font-weight: 600; }
+  .imb-e { color: #b8bfd0; }
+  .imb-s { color: #8b93a7; font-size: 0.78rem; }
+
+  @media (max-width: 640px) {
+    .imb-line { grid-template-columns: 1fr; gap: 0; padding: 7px 0; }
+    .imb-line.head { display: none; }
+  }
 
   /* níveis 8 e 9 só dão título/achievement, nenhum perk */
   .prof-mastery { color: #5c6478; font-size: 0.76rem; }
@@ -273,16 +299,6 @@
     onde essas criaturas vivem e quais NPCs compram ou vendem.
   </p>
 
-  <div class="chipsbar" id="chips">
-    <span class="lbl">Consultas rápidas:</span>
-    <button class="pchip" data-p="setpaladin">⚔️ Set Paladin ≤ 360</button>
-    <button class="pchip" data-p="bows">🏹 Armas de distância</button>
-    <button class="pchip" data-p="ammo">🎯 Munição</button>
-    <button class="pchip" data-p="imbue">💠 Imbuíveis (RP)</button>
-    <button class="pchip" data-p="prof">🗡️ Com proficiência</button>
-    <button class="pchip" data-p="goals">🌟 Meus objetivos</button>
-  </div>
-
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar item, atributo, resistência ou NPC… (use | para “ou”)" />
     <span class="ctl"><label for="cat">Categoria</label>
@@ -302,6 +318,8 @@
     <select id="attr"><option value="">Qualquer</option></select></span>
     <span class="ctl"><label for="res">Resistência</label>
     <select id="res"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="profperk">Perk de prof.</label>
+    <select id="profperk"><option value="">Qualquer</option></select></span>
     <span class="ctl"><label for="lvl">Level até</label>
     <input id="lvl" type="number" placeholder="360" min="0" /></span>
     <label class="chk"><input type="checkbox" id="onlydrop" /> Com drop</label>
@@ -333,6 +351,7 @@
 </div>
 
 <script src="items-data.js"></script>
+<script src="imbuements-data.js"></script>
 <script src="ui.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
@@ -353,29 +372,84 @@
   let sortDir = 1;
   let current = [];
 
-  // nº de níveis de proficiência por item (só armas têm) — vira a coluna
-  // "Prof." ordenável e o filtro "Proficiência"
+  // categorias de perk de proficiência: viram ícone nos chips do painel,
+  // opção no filtro "Perk de prof." e entram na busca por texto
+  const PERK_CATS = {
+    crit: '🎯 Crítico', lleech: '🩸 Life leech', mleech: '💧 Mana leech',
+    vs: '💀 Dano vs classe', hpkill: '❤️ HP on kill', manakill: '🔷 Mana on kill',
+    heal: '💚 Healing', def: '🛡️ Defesa', ml: '✨ Magic level',
+    skill: '📈 Skill', dmg: '⚔️ Dano/ataque',
+  };
+
+  function perkCat(p) {
+    const t = p.toLowerCase();
+    if (t.includes('critical')) return 'crit';
+    if (t.includes('life leech')) return 'lleech';
+    if (t.includes('mana leech')) return 'mleech';
+    if (t.includes('damage against')) return 'vs';
+    if (t.includes('hit points on kill')) return 'hpkill';
+    if (t.includes('mana on kill')) return 'manakill';
+    if (t.includes('healing')) return 'heal';
+    if (t.includes('defence') || t.includes('shielding') || t.includes('armor')) return 'def';
+    if (t.includes('magic level')) return 'ml';
+    if (t.includes('fighting')) return 'skill';
+    if (t.includes('hit chance')) return 'crit';
+    return 'dmg';
+  }
+  const perkIcon = (p) => PERK_CATS[perkCat(p)].split(' ')[0];
+
+  // pré-calcula, por item com proficiência: nº de níveis (coluna ordenável),
+  // texto dos perks (busca) e categorias presentes (filtro)
   D.items.forEach((it) => {
-    if (it.p !== undefined && PROF[it.p]) it.pn = PROF[it.p].length;
+    const perks = it.p !== undefined && PROF[it.p];
+    if (!perks) return;
+    it.pn = perks.length;
+    const all = perks.flat();
+    it.ptext = all.join(' ').toLowerCase();
+    it.pcats = new Set(all.map(perkCat));
   });
 
-  // ícone por tipo de perk, para bater o olho e achar o que interessa
-  function perkIcon(p) {
-    const t = p.toLowerCase();
-    if (t.includes('critical')) return '🎯';
-    if (t.includes('life leech')) return '🩸';
-    if (t.includes('mana leech')) return '💧';
-    if (t.includes('damage against')) return '💀';
-    if (t.includes('hit points on kill')) return '❤️';
-    if (t.includes('mana on kill')) return '🔷';
-    if (t.includes('healing')) return '💚';
-    if (t.includes('defence') || t.includes('shielding') || t.includes('armor')) return '🛡️';
-    if (t.includes('magic level')) return '✨';
-    if (t.includes('fighting')) return '📈';
-    if (t.includes('hit chance')) return '🎯';
-    if (t.includes('damage') || t.includes('attack')) return '⚔️';
-    return '✦';
-  }
+  // ── imbuements: o que este item aceita, com efeito e materiais ─────────
+  // (imbuements-data.js sai do wikitext; ver tibia-mcp/gen_imbuements.py)
+  const IMB = window.IMBUEDATA || { types: [], crossbows: [] };
+  const XBOW = new Set(IMB.crossbows);
+  const IMB_CLASS = {
+    'Club Weapons': 'clubs', 'Sword Weapons': 'swords', 'Axe Weapons': 'axes',
+    'Helmets': 'helmets', 'Armors': 'armors', 'Boots': 'boots',
+    'Shields': 'shields', 'Spellbooks': 'spellbooks', 'Wands': 'wands',
+    'Rods': 'rods', 'Containers': 'containers', 'Fist Fighting Weapons': 'fists',
+  };
+  const imbClass = (it) => it.t === 'Distance Weapons'
+    ? (XBOW.has(it.n) ? 'crossbows' : 'bows')
+    : IMB_CLASS[it.t];
+
+  // efeito do tier em PT; os parâmetros (p) vêm do wiki
+  const IMB_EFF = {
+    'Vampirism': (p) => `${p[0]} do dano causado volta como HP (life leech)`,
+    'Void': (p) => `${p[0]} do dano causado volta como mana (mana leech)`,
+    'Strike': (p) => `dano crítico +${p[0]}${p[1] ? ' · chance +' + p[1] : ''}`,
+    'Bash': (p) => `+${p[0]} de Club Fighting`,
+    'Chop': (p) => `+${p[0]} de Axe Fighting`,
+    'Slash': (p) => `+${p[0]} de Sword Fighting`,
+    'Punch': (p) => `+${p[0]} de Fist Fighting`,
+    'Precision': (p) => `+${p[0]} de Distance Fighting`,
+    'Blockade': (p) => `+${p[0]} de Shielding`,
+    'Epiphany': (p) => `+${p[0]} de Magic Level`,
+    'Scorch': (p) => `converte ${p[0]} do dano físico em fogo`,
+    'Venom': (p) => `converte ${p[0]} do dano físico em terra`,
+    'Frost': (p) => `converte ${p[0]} do dano físico em gelo`,
+    'Electrify': (p) => `converte ${p[0]} do dano físico em energia`,
+    'Reap': (p) => `converte ${p[0]} do dano físico em death`,
+    'Dragon Hide': (p) => `+${p[0]} de proteção contra fogo`,
+    'Snake Skin': (p) => `+${p[0]} de proteção contra terra`,
+    'Quara Scale': (p) => `+${p[0]} de proteção contra gelo`,
+    'Cloud Fabric': (p) => `+${p[0]} de proteção contra energia`,
+    'Lich Shroud': (p) => `+${p[0]} de proteção contra death`,
+    'Demon Presence': (p) => `+${p[0]} de proteção contra holy`,
+    'Swiftness': (p) => `+${p[0]} de velocidade`,
+    'Featherweight': (p) => `reduz o peso do container em ${p[0]}`,
+    'Vibrancy': (p) => `${p[0]} de chance de remover paralisia`,
+  };
 
   const rcls = (r) => 'r-' + r.replace(/[ -]/g, '');
   const paintNeg = (t) => t.replace(/([a-z ]+ -\d+%)/gi, '<span class="neg">$1</span>');
@@ -400,6 +474,7 @@
     const onlyTask = $('onlytask').checked;
     const attr = $('attr').value;
     const res = $('res').value;
+    const profperk = $('profperk').value;
 
     let rows = D.items.filter((it) => {
       if (cat === '__equip' ? !EQUIP_CATS.has(it.c) : (cat && it.c !== cat)) return false;
@@ -412,9 +487,11 @@
       if (onlyTask && !it.dt) return false;
       if (onlyImb && !it.sl) return false;
       if (onlyProf && !it.pn) return false;
+      if (profperk && !(it.pcats && it.pcats.has(profperk))) return false;
       if (onlyStats && !(it.at || it.rs || it.arm || it.atk)) return false;
       if (q) {
-        const hay = [it.n, it.at, it.rs, it.bf, it.sl_to, it.c].join(' ').toLowerCase();
+        // a busca também cobre os perks de proficiência ("life leech", "Divine Missile"…)
+        const hay = [it.n, it.at, it.rs, it.bf, it.sl_to, it.c, it.ptext].join(' ').toLowerCase();
         if (!matchQuery(hay, q)) return false;
       }
       return true;
@@ -451,7 +528,9 @@
         <td class="num">${base || '<span class="dim">—</span>'}</td>
         <td class="attrib">${it.at || '<span class="dim">—</span>'}</td>
         <td class="resist">${it.rs ? paintNeg(it.rs) : '<span class="dim">—</span>'}</td>
-        <td class="num">${it.pn ? `<span class="profmark">✦ ${it.pn}</span>` : '<span class="dim">—</span>'}</td>
+        <td class="num">${it.pn ? `<span class="profmark" title="${
+          PROF[it.p].map((lvl, j) => `Nível ${j + 1}: ${lvl.join('  |  ')}`)
+            .join('\n').replace(/"/g, '&quot;')}">✦ ${it.pn}</span>` : '<span class="dim">—</span>'}</td>
         <td class="num">${it.nv ? it.nv.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
         <td class="num drops">${it.by ? it.by.length : '<span class="dim">—</span>'}</td>
       </tr>`;
@@ -515,6 +594,26 @@
       <span class="loc">${c[1] || '—'}</span>`;
       }).join('')}</div>` : '';
 
+    // imbuements que este item aceita (classe do item ∈ slots do imbuement),
+    // com efeito e materiais do tier Powerful
+    const icls = it.sl ? imbClass(it) : null;
+    const imbs = icls ? IMB.types.filter((t) => t.slots.includes(icls)) : [];
+    const imbu = imbs.length ? `<div class="imbu">
+      <div class="imb-line head"><span>Imbuement</span><span>Efeito (Powerful)</span><span>Materiais</span></div>
+      ${imbs.map((t) => {
+        const pw = t.tiers.Powerful || t.tiers.Intricate || t.tiers.Basic || {};
+        const eff = (IMB_EFF[t.n] || ((p) => p.join(' · ')))(pw.eff || []);
+        return `<div class="imb-line">
+          <span class="imb-n">${t.n}</span>
+          <span class="imb-e">${eff}</span>
+          <span class="imb-s">${pw.src || '<span class="dim">—</span>'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <p class="legend" style="margin-top:6px">Efeito e materiais do tier Powerful
+      (Basic/Intricate custam menos e rendem menos — detalhe no wiki).
+      Aplicar: 6 gold tokens ou os materiais + taxa no Goldsmith.</p>` : '';
+
     // perks por nível de proficiência; só um perk de cada nível pode ficar ativo
     const perks = it.p === undefined ? null : PROF[it.p];
     const prof = perks ? `<div class="prof">
@@ -542,6 +641,7 @@
       ${section('Atributos', it.at ? `<p class="prose attrib">${it.at}</p>` : '')}
       ${section('Resistências', it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '')}
       ${prof ? section(`Weapon proficiency (${perks.length} níveis)`, prof) : ''}
+      ${it.sl ? section(`Imbuements (${it.sl} slot${it.sl > 1 ? 's' : ''})`, imbu) : ''}
       ${section('Comércio', `<div class="grid">${value}</div>`)}
       ${it.dt ? section('Delivery task (semanal)', `<div class="grid">${
         kv('Quantidade pedida', `${it.dt[0]}–${it.dt[1]} unidades`) +
@@ -582,28 +682,18 @@
   fill('attr', tally((it) => it.af || []));
   fill('res', tally((it) => [...new Set((it.rf || []).filter(([, v]) => v > 0).map(([e]) => e))]));
 
+  // perks de proficiência por categoria, com contagem de armas
+  {
+    const counts = {};
+    D.items.forEach((it) => it.pcats && it.pcats.forEach((c) => { counts[c] = (counts[c] || 0) + 1; }));
+    $('profperk').innerHTML += Object.entries(counts).sort((a, b) => b[1] - a[1])
+      .map(([c, n]) => `<option value="${c}">${PERK_CATS[c]} (${n})</option>`).join('');
+  }
+
   // ── estado, presets e deep-links ─────────────────────────────────────────
-  const FILTER_IDS = ['q', 'cat', 'voc', 'attr', 'res', 'lvl',
+  const FILTER_IDS = ['q', 'cat', 'voc', 'attr', 'res', 'lvl', 'profperk',
                       'onlydrop', 'onlystats', 'onlyimb', 'onlyprof', 'onlytask'];
   const state = filterState(FILTER_IDS, 'items');
-
-  // consultas de 1 clique — cada chip limpa os filtros e monta a consulta
-  const PRESETS = {
-    setpaladin: { f: { cat: '__equip', voc: 'paladin_any', lvl: '360', onlystats: true }, sort: ['lvl', -1] },
-    bows:       { f: { cat: 'Armas de Distância' }, sort: ['lvl', -1] },
-    ammo:       { f: { cat: 'Munição' } },
-    imbue:      { f: { cat: '__equip', voc: 'paladin_any', onlyimb: true }, sort: ['lvl', -1] },
-    prof:       { f: { voc: 'paladin_any', onlyprof: true }, sort: ['pn', -1] },
-    goals:      { f: { q: 'soulbleeder|soulshell|soulstalkers|alicorn headguard|sanguine greaves' } },
-  };
-  $('chips').querySelectorAll('.pchip').forEach((b) => {
-    b.onclick = () => {
-      const p = PRESETS[b.dataset.p];
-      state.apply(p.f);
-      if (p.sort) { sortKey = p.sort[0]; sortDir = p.sort[1]; }
-      render();
-    };
-  });
 
   $('clear').onclick = () => { state.clear(); render(); };
 
