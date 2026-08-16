@@ -39,6 +39,9 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `index.html` + `items-data.js` | catálogo completo (9.894 itens, 56 categorias) com índice reverso de drops |
 | `creatures.html` + `creatures-data.js` | 1.629 criaturas com detalhe completo ao clicar |
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
+| `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
+| `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
+| `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |

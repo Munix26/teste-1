@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Quests</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #1a1d26;
+    border: 1px solid #262b38;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  input, select {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus { outline: 1px solid #d4af37; }
+
+  #q { flex: 1; min-width: 170px; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
+  .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
+  .chk input { width: auto; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  .scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+  th {
+    text-align: left;
+    color: #8b93a7;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 6px 8px;
+    border-bottom: 1px solid #262b38;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover, th.sorted { color: #d4af37; }
+
+  td { padding: 6px 8px; border-bottom: 1px solid #1c202a; }
+
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: #1a1d26; }
+
+  .name { font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dim { color: #5c6478; }
+  .na { color: #5c6478; font-style: italic; }
+  .prem { color: #d4af37; font-size: 0.75rem; }
+  .rw { color: #b8bfd0; font-size: 0.8rem; }
+  .ritems { color: #7dd3a0; white-space: nowrap; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+
+  /* ── painel ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    display: none; z-index: 50; padding: 24px 16px; overflow-y: auto;
+  }
+  .overlay.open { display: block; }
+
+  .panel {
+    max-width: 900px; margin: 0 auto; background: #171a22;
+    border: 1px solid #2c3242; border-radius: 10px; padding: 20px 22px 26px;
+  }
+
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid #262b38; padding-bottom: 10px; margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .panel-head h2 { font-size: 1.3rem; color: #d4af37; }
+
+  .close {
+    background: none; border: 1px solid #303646; color: #8b93a7;
+    border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 0.85rem;
+  }
+  .close:hover { color: #e6e8ee; border-color: #4a5266; }
+
+  .panel h3 {
+    font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #8b93a7; margin: 18px 0 7px;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
+  .kv { font-size: 0.85rem; }
+  .kv .k { color: #6b7385; font-size: 0.74rem; display: block; }
+  .prose { font-size: 0.87rem; color: #b8bfd0; white-space: pre-line; }
+
+  @media (max-width: 640px) {
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+    .overlay { padding: 10px 6px; }
+    .panel { padding: 16px 14px 20px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html">🐲 Criaturas</a>
+      <a href="spawns.html">🗺️ Spawns</a>
+      <a href="central.html">⭐ Central</a>
+      <a href="quests.html" class="on">📜 Quests</a>
+    </nav>
+    <span class="hint"><kbd>/</kbd> busca · <kbd>Esc</kbd> fecha · <kbd>a|b</kbd> busca “a ou b”</span>
+  </header>
+
+  <h1>Quests</h1>
+  <p class="sub">
+    As 371 quests do TibiaWiki com level, recompensas, local e perigos.
+    Os itens de recompensa são clicáveis — abrem a ficha completa na página de
+    itens. Para o passo a passo (spoiler), o link do wiki está em cada quest.
+  </p>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="Buscar quest, recompensa ou lugar… (use | para “ou”)" />
+    <span class="ctl"><label for="lvlr">Level</label>
+      <select id="lvlr"><option value="">Qualquer</option></select></span>
+    <span class="ctl"><label for="prem">Conta</label>
+      <select id="prem">
+        <option value="">Todas</option>
+        <option value="free">Free</option>
+        <option value="prem">Premium</option>
+      </select></span>
+    <label class="chk"><input type="checkbox" id="onlyitems" /> Com item de recompensa</label>
+    <button class="clearbtn" id="clear" title="Limpar todos os filtros">✕ limpar</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="scroll"><table id="tbl"></table></div>
+
+  <p class="legend">
+    Clique numa quest para ver recompensas, perigos e o link do spoiler.
+    “Level” é o recomendado pelo wiki; nem toda quest tem level mínimo formal.
+    Os filtros ficam salvos no navegador.
+  </p>
+</div>
+
+<div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
+
+<script src="quests-data.js"></script>
+<script src="ui.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const Q = window.QUESTS;
+  const NA = '<span class="na">não disponível</span>';
+
+  let sortKey = 'n';
+  let sortDir = 1;
+  let current = [];
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const prem = $('prem').value;
+    const onlyItems = $('onlyitems').checked;
+    const lvlr = $('lvlr').value;
+    let lo = null, hi = null;
+    if (lvlr) [lo, hi] = lvlr.split('|').map(Number);
+
+    let rows = Q.filter((it) => {
+      if (prem === 'free' && it.prem) return false;
+      if (prem === 'prem' && !it.prem) return false;
+      if (onlyItems && !(it.ri && it.ri.length)) return false;
+      if (lo !== null && !((it.lvl || 0) >= lo && (it.lvl || 0) < hi)) return false;
+      if (q) {
+        const hay = [it.n, it.rw, it.loc, (it.ri || []).join(' ')].join(' ').toLowerCase();
+        if (!matchQuery(hay, q)) return false;
+      }
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (x === null || x === undefined) return 1;
+      if (y === null || y === undefined) return -1;
+      return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
+    });
+
+    current = rows.slice(0, 400);
+
+    const head = `<thead><tr>
+      <th data-k="n">Quest</th>
+      <th data-k="lvl" class="num">Lvl</th>
+      <th>Conta</th>
+      <th>Recompensa</th>
+      <th class="num">Itens</th>
+      <th>Onde</th>
+    </tr></thead>`;
+
+    const body = current.map((it, i) => `<tr data-i="${i}">
+      <td class="name">${it.n}</td>
+      <td class="num">${it.lvl ?? '<span class="dim">—</span>'}</td>
+      <td>${it.prem ? '<span class="prem">premium</span>' : '<span class="dim">free</span>'}</td>
+      <td class="rw">${it.rw ? (it.rw.length > 90 ? it.rw.slice(0, 90) + '…' : it.rw) : '<span class="dim">—</span>'}</td>
+      <td class="num ritems">${it.ri ? it.ri.length : '<span class="dim">—</span>'}</td>
+      <td class="dim">${it.loc ? (it.loc.length > 40 ? it.loc.slice(0, 40) + '…' : it.loc) : '—'}</td>
+    </tr>`).join('');
+
+    $('tbl').innerHTML = rows.length ? head + `<tbody>${body}</tbody>`
+      : '<caption class="na" style="padding:32px">Nenhuma quest com esses filtros.</caption>';
+    $('count').textContent = rows.length > 400
+      ? `${rows.length} quests (mostrando 400)` : `${rows.length} quests`;
+
+    $('tbl').querySelectorAll('th[data-k]').forEach((th) => {
+      if (th.dataset.k === sortKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (sortKey === th.dataset.k) sortDir *= -1;
+        else { sortKey = th.dataset.k; sortDir = th.dataset.k === 'n' ? 1 : -1; }
+        render();
+      };
+    });
+    $('tbl').querySelectorAll('tbody tr').forEach((tr) => {
+      tr.onclick = () => openDetail(current[+tr.dataset.i]);
+    });
+  }
+
+  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span>${
+    v === null || v === undefined || v === '' ? NA : v}</div>`;
+  const section = (t, inner) => inner ? `<h3>${t}</h3>${inner}` : '';
+
+  function openDetail(it) {
+    const info = [
+      kv('Level recomendado', it.lvl),
+      kv('Level mínimo', it.req),
+      kv('Conta', it.prem ? 'Premium' : 'Free'),
+      kv('Implementada', it.impl),
+    ].join('');
+
+    const ritems = it.ri && it.ri.length
+      ? `<div class="loot-list">${it.ri.map((n) =>
+          `<a class="loot-item" href="index.html?open=${encodeURIComponent(n)}">${spr(n)}${n}</a>`).join('')}</div>`
+      : '';
+
+    $('panel').innerHTML = `
+      <div class="panel-head">
+        <h2>${it.n}</h2>
+        ${it.prem ? '<span class="prem">premium</span>' : ''}
+        <span class="panel-actions">
+          <a class="panel-link" target="_blank" rel="noopener"
+             href="https://tibia.fandom.com/wiki/${encodeURIComponent(it.n.replace(/ /g, '_'))}">spoiler no wiki ↗</a>
+          <button class="close" onclick="closeDetail()">fechar ✕</button>
+        </span>
+      </div>
+      <div class="grid">${info}</div>
+      ${section('Recompensa', it.rw ? `<p class="prose">${it.rw}</p>` : '')}
+      ${section(`Itens de recompensa (${(it.ri || []).length})`, ritems)}
+      ${it.ri && it.ri.length ? '<p class="legend" style="margin-top:6px">Clique num item para abrir a ficha dele.</p>' : ''}
+      ${section('Onde', it.loc ? `<p class="prose">${it.loc}</p>` : '')}
+      ${section('Perigos', it.dg ? `<p class="prose">${it.dg}</p>` : '')}
+      ${section('Notas', it.no ? `<p class="prose">${it.no}</p>` : '')}
+    `;
+    $('overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDetail() {
+    $('overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
+
+  // faixas de level derivadas dos dados
+  {
+    const steps = [0, 20, 50, 80, 100, 150, 200, 250, 300, 400];
+    const opts = [];
+    for (let i = 0; i < steps.length; i++) {
+      const lo = steps[i], hi = steps[i + 1] ?? Infinity;
+      const n = Q.filter((x) => (x.lvl || 0) >= lo && (x.lvl || 0) < hi).length;
+      if (n) opts.push(`<option value="${lo}|${hi}">${lo === 0 ? 'até ' + (hi - 1) :
+        hi === Infinity ? lo + '+' : lo + '–' + (hi - 1)} (${n})</option>`);
+    }
+    $('lvlr').innerHTML += opts.join('');
+  }
+
+  const FILTER_IDS = ['q', 'lvlr', 'prem', 'onlyitems'];
+  const state = filterState(FILTER_IDS, 'quests');
+  $('clear').onclick = () => { state.clear(); render(); };
+  FILTER_IDS.forEach((id) => $(id).addEventListener('input', render));
+
+  state.restore();
+  const qParam = urlParam('q');
+  if (qParam !== null) { state.clear(); $('q').value = qParam; }
+  render();
+
+  const openParam = urlParam('open');
+  if (openParam) {
+    const it = Q.find((x) => x.n.toLowerCase() === openParam.toLowerCase());
+    if (it) openDetail(it);
+    else { $('q').value = openParam; render(); }
+  }
+</script>
+</html>
