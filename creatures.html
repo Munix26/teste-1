@@ -242,15 +242,6 @@
     loot table pesada por raridade, a preço de NPC.
   </p>
 
-  <div class="chipsbar" id="chips">
-    <span class="lbl">Consultas rápidas:</span>
-    <button class="pchip" data-p="hunts">🦁 Minhas hunts</button>
-    <button class="pchip" data-p="ice">❄️ Fracos a gelo</button>
-    <button class="pchip" data-p="holy">✨ Fracos a holy</button>
-    <button class="pchip" data-p="rich">💰 Melhor gp/kill</button>
-    <button class="pchip" data-p="bosses">👑 Só bosses</button>
-  </div>
-
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar criatura ou classe… (use | para “ou”)" />
     <span class="ctl"><label for="cls">Classe</label>
@@ -540,22 +531,6 @@
   // ── estado, presets e deep-links ─────────────────────────────────────────
   const FILTER_IDS = ['q', 'cls', 'diff', 'exprange', 'hprange', 'goldrange', 'weak', 'boss'];
   const state = filterState(FILTER_IDS, 'creatures');
-
-  const PRESETS = {
-    hunts:  { f: { q: 'werelion|cobra' }, sort: ['exp', -1] },
-    ice:    { f: { weak: 'ice', boss: 'no' }, sort: ['exp', -1] },
-    holy:   { f: { weak: 'holy', boss: 'no' }, sort: ['exp', -1] },
-    rich:   { f: { boss: 'no' }, sort: ['gold', -1] },
-    bosses: { f: { boss: 'only' }, sort: ['hp', -1] },
-  };
-  $('chips').querySelectorAll('.pchip').forEach((b) => {
-    b.onclick = () => {
-      const p = PRESETS[b.dataset.p];
-      state.apply(p.f);
-      if (p.sort) { sortKey = p.sort[0]; sortDir = p.sort[1]; }
-      render();
-    };
-  });
 
   $('clear').onclick = () => { state.clear(); render(); };
 
