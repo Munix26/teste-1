@@ -12,6 +12,14 @@ Ferramenta pessoal de consulta e análise de dados de Tibia, focada em
 - Estratégia de imbuement: mantém **2× Vampirism e 2× Void** distribuídos
   entre as peças (leech duplo ≈ 200 hp/s de cura no ritmo dele).
 - Hunts principais: **Werelions (Lion Sanctum, Darashia)** e **Cobra Bastion**.
+- Progresso de quests (conferido no quest log em 2026-08-17): **Feaster of
+  Souls no capítulo The Thaian** (sinos de Kilmaresh/Ramoa/Lion's Rock;
+  Netherworld entregue — os 3 Skull Coins foram comprados de players, o que
+  funciona); Sea of Light feita; Liquid Black "The First Visitor" feita
+  (pré-req da Secret Library ok); Blood Brothers m1–4 e Grimvale (An Ancient
+  Feud + The Curse Spreads) feitas → Katex Blood Tongue liberado; **Explorer
+  Society em Novice** (pickaxe não devolvida) — é o bloqueio da Dream Courts,
+  que exige Relic Hunter. O roteiro dessas quests vive em `roteiro.html`.
 - Objetivos de equipamento: Soulbleeder, Soulshell, Pair of Soulstalkers
   (Soul War) e Alicorn Headguard (Primal Ordeal/Hazard).
 - Uso é **pessoal** — o site não deve ir a público (a proteção da Vercel
