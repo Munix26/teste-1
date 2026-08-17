@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Roteiro</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 14px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  a { color: inherit; }
+
+  /* barra de progresso geral */
+  .progress { margin: 4px 0 16px; }
+  .pbar { height: 8px; background: #1c202a; border-radius: 999px; overflow: hidden; }
+  .pbar > div { height: 100%; background: linear-gradient(90deg, #d4af37, #7dd3a0); border-radius: 999px; }
+  .ptext { color: #8b93a7; font-size: 0.8rem; margin-top: 4px; }
+
+  /* etapa = uma viagem */
+  .etapa {
+    background: #171a22;
+    border: 1px solid #2c3242;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+
+  .etapa > h2 {
+    font-size: 1.05rem;
+    color: #d4af37;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .etapa > h2 .done-n { font-size: 0.75rem; color: #5c6478; font-weight: 400; margin-left: auto; }
+
+  .etapa .why { color: #8b93a7; font-size: 0.82rem; margin: 4px 0 10px; }
+
+  .step {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px solid #1c202a;
+    font-size: 0.9rem;
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .step input { width: auto; accent-color: #d4af37; cursor: pointer; flex: 0 0 auto; position: relative; top: 2px; }
+
+  .step .txt { flex: 1; }
+  .step.done .txt { color: #4ade80; opacity: 0.55; text-decoration: line-through; }
+
+  .qtag {
+    font-size: 0.7rem;
+    border: 1px solid #2c3242;
+    border-radius: 5px;
+    padding: 1px 7px;
+    white-space: nowrap;
+    color: #8b93a7;
+    text-decoration: none;
+    flex: 0 0 auto;
+  }
+
+  .qtag:hover { color: #d4af37; border-color: rgba(212,175,55,0.5); }
+
+  .q-sol  { color: #60a5fa; }
+  .q-fos  { color: #f0abfc; }
+  .q-lb   { color: #22d3ee; }
+  .q-sl   { color: #fbbf24; }
+  .q-wtt  { color: #4ade80; }
+  .q-td   { color: #a78bfa; }
+  .q-dc   { color: #fb923c; }
+  .q-pre  { color: #94a3b8; }
+
+  .itens { color: #7dd3a0; font-size: 0.8rem; }
+  .warn  { color: #fbbf24; font-size: 0.8rem; }
+  .boss  { color: #f87171; font-size: 0.8rem; }
+
+  b.loc { color: #e6e8ee; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+
+  ul.flat { list-style: none; }
+  ul.flat li { padding: 3px 0; font-size: 0.85rem; }
+</style>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html">🐲 Criaturas</a>
+      <a href="spawns.html">🗺️ Spawns</a>
+      <a href="central.html">⭐ Central</a>
+      <a href="quests.html">📜 Quests</a>
+      <a href="guia.html">🎯 Guia</a>
+      <a href="roteiro.html" class="on">🧭 Roteiro</a>
+    </nav>
+  </header>
+
+  <h1>Roteiro — as 7 quests, otimizando viagens</h1>
+  <p class="sub">
+    Ordem de execução para <b>Sea of Light · Feaster of Souls · Liquid Black ·
+    Secret Library · Within the Tides · Threatened Dreams · Dream Courts</b>,
+    agrupada por região para nunca visitar o mesmo lugar duas vezes à toa.
+    Passos e itens vêm dos spoilers do TibiaWiki (no dump do repositório);
+    marque cada passo — fica salvo no navegador.
+  </p>
+
+  <div class="progress">
+    <div class="pbar"><div id="pfill" style="width:0%"></div></div>
+    <div class="ptext" id="ptext"></div>
+  </div>
+
+  <div id="etapas"></div>
+
+  <p class="legend">
+    Encadeamentos que definiram a ordem: Sea of Light → capítulo final da Feaster ·
+    Feaster completa → destrava a Soul War · Liquid Black (1ª missão) → Secret Library ·
+    Threatened Dreams (Troubled Animals) → acesso a Feyrist → Dream Courts ·
+    Within the Tides → depois destrava a Primal Ordeal (Alicorn Headguard).
+    Fonte: spoilers do TibiaWiki (dump de 2026-07-29).
+  </p>
+</div>
+
+<script src="ui.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'tibia-ai:roteiro';
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (_) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (_) {} };
+
+  // tags: qual quest cada passo serve
+  const Q = {
+    sol: ['Sea of Light Quest', 'q-sol', 'Sea of Light'],
+    fos: ['Feaster of Souls Quest', 'q-fos', 'Feaster'],
+    lb:  ['Liquid Black Quest', 'q-lb', 'Liquid Black'],
+    sl:  ['The Secret Library Quest', 'q-sl', 'Secret Library'],
+    wtt: ['Within the Tides Quest', 'q-wtt', 'Within the Tides'],
+    td:  ['Threatened Dreams Quest', 'q-td', 'Threatened Dreams'],
+    dc:  ['The Dream Courts Quest', 'q-dc', 'Dream Courts'],
+    pre: [null, 'q-pre', 'pré-req'],
+  };
+
+  // s(id, quest, html) — passo marcável
+  const ETAPAS = [
+    { t: '0 · Preparação — uma ida só ao market/depot', why: 'Tudo que as 7 quests pedem de item, comprado de uma vez. Ferramentas: Rope, Shovel, Pick, Hammer, Stealth Ring.', steps: [
+      ['p1', 'wtt', 'Helmet of the Deep (ou Depth Galea) · Ice Cubes · 1 Honeycomb · 1 Mango + Juice Squeezer'],
+      ['p2', 'td', '1 Rake · Panpipes · 2× Small Enchanted Amethyst/Emerald/Ruby/Sapphire (8 gems) · Flour, Milk, Bar of Chocolate, Raspberry, Lemon (o Moon Melon se colhe em Feyrist)'],
+      ['p3', 'sl', 'Bucket + 2 recipientes (um com Blood, um com Water) · 3 comidas diferentes (Ham, Brown Mushroom…) · armadura vermelha não-metálica (Doublet, 16 gp)'],
+      ['p4', 'lb', 'Soul Net (missão Soul Net) — pick e shovel já estão na lista de ferramentas'],
+      ['p5', 'dc', 'Broken Compass (Andrew Lyze vende por 10k, ou acha na Extension Site)'],
+      ['p6', 'pre', 'Conferir na estante: Ghostsilver Lantern (Forgotten Knowledge) e Flask of Medusa\'s Ointment (Cursed Crystal) — a Dream Courts vai pedir os dois'],
+    ]},
+    { t: 'Pré-requisitos — confira antes de viajar', why: 'Acessos que as quests exigem. O que já estiver feito, só marque.', steps: [
+      ['r1', 'pre', 'Explorer Society até <b>Relic Hunter</b> (acesso a Calassa + Diving Equipment) — Dream Courts'],
+      ['r2', 'pre', 'Shattered Isles: acesso a <b>Meriana</b> — Dream Courts'],
+      ['r3', 'pre', 'Ice Islands, missão <b>Nibelor 2</b> (Tyrsung/Okolnir) — Dream Courts'],
+      ['r4', 'pre', '<b>Asura Palace Quest</b> — exigida por Threatened Dreams (Sweet Dreams) e Secret Library'],
+      ['r5', 'pre', '<b>Blood Brothers</b> até a missão 3 + <b>Grimvale</b> (An Ancient Feud e The Curse Spreads) — Threatened Dreams. <span class="warn">⚠️ Grimvale depende do world change de lua cheia — agende!</span>'],
+      ['r6', 'pre', '<b>The Lost Brother Quest</b> — exigida pela Within the Tides'],
+      ['r7', 'pre', '<b>The New Frontier</b> — só pelo atalho Zao → Falcon Bastion usado na Secret Library'],
+    ]},
+    { t: '1 · Edron — o hub do Spectulus (2 quests + 1 sino)', why: 'Sea of Light inteira e o começo da Liquid Black são com o MESMO NPC. O tempo de espera da missão 1 vira o sino da Feaster.', steps: [
+      ['e1', 'sol', '<b class="loc">Academia (torre central, topo)</b>: peça mission ao Spectulus. Ache o Shoddy Beggar em Edron, dê <i>spare</i> de 1 gp, responda as perguntas → Plans for a Strange Device → entregue. <span class="warn">⏳ Ele leva 30 min reais estudando.</span>'],
+      ['e2', 'fos', 'Nos 30 min: toque o Death Knell na <b class="loc">Edron Vampire Crypt</b> (3º andar, poça de sangue)'],
+      ['e3', 'sol', '<b class="loc">Lost Mines</b> (entre a Troll e a Goblin Cave de Edron): pick no cristal ciano grande → Rare Crystal → entregue ao Spectulus'],
+      ['e4', 'lb', 'Ainda no Spectulus: faça a <b>1ª missão da Liquid Black</b> (The First Visitor) — é o pré-requisito da Secret Library'],
+      ['e5', 'sol', 'Barco Edron → Carlin → balsa pra <b class="loc">Vega</b>: costa sudoeste até o Stony Pond, use o Rare Crystal no Ice Cube → caverna → mate <b>The Collector</b> → use o Carrying Device no corpo → volte ao Spectulus. <span class="itens">Sea of Light ✔ (destrava o final da Feaster)</span>'],
+    ]},
+    { t: '2 · Yalahar + Ankrahmun — sinos da Feaster', why: 'Dois toques de Death Knell na mesma linha de barco. Ankrahmun é vizinho do Cobra Bastion: emenda uma hunt.', steps: [
+      ['y1', 'fos', '<b class="loc">Yalahar, Cemetery Quarter</b>: knell no térreo, lado leste'],
+      ['y2', 'fos', '<b class="loc">Ankrahmun, Shadow Tomb</b> (leste da cidade): knell no 6º andar, a leste'],
+      ['y3', 'fos', 'De volta ao <b class="loc">Para Norbert</b> (norte do Jakundaf): entregue e aceite a próxima'],
+    ]},
+    { t: '3 · Port Hope / Tiquanda — Netherworld', why: 'Os três minibosses solo da Feaster; se faltar a Asura Palace Quest (pré-req de 2 quests), é aqui do lado.', steps: [
+      ['n1', 'fos', 'Antes: teça a <b>Burial Shroud</b> no Brain Grounds (Stump SE → Yarn · poça de Ghostly Water ao norte → Glittering Yarn · Loom 1 andar abaixo SO)'],
+      ['n2', 'fos', '<b class="loc">Leste de Banuta</b>: portal invisível (mureta), <b>equipe a Burial Shroud</b> pra entrar. Mate <b>Unaz the Mean, Irgix the Flimsy e Vok the Freakish</b> — solo, um por vez. <span class="boss">Comboam ~2.000 + mana drain.</span> <span class="itens">RP: Envenomed Arrows (são fortíssimos contra físico). Guarde os 3 Skull Coins!</span>'],
+      ['n3', 'pre', 'Se faltou no checklist: <b>Asura Palace Quest</b> (Tiquanda, aqui do lado)'],
+    ]},
+    { t: '4 · Grey Island / Fiehonja — o mundo Deepling', why: 'Liquid Black + a 1ª seção da Secret Library são na mesma região submarina. Levar: rope, pick, shovel, Soul Net, capacete de mergulho.', steps: [
+      ['g1', 'lb', '<span class="warn">⚠️ As missões disponíveis dependem do estágio do world change Deepling no seu servidor (1: Heart of the Sea/Soul Net · 2: Coral Mine · 3: Anchor/Guardians). Não são lineares — faça as do estágio atual e volte pro resto.</span>'],
+      ['g2', 'lb', '<b class="loc">Fiehonja</b>: missões do estágio vigente (Heart of the Sea → pick · Coral Mine → pick+shovel · Soul Net · Anchor)'],
+      ['g3', 'sl', 'Na mesma região: Secret Library <b>High and Dry</b> no Deepling Ancestorial Grounds'],
+    ]},
+    { t: '5 · Circuito Secret Library', why: 'As seções restantes espalham-se por lugares que também são hunt boa de RP — casa cada uma com uma sessão de caça.', steps: [
+      ['s1', 'sl', '<b class="loc">Asura Palace / Mirror</b>: The Path of Defiances <span class="itens">(+ hunt: Asura Mirror é 4.5kk/h de RP 350+ na ⭐ Central)</span>'],
+      ['s2', 'sl', '<b class="loc">Isle of the Kings</b>: Liquid Death (bucket + Blood + Water entram aqui)'],
+      ['s3', 'sl', 'The Lament (siga o quest log — armadura vermelha/Doublet)'],
+      ['s4', 'sl', '<b class="loc">Falcon Bastion</b> (atalho do Zao, New Frontier): The Order of the Falcon. <span class="boss">Grand Master Oberon é luta de TEAM — combine antes.</span>'],
+      ['s5', 'sl', '<b class="loc">Yalahar, MoTA</b>: Bursting at the Seams'],
+      ['s6', 'sl', '<b class="loc">A Biblioteca</b>: Lokathmor, Mazzinor, Ghulosh e Gorzindel. <span class="itens">Hunt: Secret Library rende 8–15kk/h (250–400) segundo a TibiaVault</span>'],
+    ]},
+    { t: '6 · Marapur — Within the Tides', why: 'Região isolada — uma viagem só resolve a quest inteira. É ela que destrava a Primal Ordeal (→ Alicorn Headguard no 400).', steps: [
+      ['w1', 'wtt', 'Of Feathers and Flowers (objetivos da missão no quest log)'],
+      ['w2', 'wtt', 'Coastal Concerns: cura dos beavers · caçar Foam Stalkers · <span class="boss">Timira the Many-Headed (boss)</span>'],
+      ['w3', 'wtt', 'Mountainous Matters: consertar o observatório (Hammer) · ovos das Nagas · sala secreta <span class="itens">(Ice Cubes, Honeycomb, Mango + Juice Squeezer)</span>'],
+      ['w4', 'wtt', 'Star-Crossed Lovers: falar com as Naga Shamans. <span class="itens">Within the Tides ✔ → Primal Ordeal liberada pro seu 400</span>'],
+    ]},
+    { t: '7 · Feyrist — Threatened Dreams, depois Dream Courts', why: 'Troubled Animals abre o acesso pleno a Feyrist, que é pré-requisito da Dream Courts. Uma temporada inteira na mesma região.', steps: [
+      ['f1', 'td', 'Troubled Animals (Rake): Creation of Legends · Ghost of a Wolf · Swan Maiden'],
+      ['f2', 'td', 'The Fairy Treasure: Tooth Fairy · Tired Trees · Beset Stones · The Last Part'],
+      ['f3', 'td', 'A Dream Come True <span class="itens">(as 8 small enchanted gems)</span> · An Unlikely Couple (Panpipes) · The Swan Feather Cloak'],
+      ['f4', 'td', 'Sweet Dreams: bosses The Flaming Orchid (Asura) e Katex Blood Tongue (Grimvale) + bolo <span class="itens">(Flour, Milk, Chocolate, Raspberry, Lemon, Moon Melon + Stealth Ring)</span> <span class="warn">⚠️ Katex: precisa das missões Grimvale (lua cheia)</span>'],
+      ['f5', 'dc', 'Court of Summer e Court of Winter (portais em Feyrist)'],
+      ['f6', 'dc', 'Ward Stones · Unsafe Release'],
+      ['f7', 'dc', 'Haunted House: Cellar · Temple · Tomb · Buried Cathedral'],
+      ['f8', 'dc', 'The Seven Keys — portas: Rosebush (porta das rosas) · Ghostsilver Lantern (invisível) · Flask of Medusa\'s Ointment (pedra) · Magical Paint (pintada) · Colourful Mushroom (ice bird) · Anatomy Book + Orc/Troll/Minotaur Skull (caveira) · Old Lock (vazia)'],
+      ['f9', 'dc', '<b class="loc">The Dream Scar</b>: <span class="boss">Alptramun (320k HP) — TEAM</span>. Dream Courts ✔'],
+    ]},
+    { t: '8 · Final da Feaster — The Thaian e Zarganash', why: 'Precisa da Sea of Light (etapa 1). O sino do Lion\'s Rock fica na porta do Lion Sanctum: toque no dia de Werelions. 🦁', steps: [
+      ['t1', 'fos', 'Spectulus (Magic Academy) → pergunte sobre <i>The Thaian</i> → taverna na floresta ao norte da montanha (norte de Thais) → <i>need</i>, <i>yes</i>, <i>yes</i>'],
+      ['t2', 'fos', 'Knells: <b class="loc">Kilmaresh Catacombs</b> (buraco no Water Temple) · <b class="loc">Ramoa</b> (spawn de Cavebears, esqueleto de dragão) · <b class="loc">Lion\'s Rock</b> (logo após a entrada do Sanctum) — e entregue os <b>3 Skull Coins</b> ao Thaian'],
+      ['t3', 'fos', '<b class="loc">Barren Drift</b>: minere 100 Luminescent Crystals (pick; entregue e continue até ser teleportado; funda o cristal grande → Raw Eye of the Chasm). <span class="warn">⚠️ Minerar atrai raids de Evil Prospectors; volte pela rota mais curta ou os cristais somem.</span>'],
+      ['t4', 'fos', '<span class="boss">Boss Thaian</span>: mate os Prospectors → mate o Thaian\'s Ghost repetidamente (cada um tira 5.000 de drown do boss) até cair'],
+      ['t5', 'fos', '<b class="loc">Zarganash</b>: The Unwelcome → The Dread Maiden → The Fear Feaster → <span class="boss">The Pale Worm (TEAM)</span>. <span class="itens">Feaster of Souls ✔ → SOUL WAR destravada (seu Soul Set!)</span>'],
+    ]},
+  ];
+
+  function render() {
+    let total = 0, ok = 0;
+    $('etapas').innerHTML = ETAPAS.map((et, ei) => {
+      const rows = et.steps.map(([id, qk, html]) => {
+        total++;
+        if (done[id]) ok++;
+        const [qn, qc, ql] = Q[qk];
+        const tag = qn
+          ? `<a class="qtag ${qc}" href="quests.html?open=${encodeURIComponent(qn)}">${ql}</a>`
+          : `<span class="qtag ${qc}">${ql}</span>`;
+        return `<div class="step ${done[id] ? 'done' : ''}">
+          <input type="checkbox" data-id="${id}" ${done[id] ? 'checked' : ''} />
+          <span class="txt">${html}</span>${tag}
+        </div>`;
+      }).join('');
+      const dcount = et.steps.filter(([id]) => done[id]).length;
+      return `<section class="etapa">
+        <h2>${et.t}<span class="done-n">${dcount}/${et.steps.length}</span></h2>
+        <p class="why">${et.why}</p>
+        ${rows}
+      </section>`;
+    }).join('');
+
+    const pct = total ? Math.round(100 * ok / total) : 0;
+    $('pfill').style.width = pct + '%';
+    $('ptext').textContent = `${ok} de ${total} passos concluídos — ${pct}%`;
+
+    document.querySelectorAll('.step input[data-id]').forEach((cb) => {
+      cb.onchange = () => {
+        if (cb.checked) done[cb.dataset.id] = true; else delete done[cb.dataset.id];
+        save();
+        render();
+      };
+    });
+  }
+
+  render();
+</script>
+</html>
