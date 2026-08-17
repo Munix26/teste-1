@@ -160,6 +160,8 @@
       <a href="spawns.html">🗺️ Spawns</a>
       <a href="central.html" class="on">⭐ Central</a>
       <a href="quests.html">📜 Quests</a>
+      <a href="guia.html">🎯 Guia</a>
+      <a href="roteiro.html">🧭 Roteiro</a>
     </nav>
     <span class="hint"><kbd>/</kbd> busca · <kbd>a|b</kbd> busca “a ou b”</span>
   </header>
@@ -195,8 +197,9 @@
   <div class="scroll"><table id="tbl"></table></div>
 
   <p class="legend">
-    “Seu level” esconde hunts acima do seu alcance (e as que você já passou muito,
-    quando a fonte dá faixa). XP/h e loot/h são <b>raw</b> reportados pela fonte —
+    O level mostrado é o <b>mínimo recomendado pela fonte</b> (“300+”); quando a
+    fonte dá uma faixa, ela aparece ao passar o mouse. “Seu level” esconde hunts
+    acima do seu alcance (e as que você já passou muito, quando há faixa). XP/h e loot/h são <b>raw</b> reportados pela fonte —
     variam com equip, bônus e ocupação do respawn; use como ordem de grandeza e
     compare com as suas sessões do Hunt Analyzer. Loot/h em
     <span class="negv">vermelho</span> = waste (custo maior que o loot).
@@ -283,7 +286,7 @@
     </tr></thead>`;
 
     const body = rows.map((r) => `<tr>
-      <td class="num">${r.l}${r.lm ? '<span class="dim">–' + r.lm + '</span>' : '+'}</td>
+      <td class="num"${r.lm ? ` title="a fonte indica a faixa ${r.l}–${r.lm}"` : ''}>${r.l}+</td>
       <td class="name">${r.n}${MINE.test(r.n) ? '<span class="mine" title="sua hunt atual">🦁</span>' : ''}
         ${r.wiki ? ` <a class="wikilink" href="spawns.html?open=${encodeURIComponent(r.wiki)}" title="ficha do spawn no wiki">🗺️</a>` : ''}</td>
       <td class="num">${r.xp ? r.xp : '<span class="dim">—</span>'}</td>
