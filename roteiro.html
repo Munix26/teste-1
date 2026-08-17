@@ -106,6 +106,17 @@
   .warn  { color: #fbbf24; font-size: 0.8rem; }
   .boss  { color: #f87171; font-size: 0.8rem; }
 
+  /* trava de ordem: este passo só libera depois de outro */
+  .gate {
+    display: inline-block;
+    color: #fb923c;
+    font-size: 0.76rem;
+    border: 1px dashed rgba(251,146,60,0.45);
+    border-radius: 5px;
+    padding: 0 7px;
+    margin-right: 4px;
+  }
+
   b.loc { color: #e6e8ee; }
 
   .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
@@ -132,7 +143,10 @@
   <p class="sub">
     Ordem de execução para <b>Sea of Light · Feaster of Souls · Liquid Black ·
     Secret Library · Within the Tides · Threatened Dreams · Dream Courts</b>,
-    agrupada por região para nunca visitar o mesmo lugar duas vezes à toa.
+    agrupada por região para nunca visitar o mesmo lugar duas vezes à toa —
+    <b>respeitando a ordem interna obrigatória de cada quest</b>: um passo com
+    <span class="gate">⛓️ trava</span> só fica disponível depois do que está
+    indicado nele; o resto de cada etapa pode ser feito na mesma viagem.
     Passos e itens vêm dos spoilers do TibiaWiki (no dump do repositório);
     marque cada passo — fica salvo no navegador.
   </p>
@@ -192,55 +206,62 @@
       ['r6', 'pre', '<b>The Lost Brother Quest</b> — exigida pela Within the Tides'],
       ['r7', 'pre', '<b>The New Frontier</b> — só pelo atalho Zao → Falcon Bastion usado na Secret Library'],
     ]},
-    { t: '1 · Edron — o hub do Spectulus (2 quests + 1 sino)', why: 'Sea of Light inteira e o começo da Liquid Black são com o MESMO NPC. O tempo de espera da missão 1 vira o sino da Feaster.', steps: [
+    { t: '1 · Jakundaf / Carlin / Dark Cathedral — Feaster parte 1 (ordem obrigatória)', why: 'A primeira missão da Feaster (Drain the Brain) é uma cadeia linear: cada passo libera o próximo. O ganho de rota aqui é interno: os 3 primeiros sinos formam um circuito Carlin → Ghostlands → Dark Cathedral, e a Burial Shroud (da missão SEGUINTE) já pode ser tecida enquanto você está dentro do Brain Grounds — dica do próprio wiki.', steps: [
+      ['a1', 'fos', '<b class="loc">Para Norbert</b> (norte do Deserto de Jakundaf): aceite a missão e receba o <b>Death Knell</b>'],
+      ['a2', 'fos', 'Circuito dos 3 primeiros sinos: <b class="loc">Carlin Graveyard</b> (entrada) → <b class="loc">Ghostlands</b> (buraco a SO, sala a oeste) → <b class="loc">Dark Cathedral</b> (2º andar leste, sala ao norte)'],
+      ['a3', 'fos', '<span class="gate">⛓️ após os 3 sinos</span>Poção: Skull no Wooden Grinder → Bone Meal · Grave Flower no Alchemical Apparatus → extrato · junte → Vial with a Skull Cork → <b>beba</b>'],
+      ['a4', 'fos', '<span class="gate">⛓️ após a poção</span>Portal invisível ao lado do Norbert → <b class="loc">Brain Grounds</b>: reporte, receba o Scalpel e colete <b>20 amostras do ulcer</b> (pise no chão amarelo, tome o dano, use o Scalpel na bolha) <span class="warn">⚠️ o chão tira 15–25% do HP máximo por andar</span>'],
+      ['a5', 'fos', 'Enquanto está lá dentro, <b>já teça a Burial Shroud</b> (é da missão seguinte, mas o wiki recomenda adiantar): Stump a SE → Yarn · poça de Ghostly Water ao norte → Glittering Yarn · Loom 1 andar abaixo a SO → <b>Burial Shroud</b>'],
+      ['a6', 'fos', '<span class="gate">⛓️ após as amostras</span>Purify the Lost Souls (reporte e siga o quest log) → acesso ao boss'],
+      ['a7', 'fos', '<span class="gate">⛓️ último da cadeia</span><span class="boss">Brain Head</span>: mate primeiro os Cerebellum (o de NE e os ao redor), foque o boss com <b>gelo</b> (fraqueza), <b>nada de energy</b> (cura o boss; Bad Thoughts curam se a bola de energia pegar o boss no raio de 2 sqm). <span class="warn">⏱️ 5 minutos; falhou = 20h de cooldown</span>. Reporte ao Norbert e <b>aceite Journey to the Netherworld (diga yes)</b> — isso libera o 2º conjunto de sinos'],
+    ]},
+    { t: '2 · Edron — o hub do Spectulus (2 quests + 1 sino)', why: 'Sea of Light inteira e o começo da Liquid Black são com o MESMO NPC. O tempo de espera da missão 1 vira o sino da Feaster — que agora está liberado, porque a etapa 1 terminou com a missão Netherworld ativa.', steps: [
       ['e1', 'sol', '<b class="loc">Academia (torre central, topo)</b>: peça mission ao Spectulus. Ache o Shoddy Beggar em Edron, dê <i>spare</i> de 1 gp, responda as perguntas → Plans for a Strange Device → entregue. <span class="warn">⏳ Ele leva 30 min reais estudando.</span>'],
-      ['e2', 'fos', 'Nos 30 min: toque o Death Knell na <b class="loc">Edron Vampire Crypt</b> (3º andar, poça de sangue)'],
+      ['e2', 'fos', '<span class="gate">⛓️ exige etapa 1 completa (missão Netherworld ativa)</span>Nos 30 min: toque o Death Knell na <b class="loc">Edron Vampire Crypt</b> (3º andar, poça de sangue)'],
       ['e3', 'sol', '<b class="loc">Lost Mines</b> (entre a Troll e a Goblin Cave de Edron): pick no cristal ciano grande → Rare Crystal → entregue ao Spectulus'],
       ['e4', 'lb', 'Ainda no Spectulus: faça a <b>1ª missão da Liquid Black</b> (The First Visitor) — é o pré-requisito da Secret Library'],
       ['e5', 'sol', 'Barco Edron → Carlin → balsa pra <b class="loc">Vega</b>: costa sudoeste até o Stony Pond, use o Rare Crystal no Ice Cube → caverna → mate <b>The Collector</b> → use o Carrying Device no corpo → volte ao Spectulus. <span class="itens">Sea of Light ✔ (destrava o final da Feaster)</span>'],
     ]},
-    { t: '2 · Yalahar + Ankrahmun — sinos da Feaster', why: 'Dois toques de Death Knell na mesma linha de barco. Ankrahmun é vizinho do Cobra Bastion: emenda uma hunt.', steps: [
-      ['y1', 'fos', '<b class="loc">Yalahar, Cemetery Quarter</b>: knell no térreo, lado leste'],
-      ['y2', 'fos', '<b class="loc">Ankrahmun, Shadow Tomb</b> (leste da cidade): knell no 6º andar, a leste'],
-      ['y3', 'fos', 'De volta ao <b class="loc">Para Norbert</b> (norte do Jakundaf): entregue e aceite a próxima'],
+    { t: '3 · Yalahar + Ankrahmun — sinos 5 e 6 da Feaster', why: 'Mesma trava da etapa anterior: os dois sinos são da missão Netherworld. Ankrahmun é vizinho do Cobra Bastion: emenda uma hunt.', steps: [
+      ['y1', 'fos', '<span class="gate">⛓️ missão Netherworld ativa</span><b class="loc">Yalahar, Cemetery Quarter</b>: knell no térreo, lado leste'],
+      ['y2', 'fos', '<span class="gate">⛓️ missão Netherworld ativa</span><b class="loc">Ankrahmun, Shadow Tomb</b> (leste da cidade): knell no 6º andar, a leste'],
     ]},
-    { t: '3 · Port Hope / Tiquanda — Netherworld', why: 'Os três minibosses solo da Feaster; se faltar a Asura Palace Quest (pré-req de 2 quests), é aqui do lado.', steps: [
-      ['n1', 'fos', 'Antes: teça a <b>Burial Shroud</b> no Brain Grounds (Stump SE → Yarn · poça de Ghostly Water ao norte → Glittering Yarn · Loom 1 andar abaixo SO)'],
-      ['n2', 'fos', '<b class="loc">Leste de Banuta</b>: portal invisível (mureta), <b>equipe a Burial Shroud</b> pra entrar. Mate <b>Unaz the Mean, Irgix the Flimsy e Vok the Freakish</b> — solo, um por vez. <span class="boss">Comboam ~2.000 + mana drain.</span> <span class="itens">RP: Envenomed Arrows (são fortíssimos contra físico). Guarde os 3 Skull Coins!</span>'],
+    { t: '4 · Port Hope / Tiquanda — Netherworld', why: 'Com os 3 sinos novos tocados e a Burial Shroud pronta (etapa 1), o Netherworld abre. Se faltar a Asura Palace Quest (pré-req de 2 quests), é aqui do lado.', steps: [
+      ['n2', 'fos', '<span class="gate">⛓️ 3 sinos (etapas 2–3) + Burial Shroud</span><b class="loc">Leste de Banuta</b>: portal invisível (mureta), <b>equipe a Burial Shroud</b> pra entrar. Mate <b>Unaz the Mean, Irgix the Flimsy e Vok the Freakish</b> — solo, um por vez. <span class="boss">Comboam ~2.000 + mana drain.</span> <span class="itens">RP: Envenomed Arrows (são fortíssimos contra físico). Guarde os 3 Skull Coins!</span> Depois reporte ao Norbert'],
       ['n3', 'pre', 'Se faltou no checklist: <b>Asura Palace Quest</b> (Tiquanda, aqui do lado)'],
     ]},
-    { t: '4 · Grey Island / Fiehonja — o mundo Deepling', why: 'Liquid Black + a 1ª seção da Secret Library são na mesma região submarina. Levar: rope, pick, shovel, Soul Net, capacete de mergulho.', steps: [
-      ['g1', 'lb', '<span class="warn">⚠️ As missões disponíveis dependem do estágio do world change Deepling no seu servidor (1: Heart of the Sea/Soul Net · 2: Coral Mine · 3: Anchor/Guardians). Não são lineares — faça as do estágio atual e volte pro resto.</span>'],
+    { t: '5 · Grey Island / Fiehonja — o mundo Deepling', why: 'Liquid Black + a 1ª seção da Secret Library são na mesma região submarina. Levar: rope, pick, shovel, Soul Net, capacete de mergulho.', steps: [
+      ['g1', 'lb', '<span class="warn">⚠️ As missões disponíveis dependem do estágio do world change Deepling no seu servidor (1: Heart of the Sea/Soul Net · 2: Coral Mine · 3: Anchor/Guardians). Não são lineares entre si — faça as do estágio atual e volte pro resto quando o mundo virar.</span>'],
       ['g2', 'lb', '<b class="loc">Fiehonja</b>: missões do estágio vigente (Heart of the Sea → pick · Coral Mine → pick+shovel · Soul Net · Anchor)'],
-      ['g3', 'sl', 'Na mesma região: Secret Library <b>High and Dry</b> no Deepling Ancestorial Grounds'],
+      ['g3', 'sl', '<span class="gate">⛓️ exige LB 1ª missão (etapa 2) + Asura Palace</span>Na mesma região: Secret Library <b>High and Dry</b> no Deepling Ancestorial Grounds'],
     ]},
-    { t: '5 · Circuito Secret Library', why: 'As seções restantes espalham-se por lugares que também são hunt boa de RP — casa cada uma com uma sessão de caça.', steps: [
-      ['s1', 'sl', '<b class="loc">Asura Palace / Mirror</b>: The Path of Defiances <span class="itens">(+ hunt: Asura Mirror é 4.5kk/h de RP 350+ na ⭐ Central)</span>'],
-      ['s2', 'sl', '<b class="loc">Isle of the Kings</b>: Liquid Death (bucket + Blood + Water entram aqui)'],
-      ['s3', 'sl', 'The Lament (siga o quest log — armadura vermelha/Doublet)'],
-      ['s4', 'sl', '<b class="loc">Falcon Bastion</b> (atalho do Zao, New Frontier): The Order of the Falcon. <span class="boss">Grand Master Oberon é luta de TEAM — combine antes.</span>'],
-      ['s5', 'sl', '<b class="loc">Yalahar, MoTA</b>: Bursting at the Seams'],
-      ['s6', 'sl', '<b class="loc">A Biblioteca</b>: Lokathmor, Mazzinor, Ghulosh e Gorzindel. <span class="itens">Hunt: Secret Library rende 8–15kk/h (250–400) segundo a TibiaVault</span>'],
+    { t: '6 · Circuito Secret Library (ordem interna do wiki)', why: 'As seções são sequenciais no quest log; cada parada casa com uma hunt boa de RP.', steps: [
+      ['s1', 'sl', '<span class="gate">⛓️ após High and Dry</span><b class="loc">Asura Palace / Mirror</b>: The Path of Defiances <span class="itens">(+ hunt: Asura Mirror é 4.5kk/h de RP 350+ na ⭐ Central)</span>'],
+      ['s2', 'sl', '<span class="gate">⛓️ sequência</span><b class="loc">Isle of the Kings</b>: Liquid Death (bucket + Blood + Water entram aqui)'],
+      ['s3', 'sl', '<span class="gate">⛓️ sequência</span>The Lament (siga o quest log — armadura vermelha/Doublet)'],
+      ['s4', 'sl', '<span class="gate">⛓️ sequência</span><b class="loc">Falcon Bastion</b> (atalho do Zao, New Frontier): The Order of the Falcon. <span class="boss">Grand Master Oberon é luta de TEAM — combine antes.</span>'],
+      ['s5', 'sl', '<span class="gate">⛓️ sequência</span><b class="loc">Yalahar, MoTA</b>: Bursting at the Seams'],
+      ['s6', 'sl', '<span class="gate">⛓️ sequência</span><b class="loc">A Biblioteca</b>: Lokathmor, Mazzinor, Ghulosh e Gorzindel. <span class="itens">Hunt: Secret Library rende 8–15kk/h (250–400) segundo a TibiaVault</span>'],
     ]},
-    { t: '6 · Marapur — Within the Tides', why: 'Região isolada — uma viagem só resolve a quest inteira. É ela que destrava a Primal Ordeal (→ Alicorn Headguard no 400).', steps: [
+    { t: '7 · Marapur — Within the Tides', why: 'Região isolada e sem dependência das outras — encaixe onde preferir. Uma viagem só resolve a quest inteira, e é ela que destrava a Primal Ordeal (→ Alicorn Headguard no 400).', steps: [
       ['w1', 'wtt', 'Of Feathers and Flowers (objetivos da missão no quest log)'],
       ['w2', 'wtt', 'Coastal Concerns: cura dos beavers · caçar Foam Stalkers · <span class="boss">Timira the Many-Headed (boss)</span>'],
       ['w3', 'wtt', 'Mountainous Matters: consertar o observatório (Hammer) · ovos das Nagas · sala secreta <span class="itens">(Ice Cubes, Honeycomb, Mango + Juice Squeezer)</span>'],
       ['w4', 'wtt', 'Star-Crossed Lovers: falar com as Naga Shamans. <span class="itens">Within the Tides ✔ → Primal Ordeal liberada pro seu 400</span>'],
     ]},
-    { t: '7 · Feyrist — Threatened Dreams, depois Dream Courts', why: 'Troubled Animals abre o acesso pleno a Feyrist, que é pré-requisito da Dream Courts. Uma temporada inteira na mesma região.', steps: [
+    { t: '8 · Feyrist — Threatened Dreams, depois Dream Courts', why: 'Troubled Animals abre o acesso pleno a Feyrist, que é pré-requisito da Dream Courts — a ordem TD → DC é obrigatória. Uma temporada inteira na mesma região.', steps: [
       ['f1', 'td', 'Troubled Animals (Rake): Creation of Legends · Ghost of a Wolf · Swan Maiden'],
       ['f2', 'td', 'The Fairy Treasure: Tooth Fairy · Tired Trees · Beset Stones · The Last Part'],
       ['f3', 'td', 'A Dream Come True <span class="itens">(as 8 small enchanted gems)</span> · An Unlikely Couple (Panpipes) · The Swan Feather Cloak'],
       ['f4', 'td', 'Sweet Dreams: bosses The Flaming Orchid (Asura) e Katex Blood Tongue (Grimvale) + bolo <span class="itens">(Flour, Milk, Chocolate, Raspberry, Lemon, Moon Melon + Stealth Ring)</span> <span class="warn">⚠️ Katex: precisa das missões Grimvale (lua cheia)</span>'],
-      ['f5', 'dc', 'Court of Summer e Court of Winter (portais em Feyrist)'],
+      ['f5', 'dc', '<span class="gate">⛓️ exige Troubled Animals (f1) + Lantern/Ointment/Compass da preparação</span>Court of Summer e Court of Winter (portais em Feyrist)'],
       ['f6', 'dc', 'Ward Stones · Unsafe Release'],
       ['f7', 'dc', 'Haunted House: Cellar · Temple · Tomb · Buried Cathedral'],
       ['f8', 'dc', 'The Seven Keys — portas: Rosebush (porta das rosas) · Ghostsilver Lantern (invisível) · Flask of Medusa\'s Ointment (pedra) · Magical Paint (pintada) · Colourful Mushroom (ice bird) · Anatomy Book + Orc/Troll/Minotaur Skull (caveira) · Old Lock (vazia)'],
       ['f9', 'dc', '<b class="loc">The Dream Scar</b>: <span class="boss">Alptramun (320k HP) — TEAM</span>. Dream Courts ✔'],
     ]},
-    { t: '8 · Final da Feaster — The Thaian e Zarganash', why: 'Precisa da Sea of Light (etapa 1). O sino do Lion\'s Rock fica na porta do Lion Sanctum: toque no dia de Werelions. 🦁', steps: [
-      ['t1', 'fos', 'Spectulus (Magic Academy) → pergunte sobre <i>The Thaian</i> → taverna na floresta ao norte da montanha (norte de Thais) → <i>need</i>, <i>yes</i>, <i>yes</i>'],
+    { t: '9 · Final da Feaster — The Thaian e Zarganash', why: 'Dupla trava: exige o Netherworld entregue (etapa 4) E a Sea of Light completa (etapa 2). O sino do Lion\'s Rock fica na porta do Lion Sanctum: toque no dia de Werelions. 🦁', steps: [
+      ['t1', 'fos', '<span class="gate">⛓️ Netherworld entregue + Sea of Light ✔</span>Spectulus (Magic Academy) → pergunte sobre <i>The Thaian</i> → taverna na floresta ao norte da montanha (norte de Thais) → <i>need</i>, <i>yes</i>, <i>yes</i>'],
       ['t2', 'fos', 'Knells: <b class="loc">Kilmaresh Catacombs</b> (buraco no Water Temple) · <b class="loc">Ramoa</b> (spawn de Cavebears, esqueleto de dragão) · <b class="loc">Lion\'s Rock</b> (logo após a entrada do Sanctum) — e entregue os <b>3 Skull Coins</b> ao Thaian'],
       ['t3', 'fos', '<b class="loc">Barren Drift</b>: minere 100 Luminescent Crystals (pick; entregue e continue até ser teleportado; funda o cristal grande → Raw Eye of the Chasm). <span class="warn">⚠️ Minerar atrai raids de Evil Prospectors; volte pela rota mais curta ou os cristais somem.</span>'],
       ['t4', 'fos', '<span class="boss">Boss Thaian</span>: mate os Prospectors → mate o Thaian\'s Ghost repetidamente (cada um tira 5.000 de drown do boss) até cair'],
