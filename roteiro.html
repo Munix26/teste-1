@@ -121,6 +121,32 @@
 
   .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
 
+  /* detalhe "como fazer" expansível por passo */
+  .how { margin-top: 5px; }
+  .how summary {
+    cursor: pointer;
+    color: #60a5fa;
+    font-size: 0.78rem;
+    user-select: none;
+    list-style: none;
+  }
+  .how summary::before { content: '▸ '; }
+  .how[open] summary::before { content: '▾ '; }
+  .how summary::-webkit-details-marker { display: none; }
+  .how summary:hover { color: #93c5fd; }
+  .how > div {
+    margin: 6px 0 4px;
+    padding: 9px 12px;
+    background: #12141a;
+    border-left: 2px solid #2c3242;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #c3c9d6;
+  }
+  .how ol, .how ul { margin: 2px 0 2px 20px; }
+  .how li { padding: 2px 0; }
+  .step.done .how { display: none; }
+
   ul.flat { list-style: none; }
   ul.flat li { padding: 3px 0; font-size: 0.85rem; }
 </style>
@@ -169,7 +195,13 @@
     <p class="why" style="margin-bottom:6px">
       <b style="color:#fb923c">Pendência-chave:</b> <b>Explorer Society está em Novice</b>
       (e a pickaxe ainda não foi devolvida) — a Dream Courts exige rank <b>Relic Hunter</b>.
-      O caminho completo está na <b>etapa ES</b> logo abaixo.
+      O caminho completo está na <b>etapa ES</b> logo abaixo. Também não iniciada:
+      <b>Cults of Tibia — Prosperity</b> (segundo o wiki BR, é o que abre o acesso à
+      <b>Gorga</b> no topo da Medusa Tower — o 4º doce da Sweet Dreams; ver o passo r8).
+      Sobre a lista do wiki BR (<b>Key 3802 · Key 3012 · Queen of the Banshees ·
+      Kissing a Pig</b>): <b>nada disso trava a Dream Courts</b> — a Key 3802 é só da
+      rota clássica de pegar a pickaxe (dá pra comprar no Market), e o resto pertence
+      aos ranks <i>depois</i> de Relic Hunter (etapa <b>ES2</b>, opcional).
     </p>
     <p class="why" style="margin:0">
       <b style="color:#22d3ee">World change Deepling: stage 3</b> (em 17/08) — na V9, por
@@ -196,9 +228,11 @@
   </p>
 </div>
 
+<script src="roteiro-det.js"></script>
 <script src="ui.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
+  const DET = window.ROTEIRO_DET || {};
   const KEY = 'tibia-ai:roteiro';
   let done = {};
   try { done = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (_) {}
@@ -226,15 +260,25 @@
       ['p5', 'lb', 'Soul Net (missão Soul Net) · 2 gp pro Shoddy Beggar (ele cobra 1 gp duas vezes)'],
       ['p6', 'dc', 'Broken Compass (Andrew Lyze vende por 10k — ou pegue de graça na Extension Site durante o MoTA da Secret Library) · conferir na estante: Ghostsilver Lantern (Forgotten Knowledge) e Flask of Medusa\'s Ointment (Cursed Crystal)'],
       ['r1', 'pre', 'Acessos exigidos: Explorer Society até <b>Relic Hunter</b> (Calassa + Diving Equipment — DC) · <b>Meriana</b> (Shattered Isles — DC) · <b>Nibelor 2</b> (Tyrsung/Okolnir — DC) · <b>Asura Palace Quest</b> (SL e TD) · <b>The Lost Brother</b> (SL Lament e WtT) · <b>New Frontier</b> (só pro atalho Zao→Falcon) · <b>Blood Brothers até m3</b> + <b>Grimvale</b> (An Ancient Feud e The Curse Spreads) — TD Sweet Dreams <span class="warn">⚠️ Grimvale depende de lua cheia — agende</span>'],
+      ['r8', 'pre', '<b>Cults of Tibia — Prosperity (Patron of the Arts)</b> iniciada: Gareth no <b class="loc">MoTA (Thais, teleport a oeste da Knights Guild)</b>, vire <i>patron</i> por 10k — o MESMO patronato que a Secret Library exige (V10/j4); os passos seguintes passam por Iwar (Kazordoon) e Angelo (<b>Dark Pyramid</b> — a mesma da ES/x5!). <span class="warn">⚠️ A ligação com a Gorga vem do wiki BR; o wiki EN não confirma — mas iniciar é barato e o patronato você usaria de qualquer forma</span>'],
     ]},
-    { t: 'ES · Explorer Society — de Novice a Relic Hunter (destrava a Dream Courts)', why: 'Sede em Port Hope (Angus) ou Northport (Mortimer). São 2 rodadas de 3 missões, cada rodada em qualquer ordem — e quase todas caem em lugares que o roteiro já visita.', steps: [
-      ['x1', 'pre', '<b>Devolver a Dwarven Pickaxe</b> (você já tem ela!) a um representante → vira membro pleno'],
+    { t: 'ES · Explorer Society — de Novice a Relic Hunter (destrava a Dream Courts)', why: 'Sede em Port Hope (Angus) ou Northport (Mortimer). São 2 rodadas de 3 missões, cada rodada em qualquer ordem — e quase todas caem em lugares que o roteiro já visita. Pra Dream Courts basta chegar em Relic Hunter e fazer a The Undersea Kingdom (x7) — os ranks seguintes ficam na etapa ES2, opcional.', steps: [
+      ['x1', 'pre', '<b>Devolver a Dwarven Pickaxe</b> (você já tem ela!) a um representante → vira membro pleno. <span class="itens">Se não tiver a pickaxe: compre no Market ou pegue de daily respawn nas Dwarf Mines — a Key 3802/Dwacatra só é necessária na rota clássica do Family Brooch</span>'],
       ['x2', 'pre', '<b>Novice — The Ice Delivery</b>: aceite em <b class="loc">Northport</b> (dica do wiki — a corrida é de <b>Folda</b>): Ice Pick nas estalagmites da sala congelada (2º andar da caverna, Minotaurs) → <span class="warn">⏱️ 10 min pra entregar antes de derreter</span> (falhou? peça outra chance). <span class="itens">Sinergia: Folda também tem a Golden Hand (V8/h1) e uma ward stone da DC (V12/l2)</span>'],
       ['x3', 'pre', '<b>Novice — Butterfly Hunt + Plant Collection juntas</b> (dica do wiki): em <b class="loc">Tiquanda</b>, borboletas roxa → azul → vermelha (mate e use o kit no corpo fresco; Stealth Ring congela elas) + 3 plantas na ordem Jungle Bells → Witches Cauldron → Giant Jungle Rose. <span class="itens">Encaixa na V7 (Tiquanda)</span>'],
       ['x4', 'pre', '<b>Journeyman — The Lizard Urn</b>: Funeral Urn no templo central de <b class="loc">Chor</b> (precisa de <b>100 oz livres</b>; com task points do Paw and Fur, o Lorek te leva por 30 gp)'],
       ['x5', 'pre', '<b>Journeyman — The Bonelord Secret</b>: <b class="loc">Dark Pyramid</b> (NE de Darashia, cheia de Minotaurs — Stealth Ring ajuda): desça 5 andares até o Wrinkled Parchment; entregue dizendo <i>bonelord secrets</i>. <span class="itens">Encaixa nas idas a Darashia (V4/V6) 🦁</span>'],
       ['x6', 'pre', '<b>Journeyman — The Orc Powder</b>: <b class="loc">Ulderek\'s Rock</b>, suba 5 andares da montanha de orcs (Warlords/Leaders imunes a invisível) → Strange Powder no baú. <span class="itens">MESMA montanha do passo e5 da TD — faça na V5!</span> <span class="itens">Entregou as 3 → RELIC HUNTER ✔</span>'],
       ['x7', 'pre', '<span class="gate">⛓️ Relic Hunter</span><b>The Undersea Kingdom</b> (acesso a Calassa pra DC): <b class="loc">Liberty Bay</b> — Berenice (<i>mission</i>) → Captain Max (200 gp) → mergulhe com <b>Helmet of the Deep</b> (aluga em Calassa por 5.000 de depósito, pesa 210 oz — ou use o seu) → Pick na escotilha do navio → Damaged Logbook → reporte à Berenice. <span class="itens">Liberty Bay é a mesma ida do Corym Black Market (V11/k4)</span>'],
+    ]},
+    { t: 'ES2 · Explorer Society — de Relic Hunter até o fim (OPCIONAL — nada aqui trava a Dream Courts)', why: 'É daqui que vêm a Key 3012, a Key 3802 e a Queen of the Banshees que o wiki BR lista como requisitos: pertencem aos ranks Explorer em diante. Faça quando quiser fechar a Society inteira. As 3 missões de Relic Hunter são em qualquer ordem; as 4 de Explorer são NA ORDEM FIXA mostrada.', steps: [
+      ['y1', 'pre', '<b>Relic Hunter — The Elven Poetry</b>: <b class="loc">Hellgate</b> (embaixo de Ab\'Dendriel) — leve Rope e a <b>Key 3012</b> (só se a porta estiver trancada) → Songs of the Forest na porta selada. <span class="itens">Perdeu o livro depois de pegar? Elvith vende em Ab\'Dendriel (<i>elven poetry book</i>)</span>'],
+      ['y2', 'pre', '<b>Relic Hunter — The Memory Stone</b>: <b class="loc">Hero Cave (Edron)</b> → Memory Stone na sala leste. <span class="warn">⚠️ Não desça o buraco errado (Giant Spiders) nem a escada do fim (Grim Reapers!) — e NÃO dá pra pular a missão comprando a pedra do Black Bert</span>'],
+      ['y3', 'pre', '<b>Relic Hunter — The Rune Writings</b>: <b class="loc">Banuta</b> (Lorek te leva com task points do Paw and Fur) → Tracing Paper na Atypical Structure do subterrâneo sul. <span class="itens">Entregou as 3 → rank EXPLORER ✔ (a partir daqui a ordem é fixa)</span>'],
+      ['y4', 'pre', '<b>Explorer — The Ectoplasm</b>: mate um <b>Ghost</b> e use o Ectoplasm Container no corpo fresco (após os 10 s de looting). <span class="itens">Spawn mais rápido: Ankrahmun Library Tomb, a leste do depot (atrás de um sacrifício de Scarab Coin)</span>'],
+      ['y5', 'pre', '<b>Explorer — The Spectral Dress</b>: leve Pick e Rope. Pela catacumba da <b class="loc">Isle of the Kings</b> (a mesma ilha da biblioteca — j5; exige a White Raven Monastery Quest) até a <b>Queen of the Banshees</b>: diga <i>spectral dress</i> pra ela ANTES de pegar o vestido. <span class="warn">⚠️ É esta missão que pede a Rainha — a rota alternativa, sem a White Raven, é a longa: a Queen of the Banshees Quest inteira pela Ghostlands (os 7 selos)</span>'],
+      ['y6', 'pre', '<b>Explorer — The Spectral Stone</b>: busque os <i>latest research reports</i> na OUTRA sede (Angus ↔ Mortimer) → receba a Spectral Stone → use na Strange Carving no andar de cima das DUAS sedes → reporte'],
+      ['y7', 'pre', '<b>Explorer — The Astral Portals</b>: precisa de todas as outras missões feitas (é a última). <span class="itens">Recompensa: Astral Bridge Port Hope ↔ Northport (1 Orichalcum Pearl por viagem) + 6 Orichalcum Pearls + Crown Backpack</span>'],
     ]},
     { t: 'V1 · Jakundaf / Carlin / Plains of Havoc — Feaster: Drain the Brain (cadeia linear)', why: 'Cada passo libera o próximo — nada aqui pode ser antecipado. O circuito dos 3 sinos é a única otimização interna. Todos os bosses da Feaster têm cooldown de 20h.', steps: [
       ['a1', 'fos', '<b class="loc">Para Norbert</b> (norte do Deserto de Jakundaf): aceite e receba o <b>Death Knell</b>'],
@@ -261,6 +305,7 @@
     { t: 'V4 · Ankrahmun + Darashia — livro do Ahmet, sino 6 e o Deep Desert', why: 'Três coisas sem conflito de trava na mesma linha de barco — e o Path of Defiances da Secret Library é INDEPENDENTE das outras seções (só precisa da V2 pra quest existir). Werelions é aqui do lado. 🦁', steps: [
       ['d1', 'td', '<b class="loc">Ankrahmun</b>: fale <i>book</i> com <b>Ahmet</b> (ao lado do banco), pague 5.000 gp → Book with Old Legends (Doctored)'],
       ['d2', 'fos', '<span class="gate">⛓️ missão Netherworld ativa (V1)</span><b class="loc">Shadow Tomb</b> (leste de Ankrahmun): sino no 6º andar, a leste'],
+      ['d5', 'fos', '<span class="gate">⛓️ missão Netherworld ativa (V1)</span>De barco: <b class="loc">Yalahar, Cemetery Quarter</b> — o 3º sino desta rodada, no térreo a leste. <span class="warn">⚠️ sem ele o Netherworld (V7/g7) não abre</span>'],
       ['d4', 'pre', 'Aproveite: sessão de hunt nos <b class="loc">Werelions</b> (Lion Sanctum) 🦁'],
     ]},
     { t: 'V5 · Ab\'Dendriel → Edron → Cormaya (noite) → Venore — TD 1a/1b + o início da Secret Library', why: 'O livro adulterado precisa voltar à mesa das Poacher Caves; a Ghostly Wolf só aparece à noite em Cormaya — e o Dedoras (que abre a Secret Library) fica NA MESMA Cormaya, a sudeste. Ida noturna dupla.', steps: [
@@ -304,7 +349,7 @@
       ['j1', 'sl', '<span class="warn">🌙 iniciar à noite</span><b class="loc">Edron, Wyvern Mountain</b>: Chalk no chão (→ Bucket with Chalk), levite e suba ao <b>Falcon Outpost</b>, pegue a Page from a Mystic Book. Ritual no símbolo: Blood → Water → Chalk no lado NE → <b>Falcon Bastion</b>'],
       ['j2', 'sl', 'No castelo: pegue Can of Grease, Key 0909 e os <b>9 documentos do Grand Master</b> (respostas do boss!). Minibosses <b>NESTA ORDEM</b>: Soeren (telhado NE) → Lazare (salinha ao norte dos monges) → Gaunder (2 andares abaixo) → Dominus (ilha ao norte, de barquinho) — todos do time precisam causar dano ("Your deeds have been noticed")'],
       ['j3', 'sl', 'Subterrâneo: Dazed Leaf Golem → Electric Sparks → Mystic Flames (o "olho do falcão" no automap) → <span class="boss">Grand Master Oberon (TEAM)</span>: responda os 3 debates no chat com as citações dos 9 documentos (errou = ele cura). Dica do wiki: 2 hotkeys — respostas que começam com "T" numa, o resto na outra. <span class="itens">Depois, atalho de barco pelo Zao Steppe (New Frontier)</span>'],
-      ['j4', 'sl', '<b class="loc">MoTA</b> (Museum of Tibian Arts): vire Patron com o <b>Gareth</b>, <i>extension</i> → <i>problems</i>. Os 4 seals em sequência: alavanca dupla do Bone Lever · bolas de energia mineradas (amarela O, verde centro, vermelha L) · Bony Rod + Ruby Fire Stone recarregando nos Coal Basins · 3 minutos na sala dos Lava Golems sobre as inscrições. <span class="itens">De carona: o baú do Sample of Monster Blood dá um Broken Compass (pra DC)</span>'],
+      ['j4', 'sl', '<b class="loc">MoTA</b> (Museum of Tibian Arts, <b>Thais</b> — teleport a oeste da Knights Guild): vire Patron com o <b>Gareth</b> <span class="itens">(o patronato também inicia a Prosperity — r8)</span>, <i>extension</i> → <i>problems</i>. Os 4 seals em sequência: alavanca dupla do Bone Lever · bolas de energia mineradas (amarela O, verde centro, vermelha L) · Bony Rod + Ruby Fire Stone recarregando nos Coal Basins · 3 minutos na sala dos Lava Golems sobre as inscrições. <span class="itens">De carona: o baú do Sample of Monster Blood dá um Broken Compass (pra DC)</span>'],
       ['j5', 'sl', '<span class="gate">⛓️ as 6 investigações completas</span><b>Dedoras</b> (Cormaya): <i>search</i> → diga o nome das missões → <i>check</i> → <b class="loc">Isle of the Kings</b>: <b>Scythe no monumento</b> do altar (só Scythe, não vale Secret Agent Tool) → biblioteca'],
       ['j6', 'sl', 'Na biblioteca (times ≤5, 17 min cada): <span class="boss">Lokathmor</span> (Force Fields + Parchment na Writing Desk) · <span class="boss">Mazzinor</span> (vortex → Knowledge Elemental antes da explosão) · <span class="boss">Ghulosh</span> (capacete de mergulho! alinhe o Deathgaze com o Concentrated Death) · <span class="boss">Gorzindel</span> (destrua os 5 Stolen Knowledge)'],
       ['j7', 'sl', '<span class="gate">⛓️ 4 bosses mortos</span><span class="boss">Batalha final (team ≤10)</span>: waves + alas em sequência — Spellstealer (vortex da cor) → Scion of Havoc (NÃO mate os Spawns) → Chill & Freeze (separados) → Devourer (CURE os 4 livros!) → <b>Scourge of Oblivion</b> (pare de bater no modo Reflective). <span class="itens">Secret Library ✔</span>'],
@@ -314,7 +359,7 @@
       ['k2', 'td', '<b>An Unlikely Couple</b>: Aurita (praia do Ice Shrine) → Dancing Fairy (<i>fishtail</i>/<i>spell</i>) → Panpipes na ilhota do lago → notas pra Aurita → Taegen pede a <b>Raven Herb</b> (Ferns, <span class="warn">🌙 noite</span>)'],
       ['k3', 'td', '<b>A Dream Come True</b> (Maelyrra): 200 Enfeebled Silencers/Weakened Frazzlemaws + <span class="boss">Kroazur (repetível a cada 2h)</span> · 5 fadas presas (arma melee na barreira) + Dark Moon Mirror · <span class="gate">⛓️ m3 exige An Unlikely Couple completa</span> Vial da Aurita + Sun Catcher do Taegen + 8 gems · carregar as 3 luzes (sol ☀️/lua 🌙/estrelas 🌙) · usar cada item 5× nos 15 pontos. <span class="warn">⚠️ NÃO recarregue os itens antes de entregar a quest (bug sem conserto)</span>'],
       ['k4', 'td', '<span class="gate">⛓️ A Dream Come True ✔</span><b>Sweet Dreams</b>: donut gigante → <b class="loc">Liberty Bay, Corym Black Market -4</b>: <i>help</i> à fury presa → chave 2 andares abaixo → ilusão da Charlotta (1k) → liberte a fury <b>invisível</b> → receita · faça a <b>Gingerbread Key</b> (massa + chocolate; siropes NA ORDEM moon melon → raspberry → lemon; açúcar das 3 cavernas; Moon Melon 🌙) → <b>Candia</b>'],
-      ['k5', 'td', 'Em Candia: Candy Lipstick (castelo) · <b>Stolen Sweets</b>: <span class="boss">Kroazur</span> (Matcha Turtle) · <span class="boss">Katex Blood Tongue</span> (Rainbow Waffles) <span class="warn">⚠️ exige Blood Brothers m3 + Grimvale (lua cheia)</span> · <span class="boss">The Flaming Orchid</span> (Rose Milk Cake — de novo no Asura Palace) · <span class="boss">Gorga</span> (Nightsky Cupcake) · <b>Chocolate Mines</b> (Sugar Daddy, candy canes, 5 Honey Elementals) · <b>Family Feud</b>: escovas nas camas de Carlin/Thais/Venore · <b>Taffy Bunny</b> (só reportar <i>bunny</i>). <span class="itens">Threatened Dreams ✔</span>'],
+      ['k5', 'td', 'Em Candia: Candy Lipstick (castelo) · <b>Stolen Sweets</b>: <span class="boss">Kroazur</span> (Matcha Turtle) · <span class="boss">Katex Blood Tongue</span> (Rainbow Waffles) <span class="warn">⚠️ exige Blood Brothers m3 + Grimvale (lua cheia)</span> · <span class="boss">The Flaming Orchid</span> (Rose Milk Cake — de novo no Asura Palace) · <span class="boss">Gorga</span> (Nightsky Cupcake — topo da <b>Medusa Tower</b>, spawna a cada 5–10 min; <span class="warn">wiki BR: exige Prosperity iniciada — r8</span>) · <b>Chocolate Mines</b> (Sugar Daddy, candy canes, 5 Honey Elementals) · <b>Family Feud</b>: escovas nas camas de Carlin/Thais/Venore · <b>Taffy Bunny</b> (só reportar <i>bunny</i>). <span class="itens">Threatened Dreams ✔</span>'],
     ]},
     { t: 'V12 · Dream Courts — cortes, pedras, catedral, labirinto e arena', why: 'Só abre com Feyrist liberado (V6) e os itens da preparação. As 6 ward stones fáceis viram um tour de ilhas — Folda já foi visitada na V8, Cormaya na V5: se preferir, adiante essas pedras quando o Dream Talisman estiver em mãos.', steps: [
       ['l1', 'dc', '<span class="gate">⛓️ Feyrist ✔ + Myzzi (V2)</span>Corte do Verão (portal NE da Fae Village): <b>Vanys</b>, <i>task</i> → <b>Dream Talisman</b> (perdeu? diga <i>lost</i>)'],
@@ -345,9 +390,12 @@
         const tag = qn
           ? `<a class="qtag ${qc}" href="quests.html?open=${encodeURIComponent(qn)}">${ql}</a>`
           : `<span class="qtag ${qc}">${ql}</span>`;
+        const how = DET[id]
+          ? `<details class="how"><summary>como fazer</summary><div>${DET[id]}</div></details>`
+          : '';
         return `<div class="step ${done[id] ? 'done' : ''}">
           <input type="checkbox" data-id="${id}" ${done[id] ? 'checked' : ''} />
-          <span class="txt">${html}</span>${tag}
+          <div class="txt">${html}${how}</div>${tag}
         </div>`;
       }).join('');
       const dcount = et.steps.filter(([id]) => done[id]).length;
