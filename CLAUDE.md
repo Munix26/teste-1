@@ -19,8 +19,11 @@ Ferramenta pessoal de consulta e análise de dados de Tibia, focada em
   (pré-req da Secret Library ok); Blood Brothers m1–4 e Grimvale (An Ancient
   Feud + The Curse Spreads) feitas → Katex Blood Tongue liberado; **Explorer
   Society em Novice** (pickaxe não devolvida) — é o bloqueio da Dream Courts,
-  que exige Relic Hunter. World change Deepling estava no **stage 3** em
-  2026-08-17 (muda com o tempo — perguntar antes de mandar pra Fiehonja).
+  que exige Relic Hunter. **Cults of Tibia inteira do zero** (no quest log
+  só o Zathroth Remnants, que aparece sozinho) — irrelevante pras 7 quests:
+  a Prosperity começa direto no Gareth, sem pré-requisito. World change
+  Deepling estava no **stage 3** em 2026-08-17 (muda com o tempo —
+  perguntar antes de mandar pra Fiehonja).
   O roteiro dessas quests vive em `roteiro.html`.
 - Objetivos de equipamento: Soulbleeder, Soulshell, Pair of Soulstalkers
   (Soul War) e Alicorn Headguard (Primal Ordeal/Hazard).
