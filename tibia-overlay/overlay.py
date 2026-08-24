@@ -20,6 +20,7 @@ Fluxo:
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -354,7 +355,21 @@ class ControlPanel(QMainWindow):
         QApplication.quit()
 
 
+def _fix_qt_plugin_path():
+    """Contorna o PySide6 não achar o plugin de plataforma ("cocoa" no macOS,
+    "windows" no Windows) quando a autodetecção do caminho de plugins falha —
+    sintoma: 'Could not find the Qt platform plugin "cocoa" in ""'."""
+    if os.environ.get("QT_QPA_PLATFORM_PLUGIN_PATH"):
+        return
+    import PySide6
+
+    plugins = Path(PySide6.__file__).resolve().parent / "Qt" / "plugins"
+    if (plugins / "platforms").is_dir():
+        os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = str(plugins / "platforms")
+
+
 def main():
+    _fix_qt_plugin_path()
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)  # fechar um espelho não encerra o app
     panel = ControlPanel()
