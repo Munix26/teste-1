@@ -67,9 +67,10 @@ sem etapa de permissão.
   e Sair.
 - **Fechar o painel não encerra o app** — só o esconde; os espelhos
   continuam. Para encerrar de verdade, use "Sair" no ícone da barra.
-- Espelhos **e** painel aparecem em **todos os desktops/Spaces** (inclusive
-  sobre apps em fullscreen nativo) — mude de janela à vontade que o overlay
-  acompanha.
+- A caixinha **"Aparecer em todos os desktops (Spaces)"** no painel controla
+  se o overlay te segue: ligada, espelhos e painel aparecem em todos os
+  desktops (inclusive sobre fullscreen nativo); desligada, ficam só no
+  desktop onde estão (o do Tibia). A escolha fica salva entre aberturas.
 
 ### Sobre a permissão de "áudio"
 

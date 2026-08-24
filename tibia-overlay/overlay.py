@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 import mss
-from PySide6.QtCore import QRect, Qt, QTimer, Signal
+from PySide6.QtCore import QRect, QSettings, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QColor,
     QGuiApplication,
@@ -37,6 +37,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -51,7 +52,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-APP_VERSION = "0.7"
+APP_VERSION = "0.8"
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
 # Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
@@ -62,11 +63,12 @@ else:
     LAYOUT_DIR = Path(__file__).resolve().parent
 
 
-def _apply_macos_overlay_behavior(widget):
+def _apply_macos_overlay_behavior(widget, all_spaces: bool = True):
     """Configura a janela nativa (NSWindow) para se comportar como overlay de
-    verdade no macOS: nível acima de janelas comuns, nunca esconder quando o
-    app perde o foco, e aparecer em todos os Spaces — inclusive por cima de
-    apps em fullscreen nativo. No-op fora do macOS ou sem pyobjc."""
+    verdade no macOS: nível acima de janelas comuns e nunca esconder quando o
+    app perde o foco. Com all_spaces, a janela aparece em todos os Spaces
+    (inclusive sobre fullscreen nativo); sem, fica só no desktop onde está.
+    No-op fora do macOS ou sem pyobjc."""
     if sys.platform != "darwin":
         return
     try:
@@ -81,9 +83,13 @@ def _apply_macos_overlay_behavior(widget):
         win.setLevel_(101)  # NSPopUpMenuWindowLevel: acima de janelas normais
         win.setHidesOnDeactivate_(False)
         # CanJoinAllSpaces (1<<0) | Stationary (1<<4) | FullScreenAuxiliary (1<<8)
-        win.setCollectionBehavior_(
-            win.collectionBehavior() | (1 << 0) | (1 << 4) | (1 << 8)
-        )
+        spaces_bits = (1 << 0) | (1 << 8)
+        behavior = win.collectionBehavior() | (1 << 4)
+        if all_spaces:
+            behavior |= spaces_bits
+        else:
+            behavior &= ~spaces_bits
+        win.setCollectionBehavior_(behavior)
     except Exception:
         pass  # sem pyobjc instalado — fica só com o always-on-top do Qt
 
@@ -192,7 +198,7 @@ class MirrorWindow(QWidget):
         super().showEvent(e)
         # Reaplicado a cada show(): mudar window flags (ex.: travar) recria a
         # janela nativa e perderia a configuração de overlay.
-        _apply_macos_overlay_behavior(self)
+        _apply_macos_overlay_behavior(self, self.panel.all_spaces_enabled())
 
     def set_fps(self, fps: int):
         self._timer.setInterval(max(1000 // max(fps, 1), 10))
@@ -319,6 +325,14 @@ class ControlPanel(QMainWindow):
         row.addWidget(self.fps)
         layout.addLayout(row)
 
+        self._settings = QSettings("tibia-ai", "TibiaOverlay")
+        self.chk_spaces = QCheckBox("Aparecer em todos os desktops (Spaces)")
+        self.chk_spaces.setChecked(
+            self._settings.value("all_spaces", True, type=bool)
+        )
+        self.chk_spaces.toggled.connect(self._apply_all_spaces)
+        layout.addWidget(self.chk_spaces)
+
         self.listw = QListWidget()
         layout.addWidget(self.listw)
 
@@ -357,9 +371,18 @@ class ControlPanel(QMainWindow):
         self._mirrors_hidden = False
         self._setup_tray()
 
+    def all_spaces_enabled(self) -> bool:
+        return self.chk_spaces.isChecked()
+
+    def _apply_all_spaces(self, enabled: bool):
+        self._settings.setValue("all_spaces", enabled)
+        _apply_macos_overlay_behavior(self, enabled)
+        for m in self.mirrors:
+            _apply_macos_overlay_behavior(m, enabled)
+
     def showEvent(self, e):
         super().showEvent(e)
-        _apply_macos_overlay_behavior(self)  # painel segue todos os Spaces
+        _apply_macos_overlay_behavior(self, self.all_spaces_enabled())
 
     # ---- barra de menus (tray) --------------------------------------------
 
