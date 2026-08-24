@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+APP_VERSION = "0.4"
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
 # Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
@@ -50,6 +51,32 @@ if getattr(sys, "frozen", False):
     LAYOUT_DIR = Path.home() / "Documents"
 else:
     LAYOUT_DIR = Path(__file__).resolve().parent
+
+
+def _apply_macos_overlay_behavior(widget):
+    """Configura a janela nativa (NSWindow) para se comportar como overlay de
+    verdade no macOS: nível acima de janelas comuns, nunca esconder quando o
+    app perde o foco, e aparecer em todos os Spaces — inclusive por cima de
+    apps em fullscreen nativo. No-op fora do macOS ou sem pyobjc."""
+    if sys.platform != "darwin":
+        return
+    try:
+        from ctypes import c_void_p
+
+        import objc
+
+        view = objc.objc_object(c_void_p=c_void_p(int(widget.winId())))
+        win = view.window()
+        if win is None:
+            return
+        win.setLevel_(101)  # NSPopUpMenuWindowLevel: acima de janelas normais
+        win.setHidesOnDeactivate_(False)
+        # CanJoinAllSpaces (1<<0) | Stationary (1<<4) | FullScreenAuxiliary (1<<8)
+        win.setCollectionBehavior_(
+            win.collectionBehavior() | (1 << 0) | (1 << 4) | (1 << 8)
+        )
+    except Exception:
+        pass  # sem pyobjc instalado — fica só com o always-on-top do Qt
 
 
 class RegionSelector(QWidget):
@@ -134,6 +161,12 @@ class MirrorWindow(QWidget):
         self.set_fps(fps)
         self._timer.start()
 
+    def showEvent(self, e):
+        super().showEvent(e)
+        # Reaplicado a cada show(): mudar window flags (ex.: travar) recria a
+        # janela nativa e perderia a configuração de overlay.
+        _apply_macos_overlay_behavior(self)
+
     def set_fps(self, fps: int):
         self._timer.setInterval(max(1000 // max(fps, 1), 10))
 
@@ -204,7 +237,7 @@ class MirrorWindow(QWidget):
 class ControlPanel(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Tibia Overlay")
+        self.setWindowTitle(f"Tibia Overlay v{APP_VERSION}")
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         self.mirrors: list[MirrorWindow] = []
         self._selector = None
