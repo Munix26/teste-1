@@ -51,6 +51,22 @@ sem etapa de permissão.
 5. O spinner de **FPS** controla a taxa de atualização (20 é suficiente para
    cooldowns; suba para 30–60 se quiser mais fluidez, custa mais CPU).
 
+### Editar o recorte depois de criado
+
+- **Botão direito → "Reajustar recorte…"** reabre o seletor e troca a região
+  de origem daquela janela-espelho (posição e tamanho do espelho ficam).
+- **Ajuste fino pelo teclado** (clique na janela-espelho antes, destravada):
+  **setas** movem o recorte 1px na tela (Shift = 10px); **Option+setas**
+  mudam a largura/altura do recorte (Shift = 10px). Ideal para alinhar
+  slots de equipamento e contadores de item pixel a pixel.
+
+### Sobre a permissão de "áudio"
+
+O aviso do macOS fala em "gravar a tela **e o áudio**" porque o sistema
+juntou as duas coisas numa categoria única de permissão — o texto é do
+próprio macOS. O app não tem nenhum código de áudio e **nunca pede
+microfone** (confira: ele não aparece em Privacidade → Microfone).
+
 Para testar **sem o Tibia aberto**: espelhe qualquer coisa que se mova
 (o relógio do sistema, um vídeo) e confira que a janelinha replica em tempo
 real.

@@ -42,7 +42,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-APP_VERSION = "0.4"
+APP_VERSION = "0.5"
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
 # Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
@@ -142,6 +142,7 @@ class MirrorWindow(QWidget):
         self.panel = panel
         self.source = source
         self.locked = False
+        self._scale = 1.0
         self._pix = None
         self._drag = None
         try:
@@ -206,22 +207,57 @@ class MirrorWindow(QWidget):
     def mouseReleaseEvent(self, _event):
         self._drag = None
 
+    def _apply_scale(self, factor: float):
+        self._scale = factor
+        self.resize(
+            max(8, int(self.source["width"] * factor)),
+            max(8, int(self.source["height"] * factor)),
+        )
+
+    def keyPressEvent(self, e):
+        """Ajuste fino do recorte com o teclado (clique na janela antes):
+        setas movem a região de origem 1px (Shift = 10px);
+        Option/Alt + setas mudam largura/altura (Shift = 10px)."""
+        k = e.key()
+        if self.locked or k not in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down):
+            super().keyPressEvent(e)
+            return
+        step = 10 if e.modifiers() & Qt.ShiftModifier else 1
+        s = self.source
+        if e.modifiers() & Qt.AltModifier:
+            if k == Qt.Key_Right:
+                s["width"] += step
+            elif k == Qt.Key_Left:
+                s["width"] = max(8, s["width"] - step)
+            elif k == Qt.Key_Down:
+                s["height"] += step
+            elif k == Qt.Key_Up:
+                s["height"] = max(8, s["height"] - step)
+            self._apply_scale(self._scale)
+        else:
+            if k == Qt.Key_Right:
+                s["left"] += step
+            elif k == Qt.Key_Left:
+                s["left"] -= step
+            elif k == Qt.Key_Down:
+                s["top"] += step
+            elif k == Qt.Key_Up:
+                s["top"] -= step
+        self.panel.refresh_list()
+
     def contextMenuEvent(self, e):
         menu = QMenu(self)
         act_lock = menu.addAction("Travar (clique atravessa; destrave pelo painel)")
+        act_edit = menu.addAction("Reajustar recorte…")
         scale = menu.addMenu("Tamanho")
         for pct in (50, 75, 100, 150, 200):
-            scale.addAction(
-                f"{pct}%",
-                lambda pct=pct: self.resize(
-                    self.source["width"] * pct // 100,
-                    self.source["height"] * pct // 100,
-                ),
-            )
+            scale.addAction(f"{pct}%", lambda pct=pct: self._apply_scale(pct / 100))
         act_close = menu.addAction("Remover")
         chosen = menu.exec(e.globalPos())
         if chosen is act_lock:
             self.set_locked(True)
+        elif chosen is act_edit:
+            self.panel.reselect_source(self)
         elif chosen is act_close:
             self.panel.remove_mirror(self)
 
@@ -282,7 +318,9 @@ class ControlPanel(QMainWindow):
 
         hint = QLabel(
             "Arraste a janela-espelho com o botão esquerdo.\n"
-            "Botão direito nela: travar / tamanho / remover.\n"
+            "Botão direito nela: travar / reajustar recorte / tamanho / remover.\n"
+            "Ajuste fino (com a janela-espelho clicada): setas movem o recorte "
+            "1px (Shift=10px); Option+setas mudam o tamanho dele.\n"
             "Rode o Tibia em janela (não fullscreen nativo)."
         )
         hint.setWordWrap(True)
@@ -294,8 +332,19 @@ class ControlPanel(QMainWindow):
     # ---- regiões ----------------------------------------------------------
 
     def pick_region(self):
+        self._open_selector(self.add_mirror)
+
+    def reselect_source(self, m: "MirrorWindow"):
+        def apply(source):
+            m.source = source
+            m._apply_scale(m._scale)
+            self.refresh_list()
+
+        self._open_selector(apply)
+
+    def _open_selector(self, on_picked):
         self._selector = RegionSelector()
-        self._selector.picked.connect(self.add_mirror)
+        self._selector.picked.connect(on_picked)
         self._selector.show()
         self._selector.raise_()
         self._selector.activateWindow()
@@ -304,6 +353,7 @@ class ControlPanel(QMainWindow):
         m = MirrorWindow(self, source, self.fps.value())
         if size:
             m.resize(*size)
+            m._scale = size[0] / max(1, source["width"])
         if pos:
             m.move(*pos)
         else:
