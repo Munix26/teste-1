@@ -52,7 +52,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-APP_VERSION = "0.8"
+APP_VERSION = "0.9"
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
 # Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
@@ -213,7 +213,10 @@ class MirrorWindow(QWidget):
         # mss devolve BGRA; em little-endian isso é exatamente o Format_ARGB32.
         # Em telas Retina g.width vem em pixels físicos (2× a região lógica) —
         # o drawPixmap escala para o rect da janela, então funciona dos dois jeitos.
-        img = QImage(bytes(g.bgra), g.width, g.height, g.width * 4, QImage.Format_ARGB32)
+        # A QImage referencia o buffer sem copiar — ele precisa continuar vivo
+        # até o fromImage copiar os pixels para o pixmap.
+        self._buf = bytes(g.bgra)
+        img = QImage(self._buf, g.width, g.height, g.width * 4, QImage.Format_ARGB32)
         self._pix = QPixmap.fromImage(img)
         self.update()
 
@@ -296,9 +299,13 @@ class MirrorWindow(QWidget):
     def set_locked(self, locked: bool):
         self.locked = locked
         # WindowTransparentForInput = a janela vira "fantasma": cliques passam
-        # direto para o que estiver embaixo. Precisa de show() para reaplicar.
+        # direto para o que estiver embaixo. Precisa de show() para reaplicar —
+        # mas só se já estava visível, senão "Travar todas" desfaria o
+        # "Ocultar espelhos" do menu da barra.
+        was_visible = self.isVisible()
         self.setWindowFlag(Qt.WindowTransparentForInput, locked)
-        self.show()
+        if was_visible:
+            self.show()
         self.panel.refresh_list()
 
 
@@ -376,9 +383,15 @@ class ControlPanel(QMainWindow):
 
     def _apply_all_spaces(self, enabled: bool):
         self._settings.setValue("all_spaces", enabled)
-        _apply_macos_overlay_behavior(self, enabled)
-        for m in self.mirrors:
-            _apply_macos_overlay_behavior(m, enabled)
+        # Mudar o collectionBehavior de uma janela já visível não surte efeito
+        # imediato: o macOS só reassocia a janela a um Space quando ela é
+        # re-exibida. O hide/show força isso na hora (o showEvent reaplica o
+        # comportamento, então a ordem aqui não importa).
+        for w in [self, *self.mirrors]:
+            _apply_macos_overlay_behavior(w, enabled)
+            if sys.platform == "darwin" and w.isVisible():
+                w.hide()
+                w.show()
 
     def showEvent(self, e):
         super().showEvent(e)
