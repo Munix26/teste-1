@@ -121,7 +121,13 @@ class MirrorWindow(QWidget):
             self._sct = mss.mss()
         except Exception:
             self._sct = None  # sem permissão de gravação de tela / sem display
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        flags = Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+        # No macOS, Qt.Tool vira NSPanel, que o sistema esconde quando o app
+        # perde o foco (ex.: ao clicar no Tibia). Janela normal flutuante fica
+        # visível sempre; nos outros SOs o Tool evita poluir a barra de tarefas.
+        if sys.platform != "darwin":
+            flags |= Qt.Tool
+        self.setWindowFlags(flags)
         self.resize(source["width"], source["height"])
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
