@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tibia-AI — Market</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #12141a;
+    color: #e6e8ee;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+  .sub { color: #8b93a7; font-size: 0.9rem; margin-bottom: 16px; }
+
+  nav a {
+    color: #8b93a7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 5px 12px;
+    border: 1px solid #262b38;
+    border-radius: 6px;
+  }
+
+  nav a.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #1a1d26;
+    border: 1px solid #262b38;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  input, select {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #e6e8ee;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus { outline: 1px solid #d4af37; }
+
+  #q { flex: 1; min-width: 170px; }
+  #world { border-color: rgba(212,175,55,0.45); color: #d4af37; font-weight: 600; }
+
+  label { font-size: 0.82rem; color: #8b93a7; }
+
+  .ctl { display: flex; align-items: center; gap: 6px; }
+  .ctl select { min-width: 0; }
+
+  .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
+  .chk input { width: auto; }
+
+  .count { color: #8b93a7; font-size: 0.82rem; margin-left: auto; }
+
+  .scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+  th {
+    text-align: left;
+    color: #8b93a7;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 6px 8px;
+    border-bottom: 1px solid #262b38;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover, th.sorted { color: #d4af37; }
+  th.nosort { cursor: default; }
+  th.nosort:hover { color: #8b93a7; }
+
+  td { padding: 6px 8px; border-bottom: 1px solid #1c202a; }
+
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: #1a1d26; }
+
+  .name { font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dim { color: #5c6478; }
+  .na { color: #5c6478; font-style: italic; }
+
+  /* compra = o que o dono paga (vermelho), venda = o que ele recebe (verde) */
+  .buy { color: #7dd3a0; }
+  .sell { color: #f0a868; }
+  .tier { color: #d4af37; font-size: 0.72rem; }
+
+  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+
+  /* ── barra de estado da API ── */
+  .status {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 0.78rem; color: #8b93a7;
+    border: 1px solid #262b38; border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 12px; background: #171a22;
+  }
+  .status.err { border-color: rgba(248,113,113,0.4); color: #f87171; }
+  .status .fresh { color: #7dd3a0; }
+  .status .stale { color: #f0a868; }
+  .status button {
+    background: none; border: 1px solid #303646; color: #8b93a7;
+    border-radius: 6px; padding: 3px 11px; cursor: pointer;
+    font-family: inherit; font-size: 0.78rem; margin-left: auto;
+  }
+  .status button:hover { color: #d4af37; border-color: rgba(212,175,55,0.45); }
+
+  /* ── abas ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tabs button {
+    background: none; border: 1px solid #262b38; color: #8b93a7;
+    border-radius: 6px; padding: 5px 14px; cursor: pointer;
+    font-family: inherit; font-size: 0.85rem;
+  }
+  .tabs button.on { color: #d4af37; border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.08); }
+
+  /* ── painel ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    display: none; z-index: 50; padding: 24px 16px; overflow-y: auto;
+  }
+  .overlay.open { display: block; }
+
+  .panel {
+    max-width: 900px; margin: 0 auto; background: #171a22;
+    border: 1px solid #2c3242; border-radius: 10px; padding: 20px 22px 26px;
+  }
+
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid #262b38; padding-bottom: 10px; margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .panel-head h2 { font-size: 1.3rem; color: #d4af37; }
+
+  .close {
+    background: none; border: 1px solid #303646; color: #8b93a7;
+    border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 0.85rem;
+  }
+  .close:hover { color: #e6e8ee; border-color: #4a5266; }
+
+  .panel h3 {
+    font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #8b93a7; margin: 18px 0 7px;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
+  .kv { font-size: 0.85rem; }
+  .kv .k { color: #6b7385; font-size: 0.74rem; display: block; }
+  .prose { font-size: 0.87rem; color: #b8bfd0; }
+
+  /* livro de ofertas lado a lado */
+  .books { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .book table { font-size: 0.8rem; }
+  .book th { cursor: default; }
+  .book th:hover { color: #8b93a7; }
+
+  .chart { width: 100%; height: auto; display: block; }
+  .chart .gridline { stroke: #262b38; stroke-width: 1; }
+  .chart .lsell { fill: none; stroke: #f0a868; stroke-width: 1.6; }
+  .chart .lbuy { fill: none; stroke: #7dd3a0; stroke-width: 1.6; }
+  .chart text { fill: #5c6478; font-size: 10px; }
+
+  .loading { color: #5c6478; font-size: 0.85rem; padding: 8px 0; }
+
+  @media (max-width: 640px) {
+    .controls { position: static; }
+    .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
+    .count { flex-basis: 100%; margin-left: 0; text-align: right; }
+    .overlay { padding: 10px 6px; }
+    .panel { padding: 16px 14px 20px; }
+    .books { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="index.html">🏹 Tibia-AI</a>
+    <nav>
+      <a href="index.html">🎒 Itens</a>
+      <a href="creatures.html">🐲 Criaturas</a>
+      <a href="spawns.html">🗺️ Spawns</a>
+      <a href="market.html" class="on">💰 Market</a>
+      <a href="central.html">⭐ Central</a>
+      <a href="quests.html">📜 Quests</a>
+      <a href="guia.html">🎯 Guia</a>
+      <a href="roteiro.html">🧭 Roteiro</a>
+    </nav>
+    <span class="hint"><kbd>/</kbd> busca · <kbd>Esc</kbd> fecha · <kbd>a|b</kbd> busca “a ou b”</span>
+  </header>
+
+  <h1>Market</h1>
+  <p class="sub">
+    Preços e ofertas do Market ao vivo, do
+    <a class="xlink" href="https://www.tibiamarket.top/" target="_blank" rel="noopener">Tibia Market Tracker</a>.
+    Nada de preço fica salvo no repositório — cada carregamento busca na API.
+    Escolha o mundo primeiro: preço de Market é por mundo.
+  </p>
+
+  <div class="controls">
+    <span class="ctl"><label for="world">Mundo</label>
+      <select id="world"></select></span>
+    <input id="q" type="search" placeholder="Buscar item… (use | para “ou”)" />
+    <span class="ctl"><label for="cat">Categoria</label>
+      <select id="cat"><option value="">Todas</option></select></span>
+    <span class="ctl"><label for="pmin">Preço</label>
+      <input id="pmin" type="number" placeholder="mín" style="width:96px" />
+      <input id="pmax" type="number" placeholder="máx" style="width:96px" /></span>
+    <label class="chk"><input type="checkbox" id="onlyactive" /> Só com oferta ativa</label>
+    <button class="clearbtn" id="clear" title="Limpar filtros (o mundo fica)">✕ limpar</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="chipsbar">
+    <span class="lbl">Atalhos:</span>
+    <button class="pchip" data-preset="gear">Meu equipamento</button>
+    <button class="pchip" data-preset="alvos">Alvos (Soul Set + Alicorn)</button>
+    <button class="pchip" data-preset="vamp">Materiais Vampirism</button>
+    <button class="pchip" data-preset="void">Materiais Void</button>
+    <button class="pchip" data-preset="ammo">Munição</button>
+    <button class="pchip" data-preset="coins">Tibia Coins</button>
+  </div>
+
+  <div class="status" id="status">carregando…</div>
+
+  <div class="tabs">
+    <button id="tab-itens" class="on">Itens</button>
+    <button id="tab-imb">Custo de imbuement</button>
+  </div>
+
+  <div id="view-itens">
+    <div class="scroll"><table id="tbl"></table></div>
+    <p class="legend">
+      <b>Comprar por</b> = menor oferta de venda (o que você paga agora).
+      <b>Vender por</b> = maior oferta de compra (o que você recebe agora).
+      O <b>spread</b> entre os dois é o lucro bruto de quem faz flip, antes da
+      taxa de 2% do Market. Clique num item para ver o livro de ofertas, o
+      histórico de 30 dias e em que mundos ele mais negocia.
+      Preço de item forjável (t1–t3) não vem separado por tier — o valor
+      mostrado mistura os tiers.
+    </p>
+  </div>
+
+  <div id="view-imb" hidden>
+    <div class="scroll"><table id="itbl"></table></div>
+    <p class="legend">
+      Custo dos <b>materiais</b> pelo preço de venda atual do mundo escolhido
+      (o que você pagaria comprando tudo no Market agora). <b>Não inclui a taxa
+      de gold do altar</b> nem o custo dos materiais que você já dropa —
+      é o teto de quanto sai comprar o imbuement pronto.
+      Material sem oferta no mundo entra como indisponível e deixa a linha
+      incompleta, em vez de ser contado como zero.
+    </p>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
+
+<script src="market-items.js"></script>
+<script src="imbuements-data.js"></script>
+<script src="ui.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const M = window.MARKETITEMS;
+  const API = M.api;
+  const NA = '<span class="na">sem oferta</span>';
+
+  // [id, nome, catIdx, tier, npcSell?, npcBuy?] → objeto, uma vez só
+  const ITEMS = M.items.map((r) => ({
+    id: r[0], n: r[1], cat: M.cats[r[2]], tier: r[3],
+    ns: r[4] || null, nb: r[5] || null,
+  }));
+  const BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
+  const BY_NAME = new Map(ITEMS.map((i) => [i.n.toLowerCase(), i]));
+
+  let prices = new Map();   // id → market_values do mundo atual
+  let updated = null;       // last_update do mundo, do /world_data
+  let sortKey = 'sold';
+  let sortDir = -1;
+  let current = [];
+
+  // ── formatação ────────────────────────────────────────────────────────
+  // Tibia conta em k/kk; a tabela usa isso e o painel mostra o número cheio
+  const fullNum = (n) => Number(n).toLocaleString('pt-BR');
+
+  function kk(n) {
+    if (!n) return null;
+    if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 2).replace('.', ',') + 'kk';
+    if (n >= 1e4) return Math.round(n / 1e3) + 'k';
+    return fullNum(n);
+  }
+
+  const price = (n, cls) => (n ? `<span class="${cls}">${kk(n)}</span>` : '<span class="dim">—</span>');
+
+  function ago(iso) {
+    const h = (Date.now() - new Date(iso + 'Z').getTime()) / 3.6e6;
+    if (h < 1) return ['agora há pouco', 'fresh'];
+    if (h < 48) return [`há ${Math.round(h)}h`, h < 30 ? 'fresh' : 'stale'];
+    return [`há ${Math.round(h / 24)} dias`, 'stale'];
+  }
+
+  // ── API ───────────────────────────────────────────────────────────────
+  // A API devolve **-1**, não 0, quando não tem leitura do item (19 dos 5.066
+  // de Antica, e buracos no histórico). -1 é truthy: sem zerar aqui, "-1"
+  // apareceria como preço na tabela e afundaria a escala do gráfico.
+  function clean(v) {
+    for (const k in v) if (typeof v[k] === 'number' && v[k] < 0 && k !== 'id') v[k] = 0;
+    return v;
+  }
+
+  async function api(path) {
+    const r = await fetch(API + path);
+    if (r.status === 429) throw new Error('a API pediu calma (429) — espere alguns segundos');
+    if (!r.ok) throw new Error(`API respondeu ${r.status}`);
+    return r.json();
+  }
+
+  function setStatus(html, err) {
+    $('status').className = 'status' + (err ? ' err' : '');
+    $('status').innerHTML = html + '<button id="reload">↻ recarregar</button>';
+    $('reload').onclick = () => load(true);
+  }
+
+  // preços vivem só em memória: recarregar a página busca de novo, e assim
+  // nunca dá pra olhar um preço velho achando que é o de agora
+  const cache = new Map();
+
+  async function load(force) {
+    const w = $('world').value;
+    if (!w) { setStatus('escolha um mundo para carregar os preços.'); return; }
+
+    if (!force && cache.has(w)) {
+      ({ prices, updated } = cache.get(w));
+      showStatus(w);
+      render();
+      return;
+    }
+
+    setStatus(`buscando preços de <b>${w}</b>…`);
+    $('tbl').innerHTML = '';
+    try {
+      const [vals, worlds] = await Promise.all([
+        api(`/market_values?server=${encodeURIComponent(w)}&limit=6000`),
+        api('/world_data'),
+      ]);
+      prices = new Map(vals.map((v) => [v.id, clean(v)]));
+      updated = (worlds.find((x) => x.name === w) || {}).last_update || null;
+      cache.set(w, { prices, updated });
+      showStatus(w);
+      render();
+    } catch (e) {
+      prices = new Map();
+      setStatus(`não deu para buscar os preços de <b>${w}</b>: ${e.message}`, true);
+      render();
+    }
+  }
+
+  function showStatus(w) {
+    const n = [...prices.values()].filter((v) => v.sell_offer || v.buy_offer).length;
+    let s = `<b>${w}</b> · ${fullNum(n)} itens com oferta`;
+    if (updated) {
+      const [txt, cls] = ago(updated);
+      s += ` · leitura do Market <span class="${cls}">${txt}</span>`;
+    }
+    s += ' · <span class="dim">os dados vêm de players rodando o extrator, não da CipSoft</span>';
+    setStatus(s);
+  }
+
+  // ── tabela de itens ───────────────────────────────────────────────────
+  const SORTS = {
+    n: (i) => i.n.toLowerCase(),
+    cat: (i) => i.cat,
+    sell: (i) => (prices.get(i.id) || {}).sell_offer || 0,
+    buy: (i) => (prices.get(i.id) || {}).buy_offer || 0,
+    spread: (i) => spreadPct(prices.get(i.id)) ?? -1,
+    avg: (i) => (prices.get(i.id) || {}).month_average_sell || 0,
+    sold: (i) => (prices.get(i.id) || {}).month_sold || 0,
+    traders: (i) => (prices.get(i.id) || {}).active_traders || 0,
+  };
+
+  function spreadPct(v) {
+    if (!v || !v.sell_offer || !v.buy_offer) return null;
+    return ((v.sell_offer - v.buy_offer) / v.sell_offer) * 100;
+  }
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const cat = $('cat').value;
+    const pmin = parseFloat($('pmin').value);
+    const pmax = parseFloat($('pmax').value);
+    const onlyActive = $('onlyactive').checked;
+
+    let rows = ITEMS.filter((it) => {
+      const v = prices.get(it.id);
+      if (cat && it.cat !== cat) return false;
+      if (onlyActive && !(v && (v.sell_offer || v.buy_offer))) return false;
+      const ref = v ? (v.sell_offer || v.buy_offer) : 0;
+      if (!isNaN(pmin) && ref < pmin) return false;
+      if (!isNaN(pmax) && (!ref || ref > pmax)) return false;
+      if (q && !matchQuery((it.n + ' ' + it.cat).toLowerCase(), q)) return false;
+      return true;
+    });
+
+    const key = SORTS[sortKey] || SORTS.n;
+    rows.sort((a, b) => {
+      const x = key(a), y = key(b);
+      return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
+    });
+
+    current = rows.slice(0, 300);
+
+    const head = `<thead><tr>
+      <th data-k="n">Item</th>
+      <th data-k="cat">Categoria</th>
+      <th data-k="sell" class="num">Comprar por</th>
+      <th data-k="buy" class="num">Vender por</th>
+      <th data-k="spread" class="num">Spread</th>
+      <th data-k="avg" class="num">Méd. mês</th>
+      <th data-k="sold" class="num">Vend./mês</th>
+      <th data-k="traders" class="num">Traders</th>
+    </tr></thead>`;
+
+    const body = current.map((it, i) => {
+      const v = prices.get(it.id) || {};
+      const sp = spreadPct(v);
+      return `<tr data-i="${i}" class="has-spr">
+        <td><span class="namecell">${spr(it.n)}<span class="name">${it.n}</span>${
+          it.tier ? `<span class="tier">t≤${it.tier}</span>` : ''}</span></td>
+        <td class="dim">${it.cat}</td>
+        <td class="num">${price(v.sell_offer, 'sell')}</td>
+        <td class="num">${price(v.buy_offer, 'buy')}</td>
+        <td class="num dim">${sp === null ? '—' : sp.toFixed(0) + '%'}</td>
+        <td class="num dim">${v.month_average_sell ? kk(v.month_average_sell) : '—'}</td>
+        <td class="num">${v.month_sold ? fullNum(v.month_sold) : '<span class="dim">0</span>'}</td>
+        <td class="num dim">${v.active_traders || 0}</td>
+      </tr>`;
+    }).join('');
+
+    $('tbl').innerHTML = rows.length
+      ? head + `<tbody>${body}</tbody>`
+      : `<caption class="na" style="padding:32px">${
+          prices.size ? 'Nenhum item com esses filtros.' : 'Sem preços carregados.'}</caption>`;
+    $('count').textContent = rows.length > 300
+      ? `${fullNum(rows.length)} itens (mostrando 300)` : `${fullNum(rows.length)} itens`;
+
+    $('tbl').querySelectorAll('th[data-k]').forEach((th) => {
+      if (th.dataset.k === sortKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (sortKey === th.dataset.k) sortDir *= -1;
+        else { sortKey = th.dataset.k; sortDir = th.dataset.k === 'n' || th.dataset.k === 'cat' ? 1 : -1; }
+        render();
+      };
+    });
+    $('tbl').querySelectorAll('tbody tr').forEach((tr) => {
+      tr.onclick = () => openDetail(current[+tr.dataset.i]);
+    });
+  }
+
+  // ── painel do item ────────────────────────────────────────────────────
+  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span>${
+    v === null || v === undefined || v === '' ? NA : v}</div>`;
+
+  function book(title, offers, cls) {
+    if (!offers || !offers.length) return `<div class="book"><h3>${title}</h3><p class="na">nenhuma oferta</p></div>`;
+    const rows = offers.slice(0, 12).map((o) => {
+      const d = Math.round((o.time * 1000 - Date.now()) / 8.64e7);
+      return `<tr>
+        <td class="num ${cls}">${fullNum(o.price)}</td>
+        <td class="num dim">${fullNum(o.amount)}×</td>
+        <td class="num dim">${d > 0 ? d + 'd' : '—'}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="book"><h3>${title} (${offers.length})</h3><table>
+      <thead><tr><th class="num nosort">Preço</th><th class="num nosort">Qtd</th><th class="num nosort">Expira</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      ${offers.length > 12 ? `<p class="legend">+${offers.length - 12} ofertas</p>` : ''}</div>`;
+  }
+
+  // sparkline de 30 dias: duas linhas (venda e compra) num viewBox fixo
+  function chart(hist) {
+    const pts = hist.filter((h) => h.sell_offer || h.buy_offer).sort((a, b) => a.time - b.time);
+    if (pts.length < 2) return '<p class="na">histórico curto demais para um gráfico</p>';
+    const W = 900, H = 150, PAD = 26;
+    const xs = pts.map((p) => p.time);
+    const all = pts.flatMap((p) => [p.sell_offer, p.buy_offer].filter(Boolean));
+    const lo = Math.min(...all), hi = Math.max(...all);
+    const span = hi - lo || 1;
+    const x = (t) => PAD + ((t - xs[0]) / ((xs[xs.length - 1] - xs[0]) || 1)) * (W - PAD * 2);
+    const y = (v) => H - PAD - ((v - lo) / span) * (H - PAD * 2);
+    const line = (k) => {
+      const seg = pts.filter((p) => p[k]);
+      return seg.length < 2 ? '' : 'M' + seg.map((p) => `${x(p.time).toFixed(1)},${y(p[k]).toFixed(1)}`).join('L');
+    };
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+      <line class="gridline" x1="${PAD}" y1="${y(hi)}" x2="${W - PAD}" y2="${y(hi)}" />
+      <line class="gridline" x1="${PAD}" y1="${y(lo)}" x2="${W - PAD}" y2="${y(lo)}" />
+      <path class="lsell" d="${line('sell_offer')}" />
+      <path class="lbuy" d="${line('buy_offer')}" />
+      <text x="2" y="${y(hi) + 3}">${kk(hi)}</text>
+      <text x="2" y="${y(lo) + 3}">${kk(lo)}</text>
+    </svg>
+    <p class="legend"><span class="sell">━</span> comprar por ·
+       <span class="buy">━</span> vender por · ${pts.length} leituras</p>`;
+  }
+
+  async function openDetail(it) {
+    const w = $('world').value;
+    const v = prices.get(it.id) || {};
+    const sp = spreadPct(v);
+
+    const npc = [
+      it.ns ? kv('NPC vende por', `${fullNum(it.ns[0])} <span class="dim">— ${it.ns[1]}, ${it.ns[2]}</span>`) : '',
+      it.nb ? kv('NPC compra por', `${fullNum(it.nb[0])} <span class="dim">— ${it.nb[1]}, ${it.nb[2]}</span>`) : '',
+    ].join('');
+
+    $('panel').innerHTML = `
+      <div class="panel-head">
+        ${spr(it.n, true)}
+        <h2>${it.n}</h2>
+        <span class="dim">${it.cat}${it.tier ? ` · forjável até t${it.tier}` : ''}</span>
+        <span class="panel-actions">
+          <a class="panel-link" href="index.html?open=${encodeURIComponent(it.n)}">ficha do item ↗</a>
+          <button class="close" onclick="closeDetail()">fechar ✕</button>
+        </span>
+      </div>
+
+      <h3>Agora em ${w}</h3>
+      <div class="grid">
+        ${kv('Comprar por', v.sell_offer ? `<span class="sell">${fullNum(v.sell_offer)}</span>` : null)}
+        ${kv('Vender por', v.buy_offer ? `<span class="buy">${fullNum(v.buy_offer)}</span>` : null)}
+        ${kv('Spread', sp === null ? null : sp.toFixed(1) + '%')}
+        ${kv('Ofertas de venda', v.sell_offers ?? null)}
+        ${kv('Ofertas de compra', v.buy_offers ?? null)}
+        ${kv('Traders ativos', v.active_traders ?? null)}
+      </div>
+
+      <h3>Últimos 30 dias</h3>
+      <div class="grid">
+        ${kv('Média de venda', v.month_average_sell ? fullNum(v.month_average_sell) : null)}
+        ${kv('Média de compra', v.month_average_buy ? fullNum(v.month_average_buy) : null)}
+        ${kv('Mais alta (venda)', v.month_highest_sell ? fullNum(v.month_highest_sell) : null)}
+        ${kv('Mais baixa (venda)', v.month_lowest_sell ? fullNum(v.month_lowest_sell) : null)}
+        ${kv('Unidades vendidas', v.month_sold ?? null)}
+        ${kv('Unidades compradas', v.month_bought ?? null)}
+      </div>
+
+      ${npc ? `<h3>NPC</h3><div class="grid">${npc}</div>` : ''}
+
+      <h3>Histórico</h3><div id="p-hist" class="loading">carregando…</div>
+      <h3>Livro de ofertas</h3><div id="p-book" class="loading">carregando…</div>
+      <h3>Onde mais negocia</h3><div id="p-act" class="loading">carregando…</div>
+    `;
+    $('overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // as três chamadas pesadas só saem quando o painel abre, uma por item
+    const q = `server=${encodeURIComponent(w)}&item_id=${it.id}`;
+    const fill = (id, fn) => (data) => { const e = $(id); if (e) { e.className = ''; e.innerHTML = fn(data); } };
+    const fail = (id) => (e) => { const el = $(id); if (el) { el.className = 'na'; el.textContent = e.message; } };
+
+    api(`/item_history?${q}&start_days_ago=30`)
+      .then((h) => fill('p-hist', chart)(h.map(clean))).catch(fail('p-hist'));
+
+    api(`/market_board?${q}`).then(fill('p-book', (b) =>
+      `<div class="books">${book('Vendendo', b.sellers, 'sell')}${book('Comprando', b.buyers, 'buy')}</div>`
+    )).catch(fail('p-book'));
+
+    api(`/item_activity?${q}`).then(fill('p-act', (a) => {
+      const top = a.slice(0, 8);
+      if (!top.length) return '<p class="na">sem negociação registrada</p>';
+      return `<table><thead><tr><th class="nosort">Mundo</th><th class="num nosort">Trades/mês</th>
+        <th class="num nosort">Ofertas</th></tr></thead><tbody>${top.map((r) => `<tr>
+        <td${r.name === w ? ' class="name"' : ''}>${r.name}${r.name === w ? ' ←' : ''}</td>
+        <td class="num">${fullNum(r.total_trades)}</td>
+        <td class="num dim">${fullNum(r.total_offers)}</td></tr>`).join('')}</tbody></table>`;
+    })).catch(fail('p-act'));
+  }
+
+  function closeDetail() {
+    $('overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
+
+  // ── aba de imbuements ─────────────────────────────────────────────────
+  // "Cultish Robe: 25, Cultish Mask: 25" → [['Cultish Robe',25], ...]
+  function parseSrc(src) {
+    return (src || '').split(',').map((p) => {
+      const m = p.trim().match(/^(.*):\s*(\d+)$/);
+      return m ? [m[1].trim(), +m[2]] : null;
+    }).filter(Boolean);
+  }
+
+  function renderImb() {
+    const rows = [];
+    (window.IMBUEDATA ? IMBUEDATA.types : []).forEach((t) => {
+      Object.entries(t.tiers || {}).forEach(([tier, d]) => {
+        const mats = parseSrc(d.src).map(([name, qty]) => {
+          const it = BY_NAME.get(name.toLowerCase());
+          const v = it ? prices.get(it.id) : null;
+          const unit = v && v.sell_offer ? v.sell_offer : null;
+          return { name, qty, it, unit, total: unit ? unit * qty : null };
+        });
+        const missing = mats.filter((m) => !m.total);
+        const total = missing.length ? null : mats.reduce((s, m) => s + m.total, 0);
+        rows.push({ imb: t.n, cat: t.cat, tier, mats, total, missing: missing.length });
+      });
+    });
+
+    const ORDER = { Basic: 0, Intricate: 1, Powerful: 2 };
+    rows.sort((a, b) => a.imb.localeCompare(b.imb) || (ORDER[a.tier] ?? 9) - (ORDER[b.tier] ?? 9));
+
+    // a busca é a mesma caixa da aba de itens: casar também pelo material
+    // ("vampire teeth" acha Vampirism) para a troca de aba não dar em branco
+    const q = $('q').value.trim().toLowerCase();
+    const hay = (r) => (r.imb + ' ' + r.cat + ' ' + r.mats.map((m) => m.name).join(' ')).toLowerCase();
+    const shown = q ? rows.filter((r) => matchQuery(hay(r), q)) : rows;
+
+    const body = shown.map((r) => `<tr>
+      <td class="name">${r.imb}</td>
+      <td class="dim">${r.cat}</td>
+      <td>${r.tier}</td>
+      <td>${r.mats.map((m) => {
+        const label = `${m.qty}× ${m.name}`;
+        const inner = m.it
+          ? `<a class="xlink" href="#" data-mat="${m.it.id}">${label}</a>`
+          : label;
+        return `<span class="loot-item"${m.total ? '' : ' style="border-color:#3a2a2a"'}>${inner}${
+          m.total ? ` <span class="sell">${kk(m.total)}</span>` : ' <span class="na">sem oferta</span>'}</span>`;
+      }).join(' ')}</td>
+      <td class="num">${r.total ? `<span class="sell">${kk(r.total)}</span>`
+        : `<span class="na">falta ${r.missing}</span>`}</td>
+    </tr>`).join('');
+
+    $('itbl').innerHTML = shown.length ? `<thead><tr>
+      <th class="nosort">Imbuement</th><th class="nosort">Efeito</th><th class="nosort">Tier</th>
+      <th class="nosort">Materiais (custo no Market)</th><th class="num nosort">Total</th>
+    </tr></thead><tbody>${body}</tbody>`
+      : `<caption class="na" style="padding:32px">Nenhum imbuement casa com “${q}”.</caption>`;
+    $('count').textContent = `${shown.length} combinações`;
+
+    $('itbl').querySelectorAll('a[data-mat]').forEach((a) => {
+      a.onclick = (e) => { e.preventDefault(); openDetail(BY_ID.get(+a.dataset.mat)); };
+    });
+  }
+
+  let tab = 'itens';
+  function setTab(t) {
+    tab = t;
+    $('tab-itens').classList.toggle('on', t === 'itens');
+    $('tab-imb').classList.toggle('on', t === 'imb');
+    $('view-itens').hidden = t !== 'itens';
+    $('view-imb').hidden = t !== 'imb';
+    draw();
+  }
+  const draw = () => (tab === 'itens' ? render() : renderImb());
+  $('tab-itens').onclick = () => setTab('itens');
+  $('tab-imb').onclick = () => setTab('imb');
+
+  // ── presets ───────────────────────────────────────────────────────────
+  const PRESETS = {
+    gear: 'falcon bow|falcon coif|falcon greaves|mutated skin armor|winged boots|bow of destruction|bow of cataclysm|guardian boots|fabulous legs',
+    alvos: 'soulbleeder|soulshell|pair of soulstalkers|alicorn headguard|sanguine greaves',
+    vamp: 'vampire teeth|bloody pincers|piece of dead brain',
+    void: 'rope belt|silencer claws|grimeleech wings',
+    ammo: 'crystalline arrow|spectral bolt|prismatic bolt|envenomed arrow|diamond arrow',
+    coins: 'tibia coin',
+  };
+
+  $('world').innerHTML = '<option value="">— escolha —</option>' +
+    M.worlds.map((w) => `<option>${w}</option>`).join('');
+  $('cat').innerHTML += M.cats.map((c) => `<option>${c}</option>`).join('');
+
+  const FILTER_IDS = ['q', 'cat', 'pmin', 'pmax', 'onlyactive'];
+  const state = filterState(FILTER_IDS.concat('world'), 'market');
+  $('clear').onclick = () => {
+    const w = $('world').value;   // o mundo não é filtro: sobrevive ao limpar
+    state.clear();
+    $('world').value = w;
+    state.save();
+    draw();
+  };
+  FILTER_IDS.forEach((id) => $(id).addEventListener('input', draw));
+  $('world').addEventListener('change', () => { state.save(); load(); });
+
+  document.querySelectorAll('.pchip').forEach((b) => {
+    b.onclick = () => {
+      setTab('itens');
+      const w = $('world').value;   // apply() limpa tudo, o mundo tem que voltar
+      state.apply({ q: PRESETS[b.dataset.preset], onlyactive: true });
+      $('world').value = w;
+      state.save();
+      draw();
+    };
+  });
+
+  state.restore();
+  const qParam = urlParam('q');
+  if (qParam !== null) $('q').value = qParam;
+
+  const openParam = urlParam('open');
+  load().then(() => {
+    if (!openParam) return;
+    const it = BY_NAME.get(openParam.toLowerCase());
+    if (it) openDetail(it);
+    else { $('q').value = openParam; draw(); }
+  });
+</script>
+</html>

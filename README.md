@@ -18,6 +18,14 @@ TibiaWiki inteiro.
 - **`spawns.html`** — 442 locais de caçada cruzados com suas criaturas, com
   exp média, exp/HP e ouro por kill **calculados** (o wiki não traz), ignorando
   bosses e objetos.
+- **`market.html`** — preços e ofertas do Market **ao vivo**, dos 113 mundos,
+  via [Tibia Market Tracker](https://www.tibiamarket.top/): quanto custa
+  comprar, quanto rende vender, o livro de ofertas, o histórico de 30 dias e
+  em que mundos o item mais negocia. Traz também o **custo de cada imbuement**
+  somando os materiais pelo preço do mundo escolhido. Nenhum preço fica
+  versionado — cada carregamento busca na API, e a página mostra a idade da
+  última leitura do mundo (os dados vêm de players rodando o extrator, não da
+  CipSoft).
 
 Nada aqui é inventado: o que não está no wiki aparece como "não disponível", e
 o ouro por kill é sempre uma **faixa**, derivada das chances que o wiki
@@ -29,6 +37,7 @@ documenta por raridade — não um número exato.
     completo de 28.967 páginas), crawleado de `tibia.fandom.com`.
   - `setup.sh` — restaura tudo do zero, sem refazer o crawl.
   - `gen_items.py` — regenera `items-data.js`.
+  - `gen_market.py` — regenera `market-items.js` (metadados do Market; preço não).
   - `loot.py` — parser das loot tables e cálculo da faixa de gp/kill.
   - `english-wiki-adaptation.patch` — adaptação do
     [miltonhit/tibia_mcp](https://github.com/miltonhit/tibia_mcp) para o wiki
@@ -56,7 +65,8 @@ onde obter/vender itens, caçadas recomendadas, SQL livre) assim que ele subir.
 - Charm points e contagens do bestiário não importaram (ficam fora do infobox).
 - Rating de exp/loot existe em apenas ~57% das caçadas — o wiki inglês deixa
   esses campos em branco na origem.
-- Não há preços de Market ao vivo: 1.640 itens têm preço de NPC, mas o
-  endgame (Soul Set, Alicorn, itens forjados) é todo "negotiable".
+- O preço de Market (`market.html`) não vem separado por tier: um item
+  forjável mistura t0–t3 no mesmo número. Bazaar de personagem e negociação
+  direta entre players ficam de fora — não existe API para eles.
 
 Ver `CLAUDE.md` para o contexto completo do projeto e as decisões técnicas.

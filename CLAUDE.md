@@ -54,7 +54,9 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
 | `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
+| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido |
 | `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
+| `tibia-mcp/gen_market.py` | regenera `market-items.js` (só metadados: id, nome, categoria, tier, NPC — **preço nenhum**) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
@@ -80,6 +82,21 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   uncommon 5–25%, semi-rare 1–5%, rare 0,5–1%, very rare <0,5%. Escolher um
   ponto dentro do intervalo seria inventar precisão. Todo o cálculo vive em
   `tibia-mcp/loot.py`; não reintroduzir tabelas de probabilidade fixas.
+- **Preço de Market vem da API, não do repositório.** `api.tibiamarket.top`
+  (Tibia Market Tracker, MIT, sem token, CORS liberado) cobre os 113 mundos.
+  `market.html` busca a cada carregamento e guarda só em memória — preço
+  commitado nasce velho e velho é pior que ausente. O que fica versionado é
+  `market-items.js`: id, nome, categoria, tier e melhor NPC, que só mudam em
+  update do jogo. **Não é a CipSoft**: os dados vêm de players rodando o
+  extrator, então cada mundo tem sua própria idade (`/world_data.last_update`,
+  de horas a poucos dias) — a página mostra essa idade de propósito.
+- **A API usa `-1`, não `0`, para "sem leitura"** (19 dos 5.066 itens de
+  Antica, e buracos no histórico). `-1` é truthy em JS: sem normalizar na
+  entrada, vira "-1" como preço na tabela e afunda a escala do gráfico. O
+  `clean()` de `market.html` zera todo numérico negativo — não remover.
+- **Item forjável não vem separado por tier.** `market_values` devolve um
+  preço por object type id; t0 e t3 entram no mesmo número. Não usar para
+  comparar Falcon Bow t1 vs t2.
 - **`{{Loot Item}}` tem dois formatos**: `|Item|raridade` e `|1-8|Item|raridade`.
   Metade das páginas usa o segundo. Ler o primeiro parâmetro como nome do item
   perde esses drops silenciosamente (foi o que aconteceu até 2026-08).
@@ -102,8 +119,10 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   bosses e objetos de 0 exp, senão distorcem).
 - O índice reverso de drops cobre só loot table: itens vindos de quest, bag,
   task ou NPC aparecem sem fonte (ex.: Soulbleeder, que vem da Bag You Desire).
-- **Sem preços de Market ao vivo.** 1.640 itens têm preço de NPC; os itens de
-  endgame (Soul Set, Alicorn, forjados) são todos "negotiable" — sem valor.
+- **Preço de Market: resolvido** pela API (ver `market.html`) — inclusive o
+  endgame que o wiki marca como "negotiable". O que continua faltando é preço
+  por tier e qualquer coisa fora do Market (Bazaar de personagem, negociação
+  direta entre players).
 
 ## Modelo de simulação de hunt
 

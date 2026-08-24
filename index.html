@@ -288,6 +288,7 @@
       <a href="index.html" class="on">🎒 Itens</a>
       <a href="creatures.html">🐲 Criaturas</a>
       <a href="spawns.html">🗺️ Spawns</a>
+      <a href="market.html">💰 Market</a>
       <a href="central.html">⭐ Central</a>
       <a href="quests.html">📜 Quests</a>
       <a href="guia.html">🎯 Guia</a>
@@ -355,10 +356,17 @@
 </div>
 
 <script src="items-data.js"></script>
+<script src="market-items.js"></script>
 <script src="imbuements-data.js"></script>
 <script src="ui.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
+
+  // nomes que existem no Market (market-items.js) — só esses ganham o link
+  // de preço; o resto não é negociável e o link cairia numa busca vazia
+  const TRADEABLE = new Set(
+    (window.MARKETITEMS ? MARKETITEMS.items : []).map((r) => r[1].toLowerCase())
+  );
   const D = window.ITEMDATA;
   const CR = D.creatures;         // [nome, localização]
   const PROF = D.prof || [];      // [[perks nível 1], [nível 2], …] por tabela
@@ -636,6 +644,9 @@
         ${spr(it.n, true)}
         <h2>${it.n}</h2><span class="cat">${it.c}</span>
         <span class="panel-actions">
+          ${TRADEABLE.has(it.n.toLowerCase())
+            ? `<a class="panel-link" href="market.html?open=${encodeURIComponent(it.n)}">preço no Market ↗</a>`
+            : ''}
           <a class="panel-link" target="_blank" rel="noopener"
              href="https://tibia.fandom.com/wiki/${encodeURIComponent(it.n.replace(/ /g, '_'))}">wiki ↗</a>
           <button class="close" onclick="closeDetail()">fechar ✕</button>
