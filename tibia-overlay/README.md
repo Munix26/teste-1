@@ -98,6 +98,18 @@ Layouts salvos pelo app vão por padrão para `~/Documents`.
 Depois de mudar o `overlay.py`, rode o `make_app.sh` de novo para
 regenerar o app (ele não se atualiza sozinho).
 
+**Permissão que não se perde nos rebuilds**: crie uma única vez um
+certificado local chamado `Tibia Overlay Dev` — Acesso às Chaves → menu
+Acesso às Chaves → Assistente de Certificado → Criar um Certificado… →
+Nome `Tibia Overlay Dev`, Identidade "Auto-assinado raiz", Tipo
+"Assinatura de código" → Criar. O `make_app.sh` detecta e assina todo
+build com essa identidade, e o macOS para de pedir a Gravação de Tela a
+cada regeneração. (Na primeira assinatura o macOS pode perguntar se o
+codesign pode usar a chave — clique "Sempre Permitir".) Sem o
+certificado, tudo funciona igual, só que re-pedindo a permissão por
+build (`tccutil reset ScreenCapture com.tibiaai.overlay` destrava
+quando a permissão fica presa num build antigo).
+
 ## Limitações conhecidas
 
 - **Rode o Tibia em modo janela**, não fullscreen nativo — no macOS o
