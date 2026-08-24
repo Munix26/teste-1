@@ -1,3 +1,6 @@
 .venv/
 __pycache__/
 layout*.json
+build/
+dist/
+*.spec

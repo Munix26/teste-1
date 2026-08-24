@@ -55,6 +55,21 @@ Para testar **sem o Tibia aberto**: espelhe qualquer coisa que se mova
 (o relógio do sistema, um vídeo) e confira que a janelinha replica em tempo
 real.
 
+## Virar um app do macOS (sem Terminal)
+
+```bash
+cd tibia-overlay
+bash make_app.sh
+```
+
+Isso gera `dist/Tibia Overlay.app` — arraste para `/Applications` e abra
+pelo Launchpad como qualquer app. O macOS vai pedir a permissão de Gravação
+de Tela **para o app** (separada da do Terminal) na primeira captura.
+Layouts salvos pelo app vão por padrão para `~/Documents`.
+
+Depois de mudar o `overlay.py`, rode o `make_app.sh` de novo para
+regenerar o app (ele não se atualiza sozinho).
+
 ## Limitações conhecidas
 
 - **Rode o Tibia em modo janela**, não fullscreen nativo — no macOS o

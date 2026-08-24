@@ -44,7 +44,12 @@ from PySide6.QtWidgets import (
 
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
-LAYOUT_DIR = Path(__file__).resolve().parent
+# Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
+# que não é lugar de gravar layout — usa a pasta do usuário nesse caso.
+if getattr(sys, "frozen", False):
+    LAYOUT_DIR = Path.home() / "Documents"
+else:
+    LAYOUT_DIR = Path(__file__).resolve().parent
 
 
 class RegionSelector(QWidget):
