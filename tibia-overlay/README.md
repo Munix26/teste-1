@@ -60,6 +60,17 @@ sem etapa de permissão.
   mudam a largura/altura do recorte (Shift = 10px). Ideal para alinhar
   slots de equipamento e contadores de item pixel a pixel.
 
+### Ícone na barra de menus e Spaces
+
+- O app põe um **ícone na barra de menus** (duas telinhas) com menu rápido:
+  mostrar painel, ocultar/mostrar todos os espelhos, travar/destravar todas
+  e Sair.
+- **Fechar o painel não encerra o app** — só o esconde; os espelhos
+  continuam. Para encerrar de verdade, use "Sair" no ícone da barra.
+- Espelhos **e** painel aparecem em **todos os desktops/Spaces** (inclusive
+  sobre apps em fullscreen nativo) — mude de janela à vontade que o overlay
+  acompanha.
+
 ### Sobre a permissão de "áudio"
 
 O aviso do macOS fala em "gravar a tela **e o áudio**" porque o sistema

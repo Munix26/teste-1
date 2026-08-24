@@ -26,7 +26,15 @@ from pathlib import Path
 
 import mss
 from PySide6.QtCore import QRect, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QGuiApplication, QImage, QPainter, QPixmap
+from PySide6.QtGui import (
+    QColor,
+    QGuiApplication,
+    QIcon,
+    QImage,
+    QPainter,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -38,11 +46,12 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
 
-APP_VERSION = "0.5"
+APP_VERSION = "0.6"
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
 # Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
@@ -77,6 +86,23 @@ def _apply_macos_overlay_behavior(widget):
         )
     except Exception:
         pass  # sem pyobjc instalado — fica só com o always-on-top do Qt
+
+
+def _make_tray_icon() -> QIcon:
+    """Ícone da barra de menus desenhado em código (sem arquivo de imagem):
+    duas telinhas sobrepostas, o motivo do espelhamento. Marcado como máscara
+    para o macOS pintar branco/preto conforme o tema da barra."""
+    pm = QPixmap(22, 22)
+    pm.fill(Qt.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.Antialiasing)
+    p.setPen(QPen(QColor(0, 0, 0), 2))
+    p.drawRoundedRect(2, 4, 12, 9, 2, 2)
+    p.drawRoundedRect(8, 9, 12, 9, 2, 2)
+    p.end()
+    icon = QIcon(pm)
+    icon.setIsMask(True)
+    return icon
 
 
 class RegionSelector(QWidget):
@@ -328,6 +354,50 @@ class ControlPanel(QMainWindow):
 
         self.setCentralWidget(central)
         self.resize(340, 360)
+        self._mirrors_hidden = False
+        self._setup_tray()
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        _apply_macos_overlay_behavior(self)  # painel segue todos os Spaces
+
+    # ---- barra de menus (tray) --------------------------------------------
+
+    def _setup_tray(self):
+        self.tray = None
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            return
+        self.tray = QSystemTrayIcon(_make_tray_icon(), self)
+        self.tray.setToolTip("Tibia Overlay")
+        self._tray_menu = QMenu()
+        self._tray_menu.addAction("Mostrar painel", self._show_panel)
+        self._act_mirrors = self._tray_menu.addAction(
+            "Ocultar espelhos", self.toggle_mirrors_visible
+        )
+        self._tray_menu.addAction(
+            "Travar todas", lambda: [m.set_locked(True) for m in self.mirrors]
+        )
+        self._tray_menu.addAction(
+            "Destravar todas", lambda: [m.set_locked(False) for m in self.mirrors]
+        )
+        self._tray_menu.addSeparator()
+        self._tray_menu.addAction("Sair", self.quit_app)
+        self.tray.setContextMenu(self._tray_menu)
+        self.tray.show()
+
+    def _show_panel(self):
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def toggle_mirrors_visible(self):
+        self._mirrors_hidden = not self._mirrors_hidden
+        for m in self.mirrors:
+            m.setVisible(not self._mirrors_hidden)
+        if self.tray is not None:
+            self._act_mirrors.setText(
+                "Mostrar espelhos" if self._mirrors_hidden else "Ocultar espelhos"
+            )
 
     # ---- regiões ----------------------------------------------------------
 
@@ -443,9 +513,20 @@ class ControlPanel(QMainWindow):
             )
 
     def closeEvent(self, e):
+        # Com o ícone na barra de menus, fechar o painel só o esconde — o app
+        # e os espelhos continuam. "Sair" de verdade fica no menu do ícone.
+        if self.tray is not None:
+            e.ignore()
+            self.hide()
+        else:
+            self.quit_app()
+            e.accept()
+
+    def quit_app(self):
         for m in list(self.mirrors):
             m.close()
-        e.accept()
+        if self.tray is not None:
+            self.tray.hide()
         QApplication.quit()
 
 
