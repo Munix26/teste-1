@@ -51,7 +51,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-APP_VERSION = "0.6"
+APP_VERSION = "0.7"
 DEFAULT_FPS = 20
 BORDER = QColor(255, 127, 0)  # laranja TibiaVision
 # Empacotado como app (PyInstaller), __file__ aponta para dentro do bundle,
@@ -543,9 +543,42 @@ def _fix_qt_plugin_path():
         os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = str(plugins / "platforms")
 
 
+def _check_screen_permission():
+    """No macOS, detecta permissão de Gravação de Tela ausente ou
+    dessincronizada (o sintoma é a captura devolver só o papel de parede) e
+    avisa com instruções, em vez de deixar o espelho 'azul' sem explicação."""
+    if sys.platform != "darwin":
+        return
+    try:
+        import Quartz
+    except ImportError:
+        return
+    try:
+        if Quartz.CGPreflightScreenCaptureAccess():
+            return
+        Quartz.CGRequestScreenCaptureAccess()  # dispara o aviso do sistema
+    except Exception:
+        return
+    QMessageBox.warning(
+        None,
+        "Tibia Overlay — sem Gravação de Tela",
+        "O macOS não está deixando este app capturar a tela — os espelhos "
+        "mostrariam só o papel de parede.\n\n"
+        "1. Conceda a permissão em Ajustes do Sistema → Privacidade e "
+        "Segurança → Gravação de Tela.\n"
+        "2. Se o app já aparece lá ligado e mesmo assim isto apareceu, a "
+        "permissão é de um build antigo: rode no Terminal\n"
+        "   tccutil reset ScreenCapture com.tibiaai.overlay\n"
+        "   e abra o app de novo.\n"
+        "3. FECHE e REABRA o app depois de conceder — só vale na próxima "
+        "abertura.",
+    )
+
+
 def main():
     _fix_qt_plugin_path()
     app = QApplication(sys.argv)
+    _check_screen_permission()
     app.setQuitOnLastWindowClosed(False)  # fechar um espelho não encerra o app
     panel = ControlPanel()
     panel.show()
