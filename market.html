@@ -189,6 +189,41 @@
 
   .loading { color: #5c6478; font-size: 0.85rem; padding: 8px 0; }
 
+  /* ── comparação entre servidores ── */
+  .srvpick {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    background: #1a1d26; border: 1px solid #262b38; border-radius: 8px;
+    padding: 12px; margin-bottom: 12px;
+  }
+  .srvpick #cmpq { flex: 1; min-width: 200px; }
+  .srvpick .go {
+    background: none; border: 1px solid rgba(212,175,55,0.45); color: #d4af37;
+    border-radius: 6px; padding: 6px 15px; cursor: pointer;
+    font-family: inherit; font-size: 0.85rem; white-space: nowrap;
+  }
+  .srvpick .go:hover { background: rgba(212,175,55,0.1); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .card { background: #171a22; border: 1px solid #262b38; border-radius: 8px; padding: 9px 12px; }
+  .card .k { color: #6b7385; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; display: block; }
+  .card .v { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .card .w { color: #8b93a7; font-size: 0.76rem; display: block; }
+
+  /* o mundo escolhido no topo, destacado no meio dos 113 */
+  tr.here td { background: rgba(212,175,55,0.09); }
+  tr.here td.name { color: #d4af37; }
+
+  /* leitura velha demais para servir de referência */
+  .old, .status .old { color: #f87171; }
+
+  .sugs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+
+  /* busca, categoria e faixa de preço filtram a tabela de itens; na aba por
+     servidor não filtram nada, então saem de cena e sobra só o mundo */
+  .controls.srv > *:not(.wctl):not(.count) { display: none; }
+
+  button.panel-link { background: none; cursor: pointer; font-family: inherit; }
+
   @media (max-width: 640px) {
     .controls { position: static; }
     .ctl { flex: 1 1 calc(50% - 5px); flex-direction: column; align-items: stretch; gap: 3px; }
@@ -224,7 +259,7 @@
   </p>
 
   <div class="controls">
-    <span class="ctl"><label for="world">Mundo</label>
+    <span class="ctl wctl"><label for="world">Mundo</label>
       <select id="world"></select></span>
     <input id="q" type="search" placeholder="Buscar item… (use | para “ou”)" />
     <span class="ctl"><label for="cat">Categoria</label>
@@ -252,6 +287,7 @@
   <div class="tabs">
     <button id="tab-itens" class="on">Itens</button>
     <button id="tab-imb">Custo de imbuement</button>
+    <button id="tab-srv">Por servidor</button>
   </div>
 
   <div id="view-itens">
@@ -276,6 +312,33 @@
       é o teto de quanto sai comprar o imbuement pronto.
       Material sem oferta no mundo entra como indisponível e deixa a linha
       incompleta, em vez de ser contado como zero.
+    </p>
+  </div>
+
+  <div id="view-srv" hidden>
+    <div class="srvpick">
+      <label for="cmpq">Item</label>
+      <input id="cmpq" list="cmplist" type="search" autocomplete="off"
+             placeholder="Falcon Bow, Vampire Teeth, Soulbleeder…" />
+      <datalist id="cmplist"></datalist>
+      <button class="go" id="cmpgo">comparar ⇄</button>
+      <label class="chk"><input type="checkbox" id="cmpfresh" checked /> Só leitura de até 7 dias</label>
+      <label class="chk"><input type="checkbox" id="cmponly" checked /> Só mundos com oferta</label>
+      <button class="clearbtn" id="cmprefresh" title="Buscar de novo na API">↻ atualizar</button>
+    </div>
+
+    <div id="cmphead"></div>
+    <div class="scroll"><table id="stbl"></table></div>
+    <p class="legend">
+      Preço do mesmo item em todos os mundos rastreados. Não depende do mundo
+      escolhido lá em cima — esta aba funciona antes de carregar qualquer preço.
+      <b>Leitura</b> é a idade do dado <i>daquele</i> mundo: como quem extrai são
+      players, mundo pouco jogado fica meses parado, e um preço barato de uma
+      leitura velha não é um preço — por isso o filtro de 7 dias já vem ligado.
+      Clique numa linha para trocar o mundo selecionado no topo.
+      <b>O Market não atravessa mundos</b>: isto serve para saber se o seu está
+      caro ou barato, não para comprar num mundo e vender no outro.
+      Item forjável continua misturando os tiers.
     </p>
   </div>
 </div>
@@ -318,12 +381,21 @@
 
   const price = (n, cls) => (n ? `<span class="${cls}">${kk(n)}</span>` : '<span class="dim">—</span>');
 
-  function ago(iso) {
-    const h = (Date.now() - new Date(iso + 'Z').getTime()) / 3.6e6;
+  // A mesma escala serve a barra de estado (uma data ISO do /world_data) e a
+  // tabela por mundo (o epoch da leitura daquele item naquele mundo). Acima de
+  // STALE_DAYS vira "old": mundo pouco extraído fica meses parado, e preço de
+  // leitura velha não vale como referência de nada.
+  const STALE_DAYS = 7;
+
+  function agoTs(sec) {
+    const h = (Date.now() - sec * 1000) / 3.6e6;
     if (h < 1) return ['agora há pouco', 'fresh'];
     if (h < 48) return [`há ${Math.round(h)}h`, h < 30 ? 'fresh' : 'stale'];
-    return [`há ${Math.round(h / 24)} dias`, 'stale'];
+    const d = Math.round(h / 24);
+    return [`há ${d} dias`, d > STALE_DAYS ? 'old' : 'stale'];
   }
+
+  const ago = (iso) => agoTs(new Date(iso + 'Z').getTime() / 1000);
 
   // ── API ───────────────────────────────────────────────────────────────
   // A API devolve **-1**, não 0, quando não tem leitura do item (19 dos 5.066
@@ -358,7 +430,7 @@
     if (!force && cache.has(w)) {
       ({ prices, updated } = cache.get(w));
       showStatus(w);
-      render();
+      draw();
       return;
     }
 
@@ -373,11 +445,11 @@
       updated = (worlds.find((x) => x.name === w) || {}).last_update || null;
       cache.set(w, { prices, updated });
       showStatus(w);
-      render();
+      draw();
     } catch (e) {
       prices = new Map();
       setStatus(`não deu para buscar os preços de <b>${w}</b>: ${e.message}`, true);
-      render();
+      draw();
     }
   }
 
@@ -545,6 +617,7 @@
         <h2>${it.n}</h2>
         <span class="dim">${it.cat}${it.tier ? ` · forjável até t${it.tier}` : ''}</span>
         <span class="panel-actions">
+          <button class="panel-link" onclick="compareFromPanel(${it.id})">por servidor ⇄</button>
           <a class="panel-link" href="index.html?open=${encodeURIComponent(it.n)}">ficha do item ↗</a>
           <button class="close" onclick="closeDetail()">fechar ✕</button>
         </span>
@@ -672,18 +745,246 @@
     });
   }
 
+  // ── comparação entre servidores ───────────────────────────────────────
+  // /item_comparison devolve os 113 mundos de uma vez e não pede `server`:
+  // esta aba responde "onde esse item está barato" sem mundo carregado.
+  // O Market não atravessa mundos — isto é referência de preço, não arbitragem.
+  const CMP_KEY = 'tibia-ai:market-cmp';
+  const cmpCache = new Map();   // item id → linhas já buscadas nesta sessão
+  let cmpItem = null;           // item comparado
+  let cmpRows = null;           // linhas, ou null enquanto a busca não volta
+  let cmpHits = [];             // itens candidatos quando a busca é ambígua
+  let cmpErr = '';
+  let cmpSeq = 0;               // descarta resposta de uma busca já trocada
+  let srvKey = 'sell';
+  let srvDir = 1;               // preço: mais barato primeiro
+
+  // null = "não tem" e cai sempre para o fim, nos dois sentidos da ordenação:
+  // mundo sem oferta no topo de uma tabela de preço não diz nada.
+  const SRV_SORTS = {
+    w: (r) => r.name.toLowerCase(),
+    sell: (r) => r.v.sell_offer || null,
+    buy: (r) => r.v.buy_offer || null,
+    spread: (r) => spreadPct(r.v),
+    avg: (r) => r.v.month_average_sell || null,
+    sold: (r) => r.v.month_sold || null,
+    traders: (r) => r.v.active_traders || null,
+    seen: (r) => r.v.time || null,
+  };
+
+  function srvCmp(a, b) {
+    const k = SRV_SORTS[srvKey] || SRV_SORTS.w;
+    const x = k(a), y = k(b);
+    if (x === null || y === null) {
+      if (x === null && y === null) return a.name.localeCompare(b.name);
+      return x === null ? 1 : -1;
+    }
+    const d = typeof x === 'string' ? x.localeCompare(y) : x - y;
+    return srvDir * d || a.name.localeCompare(b.name);
+  }
+
+  function median(ns) {
+    if (!ns.length) return null;
+    const s = [...ns].sort((a, b) => a - b);
+    const m = s.length >> 1;
+    return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+  }
+
+  async function compare(it, force) {
+    if (!it) return;
+    cmpItem = it;
+    cmpHits = [];
+    cmpErr = '';
+    $('cmpq').value = it.n;
+    try { localStorage.setItem(CMP_KEY, it.n); } catch (_) {}
+
+    if (!force && cmpCache.has(it.id)) { cmpRows = cmpCache.get(it.id); renderSrv(); return; }
+
+    const seq = ++cmpSeq;
+    cmpRows = null;
+    renderSrv();
+    try {
+      const data = await api(`/item_comparison?item_id=${it.id}`);
+      if (seq !== cmpSeq) return;
+      cmpRows = data.map((r) => ({ name: r.name, v: clean(r.values || {}) }));
+      cmpCache.set(it.id, cmpRows);
+    } catch (e) {
+      if (seq !== cmpSeq) return;
+      cmpRows = [];
+      cmpErr = e.message;
+    }
+    renderSrv();
+  }
+
+  // nome exato → compara; um só casamento → compara; vários → deixa escolher
+  function pickCompare(raw) {
+    const q = (raw || '').trim().toLowerCase();
+    cmpErr = '';
+    if (!q) { cmpItem = null; cmpRows = null; cmpHits = []; renderSrv(); return; }
+    const exact = BY_NAME.get(q);
+    if (exact) return compare(exact);
+    const hits = ITEMS.filter((i) => i.n.toLowerCase().includes(q));
+    if (hits.length === 1) return compare(hits[0]);
+    cmpItem = null;
+    cmpRows = null;
+    cmpHits = hits.slice(0, 24);
+    renderSrv();
+  }
+
+  function compareFromPanel(id) {
+    closeDetail();
+    compare(BY_ID.get(id));   // define cmpItem antes de setTab não refazer a busca
+    setTab('srv');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderSrv() {
+    const head = $('cmphead'), tbl = $('stbl');
+    const done = (h, t, c) => { head.innerHTML = h; tbl.innerHTML = t; $('count').textContent = c; };
+
+    if (cmpHits.length) {
+      done(`<p class="legend" style="margin:0 0 8px">Mais de um item casa com essa busca:</p>
+        <div class="sugs">${cmpHits.map((i) =>
+          `<button class="pchip" data-cmp="${i.id}">${i.n}</button>`).join('')}</div>`,
+        '', `${cmpHits.length} itens`);
+      head.querySelectorAll('button[data-cmp]').forEach((b) => {
+        b.onclick = () => compare(BY_ID.get(+b.dataset.cmp));
+      });
+      return;
+    }
+    if (!cmpItem) {
+      done('', `<caption class="na" style="padding:32px">Escreva o nome de um item
+        para ver o preço dele nos ${M.worlds.length} mundos.</caption>`, '');
+      return;
+    }
+    if (cmpRows === null) {
+      done(`<p class="loading">buscando <b>${cmpItem.n}</b> nos ${M.worlds.length} mundos…</p>`, '', '');
+      return;
+    }
+    if (cmpErr) {
+      done(`<p class="na">não deu para comparar ${cmpItem.n}: ${cmpErr}</p>`, '', '');
+      return;
+    }
+
+    const w = $('world').value;
+    const fresh = $('cmpfresh').checked;
+    const onlyOffer = $('cmponly').checked;
+
+    const rows = cmpRows.filter((r) => {
+      if (onlyOffer && !(r.v.sell_offer || r.v.buy_offer)) return false;
+      if (fresh && (Date.now() - r.v.time * 1000) > STALE_DAYS * 864e5) return false;
+      return true;
+    }).sort(srvCmp);
+
+    // resumo sobre o conjunto filtrado — o teto e o piso têm que sair da mesma
+    // lista que está na tabela, senão a carta aponta uma linha que não aparece
+    const sells = rows.filter((r) => r.v.sell_offer);
+    const buys = rows.filter((r) => r.v.buy_offer);
+    const cheap = sells.reduce((a, b) => (!a || b.v.sell_offer < a.v.sell_offer ? b : a), null);
+    const rich = buys.reduce((a, b) => (!a || b.v.buy_offer > a.v.buy_offer ? b : a), null);
+    const med = median(sells.map((r) => r.v.sell_offer));
+
+    const mine = w ? cmpRows.find((r) => r.name === w) : null;
+    const under = mine && mine.v.sell_offer
+      ? sells.filter((r) => r.v.sell_offer < mine.v.sell_offer).length : null;
+
+    const card = (k, v, sub) =>
+      `<div class="card"><span class="k">${k}</span><span class="v">${v}</span>${
+        sub ? `<span class="w">${sub}</span>` : ''}</div>`;
+    const na = '<span class="na">—</span>';
+    const seen = (r) => { const [t, c] = agoTs(r.v.time); return `<span class="${c}">${t}</span>`; };
+
+    head.innerHTML = `<div class="cards">
+      ${card('Mais barato pra comprar',
+        cheap ? `<span class="sell">${fullNum(cheap.v.sell_offer)}</span>` : na,
+        cheap ? `${cheap.name} · ${seen(cheap)}` : 'nenhum mundo com oferta de venda')}
+      ${card('Melhor pra vender',
+        rich ? `<span class="buy">${fullNum(rich.v.buy_offer)}</span>` : na,
+        rich ? `${rich.name} · ${seen(rich)}` : 'nenhum mundo com oferta de compra')}
+      ${card('Mediana do comprar por',
+        med ? fullNum(med) : na,
+        `entre os ${sells.length} mundos com oferta de venda`)}
+      ${card(w ? `No seu mundo (${w})` : 'No seu mundo',
+        mine && mine.v.sell_offer ? `<span class="sell">${fullNum(mine.v.sell_offer)}</span>`
+          : w ? na : '<span class="na">escolha um mundo</span>',
+        mine && mine.v.sell_offer
+          ? `${under} ${under === 1 ? 'mundo mais barato' : 'mundos mais baratos'}`
+          : w ? 'sem oferta de venda aí' : 'o seletor de mundo fica no topo da página')}
+    </div>`;
+
+    const th = (k, label, cls) => `<th data-k="${k}" class="${cls || ''}${
+      srvKey === k ? ' sorted' : ''}">${label}</th>`;
+
+    const body = rows.map((r, i) => {
+      const sp = spreadPct(r.v);
+      const [aTxt, aCls] = agoTs(r.v.time);
+      return `<tr class="${r.name === w ? 'here' : ''}" data-w="${r.name}"
+          title="clique para carregar ${r.name} no topo">
+        <td class="num dim">${i + 1}</td>
+        <td class="name">${r.name}${r.name === w ? ' ←' : ''}</td>
+        <td class="num">${price(r.v.sell_offer, 'sell')}</td>
+        <td class="num">${price(r.v.buy_offer, 'buy')}</td>
+        <td class="num dim">${sp === null ? '—' : sp.toFixed(0) + '%'}</td>
+        <td class="num dim">${r.v.month_average_sell ? kk(r.v.month_average_sell) : '—'}</td>
+        <td class="num">${r.v.month_sold ? fullNum(r.v.month_sold) : '<span class="dim">0</span>'}</td>
+        <td class="num dim">${r.v.active_traders || 0}</td>
+        <td class="num dim">${r.v.sell_offers || 0}/${r.v.buy_offers || 0}</td>
+        <td class="num ${aCls}">${aTxt}</td>
+      </tr>`;
+    }).join('');
+
+    tbl.innerHTML = rows.length ? `<thead><tr>
+        <th class="num nosort">#</th>
+        ${th('w', 'Mundo')}
+        ${th('sell', 'Comprar por', 'num')}
+        ${th('buy', 'Vender por', 'num')}
+        ${th('spread', 'Spread', 'num')}
+        ${th('avg', 'Méd. mês', 'num')}
+        ${th('sold', 'Vend./mês', 'num')}
+        ${th('traders', 'Traders', 'num')}
+        <th class="num nosort" title="ofertas de venda / de compra">Ofertas</th>
+        ${th('seen', 'Leitura', 'num')}
+      </tr></thead><tbody>${body}</tbody>`
+      : `<caption class="na" style="padding:32px">Nenhum mundo passa nos filtros
+         — ${cmpItem.n} não tem oferta em lugar nenhum com leitura recente.</caption>`;
+
+    $('count').textContent = `${rows.length} de ${cmpRows.length} mundos`;
+
+    tbl.querySelectorAll('th[data-k]').forEach((el) => {
+      el.onclick = () => {
+        if (srvKey === el.dataset.k) srvDir *= -1;
+        // preço e nome começam crescentes (o barato e o A vêm primeiro);
+        // volume e data começam decrescentes
+        else { srvKey = el.dataset.k; srvDir = /^(w|sell|buy)$/.test(el.dataset.k) ? 1 : -1; }
+        renderSrv();
+      };
+    });
+    tbl.querySelectorAll('tbody tr').forEach((tr) => {
+      tr.onclick = () => {
+        if ($('world').value === tr.dataset.w) return;
+        $('world').value = tr.dataset.w;
+        state.save();
+        renderSrv();   // destaque muda na hora; load() redesenha quando voltar
+        load();
+      };
+    });
+  }
+
   let tab = 'itens';
+  const TABS = ['itens', 'imb', 'srv'];
   function setTab(t) {
     tab = t;
-    $('tab-itens').classList.toggle('on', t === 'itens');
-    $('tab-imb').classList.toggle('on', t === 'imb');
-    $('view-itens').hidden = t !== 'itens';
-    $('view-imb').hidden = t !== 'imb';
+    TABS.forEach((x) => {
+      $('tab-' + x).classList.toggle('on', x === t);
+      $('view-' + x).hidden = x !== t;
+    });
+    document.querySelector('.controls').classList.toggle('srv', t === 'srv');
+    // entrar na aba com um item guardado do acesso anterior já busca por ele
+    if (t === 'srv' && !cmpItem && !cmpHits.length) { pickCompare($('cmpq').value); return; }
     draw();
   }
-  const draw = () => (tab === 'itens' ? render() : renderImb());
-  $('tab-itens').onclick = () => setTab('itens');
-  $('tab-imb').onclick = () => setTab('imb');
+  const draw = () => (tab === 'itens' ? render() : tab === 'imb' ? renderImb() : renderSrv());
+  TABS.forEach((x) => ($('tab-' + x).onclick = () => setTab(x)));
 
   // ── presets ───────────────────────────────────────────────────────────
   const PRESETS = {
@@ -711,6 +1012,24 @@
   FILTER_IDS.forEach((id) => $(id).addEventListener('input', draw));
   $('world').addEventListener('change', () => { state.save(); load(); });
 
+  // datalist montado na hora: são 5.121 itens, jogar todos no DOM é desperdício
+  $('cmpq').addEventListener('input', () => {
+    const q = $('cmpq').value.trim().toLowerCase();
+    $('cmplist').innerHTML = q.length < 2 ? '' : ITEMS
+      .filter((i) => i.n.toLowerCase().includes(q)).slice(0, 25)
+      .map((i) => `<option value="${i.n.replace(/"/g, '&quot;')}"></option>`).join('');
+    // escolher no autocomplete já compara, sem precisar do botão
+    const exact = BY_NAME.get(q);
+    if (exact && (!cmpItem || cmpItem.id !== exact.id)) compare(exact);
+  });
+  $('cmpq').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); pickCompare($('cmpq').value); }
+  });
+  $('cmpgo').onclick = () => pickCompare($('cmpq').value);
+  $('cmprefresh').onclick = () => (cmpItem ? compare(cmpItem, true) : pickCompare($('cmpq').value));
+  $('cmpfresh').addEventListener('change', renderSrv);
+  $('cmponly').addEventListener('change', renderSrv);
+
   document.querySelectorAll('.pchip').forEach((b) => {
     b.onclick = () => {
       setTab('itens');
@@ -725,6 +1044,12 @@
   state.restore();
   const qParam = urlParam('q');
   if (qParam !== null) $('q').value = qParam;
+
+  // o item comparado vive fora do filterState: "limpar filtros" e os chips de
+  // preset não deviam apagar a comparação aberta
+  const cmpParam = urlParam('cmp');
+  try { $('cmpq').value = cmpParam || localStorage.getItem(CMP_KEY) || ''; } catch (_) {}
+  if (cmpParam) setTab('srv');
 
   const openParam = urlParam('open');
   load().then(() => {
