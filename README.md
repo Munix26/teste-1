@@ -21,9 +21,13 @@ TibiaWiki inteiro.
 - **`market.html`** — preços e ofertas do Market **ao vivo**, dos 113 mundos,
   via [Tibia Market Tracker](https://www.tibiamarket.top/): quanto custa
   comprar, quanto rende vender, o livro de ofertas, o histórico de 30 dias e
-  em que mundos o item mais negocia. Traz também o **custo de cada imbuement**
-  somando os materiais pelo preço do mundo escolhido. Nenhum preço fica
-  versionado — cada carregamento busca na API, e a página mostra a idade da
+  em que mundos o item mais negocia. A aba **Por servidor** joga um item e
+  mostra o preço dele nos 113 mundos de uma vez — onde está mais barato, onde
+  paga melhor, a mediana e quantos mundos estão abaixo do seu — com a idade da
+  leitura de cada mundo, porque preço barato de leitura de meses atrás não é
+  preço. Traz também o **custo de cada imbuement** somando os materiais pelo
+  preço do mundo escolhido. Nenhum preço fica versionado — cada carregamento
+  busca na API, e a página mostra a idade da
   última leitura do mundo (os dados vêm de players rodando o extrator, não da
   CipSoft).
 

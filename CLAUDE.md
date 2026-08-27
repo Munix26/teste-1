@@ -54,7 +54,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
 | `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
-| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido |
+| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) |
 | `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
 | `tibia-mcp/gen_market.py` | regenera `market-items.js` (só metadados: id, nome, categoria, tier, NPC — **preço nenhum**) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
@@ -94,6 +94,14 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   Antica, e buracos no histórico). `-1` é truthy em JS: sem normalizar na
   entrada, vira "-1" como preço na tabela e afunda a escala do gráfico. O
   `clean()` de `market.html` zera todo numérico negativo — não remover.
+- **Comparar um item entre mundos é uma chamada só.** `/item_comparison?item_id=`
+  devolve os 113 mundos e **não pede `server`** — é o que a aba "Por servidor"
+  usa, e por isso ela funciona antes de qualquer preço carregar. Cada mundo vem
+  com o `time` da leitura *daquele* item ali: 26 dos 113 estão com mais de 7
+  dias (alguns com meses), então o filtro de 7 dias vem ligado — sem ele o
+  "mais barato" sai de um mundo que ninguém extrai desde o ano passado. O
+  Market da CipSoft **não atravessa mundos**: a comparação diz se o seu mundo
+  está caro, não onde arbitrar.
 - **Item forjável não vem separado por tier.** `market_values` devolve um
   preço por object type id; t0 e t3 entram no mesmo número. Não usar para
   comparar Falcon Bow t1 vs t2.
