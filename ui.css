@@ -1,6 +1,38 @@
-/* Componentes compartilhados pelas três páginas: topbar, chips de preset,
+/* Componentes compartilhados pelas oito páginas: topbar, chips de preset,
    sprites do TibiaWiki, botão de limpar filtros e links cruzados.
-   O CSS de cada página continua inline nela — aqui só entra o que é novo. */
+   O CSS de cada página continua inline nela — aqui só entra o que é comum.
+
+   A partir de 2026-08 este arquivo também carrega a **camada mobile**
+   (iPhone 15 Pro Max = 430×932 CSS px em retrato). Como o <style> de cada
+   página vem DEPOIS deste link, toda regra daqui que precise vencer uma
+   regra de página usa seletor mais específico (`.wrap .controls`,
+   `.scroll > table > tbody > tr > td`…) — nunca !important. */
+
+:root {
+  --gold: #d4af37;
+  --ink: #e6e8ee;
+  --muted: #8b93a7;
+  --dim: #79829a;
+  --bg: #12141a;
+  --surface: #171a22;
+  --surface-2: #1a1d26;
+  --line: #262b38;
+  --line-2: #2c3242;
+  --navh: calc(54px + env(safe-area-inset-top, 0px));  /* altura da barra fixa; ui.js mede a real */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+/* iOS infla o corpo do texto ao girar a tela se isto não estiver travado */
+html { -webkit-text-size-adjust: 100%; }
+
+body { -webkit-tap-highlight-color: rgba(212, 175, 55, 0.14); }
+
+/* teclado e leitores de tela: o anel de foco não pode sumir junto com o
+   outline padrão que as páginas trocam por `outline: 1px solid` */
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 
 /* ── topbar ── */
 .topbar {
@@ -24,7 +56,7 @@
 
 .topbar .hint {
   margin-left: auto;
-  color: #5c6478;
+  color: #79829a;
   font-size: 0.74rem;
   white-space: nowrap;
 }
@@ -49,7 +81,7 @@ kbd {
   margin-bottom: 10px;
 }
 
-.chipsbar .lbl { color: #5c6478; font-size: 0.76rem; margin-right: 2px; }
+.chipsbar .lbl { color: #79829a; font-size: 0.76rem; margin-right: 2px; }
 
 .pchip {
   background: #1a1d26;
@@ -62,9 +94,11 @@ kbd {
   font-family: inherit;
   line-height: 1.4;
   white-space: nowrap;
+  transition: border-color 0.12s ease, color 0.12s ease;
 }
 
 .pchip:hover { border-color: rgba(212, 175, 55, 0.55); color: #d4af37; }
+.pchip:active { background: rgba(212, 175, 55, 0.12); }
 
 /* ── botão limpar filtros ── */
 .clearbtn {
@@ -151,8 +185,434 @@ a.loot-item .spr img, .loot-item .spr img { max-width: 22px; max-height: 22px; }
 
 .panel-link:hover { color: #d4af37; border-color: rgba(212, 175, 55, 0.45); }
 
+/* ══════════════════════════════════════════════════════════════════════
+   CAMADA MOBILE — controles montados por ui.js
+   Estes três componentes só existem porque ui.js os cria; ficam escondidos
+   no desktop para a página continuar exatamente como era.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* corpo dos filtros: no desktop `display: contents` faz os filhos voltarem
+   a ser filhos diretos do flex de .controls — layout idêntico ao de antes */
+.filters-body { display: contents; }
+
+.filters-toggle, .msort, .fab-top { display: none; }
+
+/* ── telas de celular ── */
 @media (max-width: 640px) {
+  html body {
+    padding: 0 calc(12px + var(--safe-l)) calc(80px + var(--safe-b)) calc(12px + var(--safe-r));
+    font-size: 16px;
+  }
+
+  /* ── barra de navegação fixa ────────────────────────────────────────
+     8 links quebravam em 3 linhas e empurravam o conteúdo pra fora da
+     tela. Vira uma trilha só, rolável na horizontal, colada no topo. */
+  .wrap > .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    gap: 0;
+    flex-wrap: nowrap;
+    /* sem margem embaixo: a barra de filtros gruda encostada nela, senão
+       o conteúdo aparece rolando na fresta entre as duas */
+    margin: 0 -12px 0;
+    padding: calc(var(--safe-t) + 7px) 12px 7px;
+    background: rgba(18, 20, 26, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* o link do brand duplica o “🎒 Itens” do nav — no celular a largura
+     vale mais do que a repetição */
+  .wrap > .topbar .brand { display: none; }
+
+  .topbar nav {
+    flex: 1;
+    min-width: 0;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding: 1px 0;
+    /* a máscara na borda direita avisa que a trilha continua */
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+
+  .topbar nav::-webkit-scrollbar { display: none; }
+
+  .topbar nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    scroll-snap-align: start;
+    white-space: nowrap;
+    padding: 0 13px;
+    font-size: 0.85rem;
+    line-height: 1.25;
+  }
+
   .topbar .hint { display: none; }
-  .chipsbar { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
-  .panel-head { flex-wrap: wrap; }
+
+  /* ── título da página ── */
+  .wrap > h1 { font-size: 1.25rem; margin-top: 12px; }
+  .wrap > .sub { font-size: 0.84rem; }
+
+  /* âncora e scrollIntoView não podem parar embaixo da barra fixa */
+  h1, h2, .etapa, .goalbox, .scroll { scroll-margin-top: calc(var(--navh) + 8px); }
+
+  /* ── barra de filtros: compacta e fixa ──────────────────────────────
+     só a busca e o botão ficam à vista; o resto abre sob demanda. Assim
+     dá pra buscar sem voltar ao topo, sem a barra comer meia tela. */
+  .wrap .controls {
+    position: sticky;
+    top: var(--navh);
+    z-index: 30;
+    margin: 0 -12px 10px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .wrap .controls > input[type="search"],
+  .wrap .controls > #q { flex: 1 1 auto; min-width: 0; }
+
+  /* mundo (market): rótulo ao lado do campo economiza uma linha inteira
+     de barra fixa, e ele precisa ficar sempre visível */
+  .wrap .controls > .wctl { flex: 1 0 100%; flex-direction: row; align-items: center; }
+  .wrap .controls > .wctl select { flex: 1; }
+
+  .filters-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #cbd3e4;
+    border-radius: 8px;
+    padding: 0 13px;
+    min-height: 44px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .filters-toggle.on { color: var(--gold); border-color: rgba(212, 175, 55, 0.5); }
+
+  .filters-toggle .fbadge {
+    background: rgba(212, 175, 55, 0.18);
+    color: var(--gold);
+    border-radius: 999px;
+    padding: 0 7px;
+    font-size: 0.74rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* gap de 10px porque o `.ctl` de cada página usa flex-basis
+     calc(50% - 5px) — com gap maior só cabe um filtro por linha. O
+     min-width: 0 é o que deixa o par caber mesmo: sem ele o <select>
+     impõe a largura da opção mais comprida ("⚔️ Todo equipamento"). */
+  .filters-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    padding-top: 2px;
+  }
+
+  .filters-body > .ctl { min-width: 0; }
+
+  .filters-body[hidden] { display: none; }
+
+  .wrap .controls .count {
+    flex: 1 0 100%;
+    margin: -2px 0 0;
+    text-align: right;
+    font-size: 0.72rem;
+    order: 99;
+  }
+
+  /* alvos de toque: 44px é o mínimo do guia da Apple. 16px no campo é o
+     que impede o Safari de dar zoom sozinho ao focar. */
+  .wrap input, .wrap select, .wrap button, .wrap .clearbtn, .wrap .pchip {
+    font-size: 16px;
+  }
+
+  .wrap .controls input, .wrap .controls select,
+  .wrap .charbox input, .wrap .charbox button, .wrap .srvpick input, .wrap .srvpick button {
+    min-height: 44px;
+  }
+
+  .wrap input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--gold); }
+
+  .wrap .chk, .wrap .goal, .wrap .step { align-items: center; }
+  .wrap .chk { min-height: 38px; }
+
+  .clearbtn { padding: 9px 14px; }
+
+  /* trilha de atalhos: mesma lógica do nav */
+  .chipsbar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+  .chipsbar::-webkit-scrollbar { display: none; }
+  .chipsbar .pchip { scroll-snap-align: start; padding: 8px 14px; }
+
+  /* ── ordenação (o <thead> some no celular) ── */
+  .msort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    color: var(--dim);
+  }
+
+  .msort select {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    background: #12141a;
+    border: 1px solid #303646;
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 0 10px;
+    font-family: inherit;
+  }
+
+  .msort[hidden] { display: none; }
+
+  .msort button {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #cbd3e4;
+    border-radius: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  /* ── tabela vira lista de cartões ───────────────────────────────────
+     9 a 16 colunas não cabem em 430px; rolar na horizontal esconde metade
+     do dado. Cada linha vira um cartão: título em cima, o resto como
+     pares “rótulo valor” que quebram sozinhos. Os rótulos saem do <thead>
+     (ui.js copia para data-l), então nenhuma página precisou mudar. */
+  .scroll { overflow-x: visible; }
+
+  .scroll > table { display: block; font-size: 0.86rem; }
+  .scroll > table > thead { display: none; }
+  .scroll > table > tbody { display: block; }
+
+  .scroll > table > caption { display: block; }
+
+  .scroll > table > tbody > tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 3px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 13px;
+    margin-bottom: 8px;
+  }
+
+  .scroll > table > tbody > tr:hover td { background: none; }
+  .scroll > table > tbody > tr.tappable:active { border-color: rgba(212, 175, 55, 0.55); }
+
+  .scroll > table > tbody > tr > td {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    text-align: left;
+  }
+
+  /* célula-título: nome do item/criatura/spawn, linha inteira */
+  .scroll > table > tbody > tr > td[data-t] {
+    flex: 1 0 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* o nome abre o cartão mesmo quando não é a primeira coluna da tabela
+       (central.html começa pelo level, guia.html pela caixa de marcar) */
+    order: -1;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  /* checkbox (guia.html) fica ao lado do título, não em cima dele */
+  .scroll > table > tbody > tr > td.has-ctl { flex: 0 0 auto; order: -2; }
+  /* com caixa de marcar o título divide a linha com ela — o min-width
+     empurra os rótulos pra linha de baixo em TODOS os cartões, senão o
+     primeiro par sobe ou desce conforme o tamanho do nome */
+  .scroll > table > tbody > tr:has(td.has-ctl) > td[data-t] {
+    flex: 1 1 auto;
+    min-width: calc(100% - 46px);
+  }
+
+  .scroll > table > tbody > tr > td[data-l]::before {
+    content: attr(data-l);
+    color: var(--dim);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-right: 5px;
+  }
+
+  /* coluna vazia (“—”) não vira linha de ruído no cartão */
+  .scroll > table > tbody > tr > td.is-empty { display: none; }
+
+  /* seta discreta só onde a linha realmente abre um painel */
+  .scroll > table > tbody > tr.tappable > td[data-t]::after {
+    content: '›';
+    color: var(--dim);
+    margin-left: auto;
+    padding-left: 8px;
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  /* ── painel de detalhe vira folha de baixo pra cima ─────────────────
+     tela cheia com cabeçalho fixo: o “fechar ✕” some ao rolar num painel
+     de criatura com 40 itens de loot. Seletor por #id porque o @media de
+     cada página já redefine .overlay com a mesma especificidade. */
+  #overlay { padding: 0; overscroll-behavior: contain; }
+
+  #overlay .panel {
+    max-width: none;
+    margin: 0;
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    padding: 0 14px calc(32px + var(--safe-b));
+  }
+
+  #overlay .panel .panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    flex-wrap: wrap;
+    margin: 0 -14px 14px;
+    padding: calc(var(--safe-t) + 10px) 14px 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    gap: 8px;
+  }
+
+  #overlay .panel .panel-head h2 { font-size: 1.15rem; }
+  #overlay .panel .panel-head .spr-big { width: 46px; height: 46px; }
+  #overlay .panel .panel-head .spr-big img { max-width: 46px; max-height: 46px; }
+
+  #overlay .panel .panel-actions {
+    flex: 1 0 100%;
+    margin-left: 0;
+    gap: 8px;
+  }
+
+  #overlay .panel .panel-actions .panel-link,
+  #overlay .panel .panel-actions .close {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.82rem;
+  }
+
+  #overlay .panel .close { order: 9; color: var(--ink); border-color: #4a5266; }
+
+  #overlay.open .panel { animation: sheet-in 0.18s ease-out; }
+
+  @keyframes sheet-in {
+    from { transform: translateY(18px); opacity: 0.5; }
+    to { transform: none; opacity: 1; }
+  }
+
+  /* ── voltar ao topo ── */
+  .fab-top {
+    display: block;
+    position: fixed;
+    right: calc(14px + var(--safe-r));
+    bottom: calc(14px + var(--safe-b));
+    z-index: 45;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    background: rgba(23, 26, 34, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--gold);
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .fab-top.on { opacity: 1; pointer-events: auto; transform: none; }
+
+  /* ── ajustes finos de cada página ── */
+  /* gráfico do market: o viewBox é 900 de largura e encolhe pra 430 —
+     texto e traço precisam crescer na mesma proporção pra continuar visíveis */
+  .chart text { font-size: 22px; }
+  .chart .lsell, .chart .lbuy { stroke-width: 3.5; }
+
+  /* roteiro/guia: caixa de marcar grande e alinhada com a primeira linha */
+  .step input[type="checkbox"], .goal input[type="checkbox"], td.ck input[type="checkbox"] {
+    top: 0;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .step { align-items: flex-start; flex-wrap: wrap; gap: 8px 12px; }
+
+  /* a etiqueta da quest desce para a linha de baixo (o ::after quebra a
+     linha) e mantém a largura do próprio texto, alinhada com o texto do passo */
+  .step::after { content: ''; flex-basis: 100%; order: 2; }
+  .step .qtag { order: 3; flex: 0 0 auto; margin-left: 34px; }
+
+  /* alvos de toque dos links miúdos que vivem soltos no texto */
+  .qtag, .srcb, .wikilink, a.loot-item {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 3px 11px;
+  }
+
+  .etapa { padding: 14px 13px; }
+  .etapa > h2 { font-size: 1rem; }
+
+  /* market: abas como controle segmentado de largura cheia */
+  .tabs { gap: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .tabs button { flex: 1; border: 0; border-radius: 0; padding: 10px 6px; font-size: 0.82rem; }
+  .tabs button + button { border-left: 1px solid var(--line); }
+
+  .srvpick { padding: 10px; }
+  .srvpick #cmpq { flex: 1 0 100%; }
+
+  .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card .v { font-size: 0.95rem; }
+
+  .status { padding: 9px 11px; }
+  .status button { margin-left: 0; min-height: 40px; padding: 7px 14px; font-size: 0.8rem; }
+}
+
+/* quem pediu menos movimento não recebe a animação da folha */
+@media (prefers-reduced-motion: reduce) {
+  .overlay.open .panel { animation: none; }
+  .fab-top { transition: none; }
 }
