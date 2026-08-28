@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="pt-BR">
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#12141a" />
 <title>Tibia-AI — Spawns</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
 <link rel="stylesheet" href="ui.css" />
@@ -98,8 +100,8 @@
 
   .name { font-weight: 600; white-space: nowrap; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .dim { color: #5c6478; }
-  .na { color: #5c6478; font-style: italic; }
+  .dim { color: #79829a; }
+  .na { color: #79829a; font-style: italic; }
   .stars { color: #d4af37; white-space: nowrap; }
   .gold { color: #fbbf24; }
   .creatures { color: #8b93a7; font-size: 0.8rem; }
@@ -109,7 +111,7 @@
   .crspr .spr { width: 26px; height: 26px; }
   .crspr .spr img { max-width: 26px; max-height: 26px; }
 
-  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+  .legend { color: #79829a; font-size: 0.76rem; margin-top: 16px; }
 
   /* ── painel ── */
   .overlay {
@@ -129,7 +131,7 @@
   }
 
   .panel-head h2 { font-size: 1.3rem; color: #d4af37; }
-  .panel-head .city { color: #6b7385; font-size: 0.82rem; }
+  .panel-head .city { color: #838da3; font-size: 0.82rem; }
 
   .close {
     background: none; border: 1px solid #303646;
@@ -145,7 +147,7 @@
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
   .kv { font-size: 0.85rem; }
-  .kv .k { color: #6b7385; font-size: 0.74rem; display: block; }
+  .kv .k { color: #838da3; font-size: 0.74rem; display: block; }
   .prose { font-size: 0.87rem; color: #b8bfd0; }
 
   .crlist { font-size: 0.83rem; }
@@ -158,7 +160,7 @@
     gap: 0 12px; align-items: center;
   }
   .cr-line.head {
-    color: #6b7385; font-size: 0.72rem; text-transform: uppercase;
+    color: #838da3; font-size: 0.72rem; text-transform: uppercase;
     margin-bottom: 4px;
   }
   .cr-name { overflow-wrap: anywhere; }
@@ -179,7 +181,7 @@
 
   /* mesma convenção de cor de creatures.html: quanto maior o número, mais dano entra */
   .el.weak   { color: #4ade80; border-color: rgba(74,222,128,0.40); background: rgba(74,222,128,0.09); }
-  .el.plain  { color: #5c6478; }
+  .el.plain  { color: #79829a; }
   .el.strong { color: #fb923c; border-color: rgba(251,146,60,0.32); }
   .el.immune { color: #ef4444; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.10); }
   .el.unk    { color: #3d4354; }
@@ -207,7 +209,7 @@
     .cr-line .num { flex-basis: auto; }
     .cr-line .num::before {
       content: attr(data-l) ' ';
-      color: #5c6478; font-size: 0.7rem;
+      color: #79829a; font-size: 0.7rem;
     }
   }
 </style>

@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="pt-BR">
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#12141a" />
 <title>Tibia-AI — Market</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>" />
 <link rel="stylesheet" href="ui.css" />
@@ -103,15 +105,15 @@
 
   .name { font-weight: 600; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .dim { color: #5c6478; }
-  .na { color: #5c6478; font-style: italic; }
+  .dim { color: #79829a; }
+  .na { color: #79829a; font-style: italic; }
 
   /* compra = o que o dono paga (vermelho), venda = o que ele recebe (verde) */
   .buy { color: #7dd3a0; }
   .sell { color: #f0a868; }
   .tier { color: #d4af37; font-size: 0.72rem; }
 
-  .legend { color: #5c6478; font-size: 0.76rem; margin-top: 16px; }
+  .legend { color: #79829a; font-size: 0.76rem; margin-top: 16px; }
 
   /* ── barra de estado da API ── */
   .status {
@@ -172,7 +174,7 @@
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
   .kv { font-size: 0.85rem; }
-  .kv .k { color: #6b7385; font-size: 0.74rem; display: block; }
+  .kv .k { color: #838da3; font-size: 0.74rem; display: block; }
   .prose { font-size: 0.87rem; color: #b8bfd0; }
 
   /* livro de ofertas lado a lado */
@@ -185,9 +187,9 @@
   .chart .gridline { stroke: #262b38; stroke-width: 1; }
   .chart .lsell { fill: none; stroke: #f0a868; stroke-width: 1.6; }
   .chart .lbuy { fill: none; stroke: #7dd3a0; stroke-width: 1.6; }
-  .chart text { fill: #5c6478; font-size: 10px; }
+  .chart text { fill: #79829a; font-size: 10px; }
 
-  .loading { color: #5c6478; font-size: 0.85rem; padding: 8px 0; }
+  .loading { color: #79829a; font-size: 0.85rem; padding: 8px 0; }
 
   /* ── comparação entre servidores ── */
   .srvpick {
@@ -205,7 +207,7 @@
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .card { background: #171a22; border: 1px solid #262b38; border-radius: 8px; padding: 9px 12px; }
-  .card .k { color: #6b7385; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; display: block; }
+  .card .k { color: #838da3; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; display: block; }
   .card .v { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
   .card .w { color: #8b93a7; font-size: 0.76rem; display: block; }
 

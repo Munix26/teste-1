@@ -65,8 +65,25 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
 | `tibia-mcp/loot.py` | parser compartilhado das loot tables + faixa de gp/kill |
 | `tibia-mcp/english-wiki-adaptation.patch` | correções aplicadas no servidor MCP upstream |
+| `ui.css` + `ui.js` | componentes compartilhados pelas 8 páginas + **camada mobile** (ver abaixo) |
 
 ## Decisões técnicas importantes
+
+- **A camada mobile vive só em `ui.css`/`ui.js`** (alvo: iPhone 15 Pro Max,
+  430×932 em retrato). Nenhum script de página mudou: `ui.js` monta o que o
+  CSS de celular espera (painel dobrável de filtros, barra de ordenação,
+  rótulo de cada célula copiado do `<thead>`) e o CSS transforma cada linha
+  de tabela em cartão abaixo de 640px. Como o `<style>` inline de cada página
+  carrega **depois** do `ui.css`, toda regra que precise vencer uma de página
+  usa seletor mais específico (`.wrap .controls`, `#overlay .panel`,
+  `.scroll > table > tbody > tr > td`) — nunca `!important`.
+- **Campo de formulário no celular tem que ter 16px**, senão o Safari dá zoom
+  sozinho ao focar e a página fica torta. O `viewport-fit=cover` + `env(safe-area-inset-*)`
+  é o que mantém conteúdo fora do notch e da barra de gestos.
+- **Ordenar sem `<thead>`**: no celular o cabeçalho da tabela some, então a
+  barra "Ordenar" reproduz os `<th data-k>` num `<select>` e clica no `<th>`
+  de verdade — cada página mantém a própria regra de sentido padrão, e nada
+  precisou ser duplicado.
 
 - **Fonte de dados = `tibia.fandom.com` (wiki inglês)**, não o `tibiawiki.com.br`.
   O wiki BR fica atrás de Cloudflare e é inalcançável de datacenter (403 mesmo
