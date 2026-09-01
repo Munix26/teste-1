@@ -215,6 +215,16 @@
   tr.here td { background: rgba(212,175,55,0.09); }
   tr.here td.name { color: #d4af37; }
 
+  /* ── aba de flips: selo de regime do spread ── */
+  .fb {
+    font-size: 0.7rem; font-weight: 600; white-space: nowrap;
+    padding: 2px 9px; border-radius: 999px; border: 1px solid; cursor: help;
+  }
+  .fb-regime { color: #7dd3a0; border-color: rgba(125,211,160,0.45); background: rgba(125,211,160,0.07); }
+  .fb-pico { color: #fbbf24; border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.06); }
+  .fb-zerado { color: #f87171; border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.06); }
+  .fb-semdado { color: #79829a; border-color: #303646; }
+
   /* leitura velha demais para servir de referência */
   .old, .status .old { color: #f87171; }
 
@@ -288,6 +298,7 @@
 
   <div class="tabs">
     <button id="tab-itens" class="on">Itens</button>
+    <button id="tab-flip">🪙 Flips</button>
     <button id="tab-imb">Custo de imbuement</button>
     <button id="tab-srv">Por servidor</button>
   </div>
@@ -302,6 +313,42 @@
       histórico de 30 dias e em que mundos ele mais negocia.
       Preço de item forjável (t1–t3) não vem separado por tier — o valor
       mostrado mistura os tiers.
+    </p>
+  </div>
+
+  <div id="view-flip" hidden>
+    <div class="srvpick">
+      <span class="ctl"><label for="fmin">Lucro mín/un</label>
+        <input id="fmin" type="number" placeholder="1000" style="width:96px" /></span>
+      <span class="ctl"><label for="froi">ROI mín %</label>
+        <input id="froi" type="number" placeholder="10" style="width:72px" /></span>
+      <span class="ctl"><label for="fgiro">Giro mín/mês</label>
+        <input id="fgiro" type="number" placeholder="60" style="width:84px" /></span>
+      <span class="ctl"><label for="fcapm">Capital máx/un</label>
+        <input id="fcapm" type="number" placeholder="sem teto" style="width:110px" /></span>
+      <span class="ctl"><label for="fshare">Captura %</label>
+        <input id="fshare" type="number" placeholder="10" style="width:66px" /></span>
+      <label class="chk" title="Descarta itens cujo spread de agora está mais de 1,5× acima do
+que os preços médios do mês sustentam — pico de momento, não rotina">
+        <input type="checkbox" id="fregime" checked /> Só spread de regime</label>
+    </div>
+
+    <div class="scroll"><table id="ftbl"></table></div>
+    <p class="legend">
+      Scanner do market inteiro do mundo escolhido, atualizado a cada carregamento.
+      <b>Você compra</b> criando buy offer 1 gp acima da maior; <b>você vende</b>
+      com sell offer 1 gp abaixo da menor. O <b>lucro/un</b> já desconta a taxa
+      de 2% nas duas pontas (mín. 20 gp, máx. 250k, paga ao criar e não volta ao
+      cancelar). <b>Giro</b> = mín(vendidas, compradas) do mês — o lado mais
+      fraco limita seus flips; <b>potencial/mês</b> = lucro × giro × captura.
+      O selo <b>regime</b> compara o spread de agora com o que os preços médios
+      do mês sustentam: <span class="fb fb-regime">regime</span> é rotina,
+      <span class="fb fb-pico">pico</span> é spread inflado que tende a fechar,
+      <span class="fb fb-zerado">mês no zero</span> é item cujo spread médio do
+      mês não paga as taxas. Leitura com mais de 7 dias fica de fora.
+      Clique no item para ver o histórico de 30 dias e o livro de ofertas.
+      Lembretes: máx. 100 ofertas simultâneas, oferta dura 30 dias, e o preço
+      de item forjável mistura os tiers.
     </p>
   </div>
 
@@ -685,6 +732,133 @@
   $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeDetail(); };
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 
+  // ── aba de flips: escaneia o market inteiro do mundo carregado ────────
+  // Taxa do Market (wiki, seção Offer Conditions): 2% do total da oferta,
+  // mín. 20 gp e máx. 250.000, cobrada ao criar TANTO buy quanto sell offer
+  // e não devolvida ao cancelar. Um flip completo paga as duas.
+  const mfee = (p) => Math.min(Math.max(p * 0.02, 20), 250000);
+
+  let flipKey = 'pot';
+  let flipDir = -1;
+
+  const REGIME = {
+    regime: ['regime', 'o spread de agora é parecido com o que os preços médios do mês sustentam — rotina, não pico'],
+    pico: ['pico', 'spread de agora mais de 1,5× acima do regime do mês — tende a fechar; confira o histórico antes'],
+    zerado: ['mês no zero', 'pelos preços médios do mês, o spread não paga as taxas — o lucro de agora é exceção'],
+    semdado: ['sem média', 'o mês não tem preço médio dos dois lados para comparar'],
+  };
+
+  function flipRow(it) {
+    const v = prices.get(it.id);
+    if (!v || !v.sell_offer || !v.buy_offer) return null;
+    if (v.time && Date.now() - v.time * 1000 > STALE_DAYS * 864e5) return null;
+    const B = v.buy_offer + 1;          // sua buy offer, 1 gp acima da maior
+    const S = v.sell_offer - 1;         // sua sell offer, 1 gp abaixo da menor
+    const cost = B + mfee(B);
+    const net = Math.round((S - mfee(S)) - cost);
+    if (net <= 0) return null;
+    const giro = Math.min(v.month_sold || 0, v.month_bought || 0);
+    // regime = o mesmo cálculo sobre os preços médios das transações do mês;
+    // spread de agora muito acima disso é momento, não rotina (o backtest de
+    // 2026-09 mostrou que é o principal falso positivo do snapshot)
+    const mNet = v.month_average_sell && v.month_average_buy
+      ? (v.month_average_sell - mfee(v.month_average_sell))
+        - (v.month_average_buy + mfee(v.month_average_buy))
+      : null;
+    const regime = mNet === null ? 'semdado'
+      : mNet <= 0 ? 'zerado'
+      : net > 1.5 * mNet ? 'pico' : 'regime';
+    return { it, v, B, S, cost, net, roi: (net / cost) * 100, giro,
+             sold: v.month_sold || 0, bought: v.month_bought || 0, regime };
+  }
+
+  const FSORTS = {
+    n: (r) => r.it.n.toLowerCase(),
+    B: (r) => r.B, S: (r) => r.S, net: (r) => r.net, roi: (r) => r.roi,
+    sold: (r) => r.sold, bought: (r) => r.bought, giro: (r) => r.giro,
+    pot: (r) => r.pot,
+  };
+
+  function renderFlip() {
+    const q = $('q').value.trim().toLowerCase();
+    const cat = $('cat').value;
+    const num = (id, dflt) => {
+      const n = parseFloat($(id).value);
+      return isNaN(n) ? dflt : n;
+    };
+    const minNet = num('fmin', 1000);
+    const minRoi = num('froi', 10);
+    const minGiro = num('fgiro', 60);
+    const maxCap = num('fcapm', Infinity);
+    const share = num('fshare', 10) / 100;
+    const onlyReg = $('fregime').checked;
+
+    const rows = [];
+    for (const it of ITEMS) {
+      if (cat && it.cat !== cat) continue;
+      if (q && !matchQuery((it.n + ' ' + it.cat).toLowerCase(), q)) continue;
+      const r = flipRow(it);
+      if (!r) continue;
+      if (r.net < minNet || r.roi < minRoi || r.giro < minGiro || r.cost > maxCap) continue;
+      if (onlyReg && r.regime !== 'regime') continue;
+      r.pot = Math.round(r.net * r.giro * share);
+      rows.push(r);
+    }
+
+    const key = FSORTS[flipKey] || FSORTS.pot;
+    rows.sort((a, b) => {
+      const x = key(a), y = key(b);
+      return typeof x === 'string' ? flipDir * x.localeCompare(y) : flipDir * (x - y);
+    });
+    current = rows.slice(0, 200);
+
+    const body = current.map((r, i) => `<tr data-i="${i}" class="has-spr">
+      <td><span class="namecell">${spr(r.it.n)}<span class="name">${r.it.n}</span>${
+        r.it.tier ? `<span class="tier">t≤${r.it.tier}</span>` : ''}</span></td>
+      <td class="num"><span class="sell">${kk(r.B)}</span></td>
+      <td class="num"><span class="buy">${kk(r.S)}</span></td>
+      <td class="num"><b>${kk(r.net)}</b></td>
+      <td class="num">${r.roi >= 1000 ? fullNum(Math.round(r.roi)) : r.roi.toFixed(0)}%</td>
+      <td class="num dim">${fullNum(r.sold)}</td>
+      <td class="num dim">${fullNum(r.bought)}</td>
+      <td class="num">${fullNum(r.giro)}</td>
+      <td class="num"><b>${kk(r.pot)}</b></td>
+      <td><span class="fb fb-${r.regime}" title="${REGIME[r.regime][1]}">${REGIME[r.regime][0]}</span></td>
+    </tr>`).join('');
+
+    $('ftbl').innerHTML = rows.length ? `<thead><tr>
+        <th data-k="n">Item</th>
+        <th data-k="B" class="num" title="sua buy offer: 1 gp acima da maior">Você compra a</th>
+        <th data-k="S" class="num" title="sua sell offer: 1 gp abaixo da menor">Você vende a</th>
+        <th data-k="net" class="num" title="já descontados os 2% de taxa nas duas pontas">Lucro/un</th>
+        <th data-k="roi" class="num">ROI</th>
+        <th data-k="sold" class="num">Vend./mês</th>
+        <th data-k="bought" class="num">Comp./mês</th>
+        <th data-k="giro" class="num" title="mín(vendidas, compradas) — o lado fraco limita">Giro</th>
+        <th data-k="pot" class="num" title="lucro/un × giro × captura">Potencial/mês</th>
+        <th class="nosort">Spread</th>
+      </tr></thead><tbody>${body}</tbody>`
+      : `<caption class="na" style="padding:32px">${prices.size
+          ? 'Nenhuma oportunidade passa nesses parâmetros — afrouxe os filtros.'
+          : 'Escolha um mundo no topo para escanear o market.'}</caption>`;
+
+    $('count').textContent = rows.length > 200
+      ? `${fullNum(rows.length)} oportunidades (mostrando 200)`
+      : `${fullNum(rows.length)} oportunidades`;
+
+    $('ftbl').querySelectorAll('th[data-k]').forEach((th) => {
+      if (th.dataset.k === flipKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (flipKey === th.dataset.k) flipDir *= -1;
+        else { flipKey = th.dataset.k; flipDir = th.dataset.k === 'n' ? 1 : -1; }
+        renderFlip();
+      };
+    });
+    $('ftbl').querySelectorAll('tbody tr').forEach((tr) => {
+      tr.onclick = () => openDetail(current[+tr.dataset.i].it);
+    });
+  }
+
   // ── aba de imbuements ─────────────────────────────────────────────────
   // "Cultish Robe: 25, Cultish Mask: 25" → [['Cultish Robe',25], ...]
   function parseSrc(src) {
@@ -973,7 +1147,7 @@
   }
 
   let tab = 'itens';
-  const TABS = ['itens', 'imb', 'srv'];
+  const TABS = ['itens', 'flip', 'imb', 'srv'];
   function setTab(t) {
     tab = t;
     TABS.forEach((x) => {
@@ -985,7 +1159,9 @@
     if (t === 'srv' && !cmpItem && !cmpHits.length) { pickCompare($('cmpq').value); return; }
     draw();
   }
-  const draw = () => (tab === 'itens' ? render() : tab === 'imb' ? renderImb() : renderSrv());
+  const draw = () => (tab === 'itens' ? render()
+    : tab === 'flip' ? renderFlip()
+    : tab === 'imb' ? renderImb() : renderSrv());
   TABS.forEach((x) => ($('tab-' + x).onclick = () => setTab(x)));
 
   // ── presets ───────────────────────────────────────────────────────────
@@ -1002,7 +1178,10 @@
     M.worlds.map((w) => `<option>${w}</option>`).join('');
   $('cat').innerHTML += M.cats.map((c) => `<option>${c}</option>`).join('');
 
-  const FILTER_IDS = ['q', 'cat', 'pmin', 'pmax', 'onlyactive'];
+  // fregime fica fora do estado de propósito: nasce ligado por padrão e o
+  // "✕ limpar" não deve desligá-lo (mesma lógica do cmpfresh da aba srv)
+  const FILTER_IDS = ['q', 'cat', 'pmin', 'pmax', 'onlyactive',
+                      'fmin', 'froi', 'fgiro', 'fcapm', 'fshare'];
   const state = filterState(FILTER_IDS.concat('world'), 'market');
   $('clear').onclick = () => {
     const w = $('world').value;   // o mundo não é filtro: sobrevive ao limpar
@@ -1031,6 +1210,7 @@
   $('cmprefresh').onclick = () => (cmpItem ? compare(cmpItem, true) : pickCompare($('cmpq').value));
   $('cmpfresh').addEventListener('change', renderSrv);
   $('cmponly').addEventListener('change', renderSrv);
+  $('fregime').addEventListener('change', draw);
 
   document.querySelectorAll('.pchip').forEach((b) => {
     b.onclick = () => {
@@ -1052,6 +1232,9 @@
   const cmpParam = urlParam('cmp');
   try { $('cmpq').value = cmpParam || localStorage.getItem(CMP_KEY) || ''; } catch (_) {}
   if (cmpParam) setTab('srv');
+
+  const tabParam = urlParam('tab');
+  if (TABS.includes(tabParam)) setTab(tabParam);
 
   const openParam = urlParam('open');
   load().then(() => {
