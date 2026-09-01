@@ -134,22 +134,43 @@
   .panel {
     max-width: 900px;
     margin: 0 auto;
-    background: #171a22;
-    border: 1px solid #2c3242;
-    border-radius: 10px;
-    padding: 20px 22px 26px;
+    background:
+      radial-gradient(120% 340px at 50% 0%, rgba(125, 211, 160, 0.07), transparent 70%),
+      #14161d;
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    border-radius: 14px;
+    padding: 20px 22px 28px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
   }
 
   .panel-head {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
-    border-bottom: 1px solid #262b38;
-    padding-bottom: 10px;
-    margin-bottom: 16px;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 6px;
   }
 
-  .panel-head h2 { font-size: 1.3rem; color: #d4af37; }
+  /* sprite grande com halo, pixel nítido — o clima do jogo */
+  .panel-head .spr-big {
+    background: radial-gradient(circle at 50% 45%,
+      rgba(125, 211, 160, 0.3), rgba(212, 175, 55, 0.12) 55%, transparent 75%);
+    border-radius: 50%;
+  }
+
+  .panel-head .spr-big img {
+    image-rendering: pixelated;
+    filter: drop-shadow(0 0 9px rgba(125, 211, 160, 0.55));
+  }
+
+  .panel-head h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.15;
+    background: linear-gradient(180deg, #f6e9b8 10%, #d4af37 55%, #a5821f 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 
   .panel-head .cat { color: #838da3; font-size: 0.82rem; }
 
@@ -165,24 +186,99 @@
 
   .close:hover { color: #e6e8ee; border-color: #4a5266; }
 
-  .panel h3 {
+  /* faixa de requisito (level + vocação), estilo banner de anúncio */
+  .ribbon {
+    margin: 6px 0 2px;
+    padding: 7px 22px;
+    background: linear-gradient(180deg, #e9cd67, #c39d24);
+    color: #251d06;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%,
+                       calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  }
+
+  /* cada seção do detalhe é um cartão de borda arredondada */
+  .sect {
+    border: 1px solid #2a3040;
+    border-radius: 12px;
+    background: rgba(18, 20, 26, 0.6);
+    padding: 13px 16px 15px;
+    margin-top: 14px;
+  }
+
+  .sect > h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 0.76rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #8b93a7;
-    margin: 18px 0 7px;
+    letter-spacing: 0.08em;
+    color: #7dd3a0;
+    margin: 0 0 10px;
   }
 
-  .grid {
+  .sect > h3::before { content: '✦'; color: var(--gold, #d4af37); }
+  .sect > h3::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, #2c3242, transparent);
+  }
+
+  /* linhas ícone · rótulo · valor (Sobre o item, Comércio, Delivery task) */
+  .statlist {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 8px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2px 28px;
   }
 
-  .kv { font-size: 0.85rem; }
-  .kv .k { color: #838da3; font-size: 0.74rem; display: block; }
+  .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 0.87rem;
+    padding: 6px 2px;
+    border-bottom: 1px dashed rgba(44, 50, 66, 0.7);
+  }
+
+  .stat .si { flex: 0 0 24px; text-align: center; align-self: center; }
+  .stat .sk { color: #98a2b8; flex: 1 1 auto; }
+  .stat .sv {
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+    max-width: 70%;
+  }
+  .stat .sv.pos { color: #7dd3a0; }
 
   .prose { font-size: 0.87rem; color: #b8bfd0; }
+  .prose.desc { font-style: italic; color: #aeb6c8; }
+
+  /* chips de atributo e resistência */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .chipx {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.84rem;
+    padding: 5px 13px;
+    border-radius: 8px;
+    background: rgba(125, 211, 160, 0.08);
+    border: 1px solid rgba(125, 211, 160, 0.35);
+    color: #a7e8c3;
+  }
+
+  .chipx.neg {
+    background: rgba(248, 113, 113, 0.07);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #fca5a5;
+  }
 
   .src {
     display: grid;
@@ -194,25 +290,52 @@
     align-items: center;
   }
 
-  /* proficiência: um nível por linha, perks alternativos lado a lado */
-  .prof { display: flex; flex-direction: column; gap: 6px; }
-
-  .prof-lvl { display: flex; gap: 10px; align-items: baseline; }
-
-  .prof-n {
-    flex: 0 0 auto; width: 58px;
-    color: #838da3; font-size: 0.72rem; text-transform: uppercase;
+  /* proficiências: grade de cartões, um por nível, ícone em azulejo */
+  .prof-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+    gap: 10px;
   }
 
-  .prof-perks { display: flex; flex-wrap: wrap; gap: 5px; }
+  .plvl {
+    border: 1px solid #2c3242;
+    border-radius: 10px;
+    background: #12141a;
+    padding: 10px 12px;
+  }
+
+  .plvl-n {
+    display: block;
+    color: #d4af37;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 7px;
+  }
 
   .perk {
-    font-size: 0.8rem; color: #cbd3e4;
-    background: #12141a; border: 1px solid #2c3242;
-    border-radius: 5px; padding: 2px 8px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.82rem;
+    color: #cbd3e4;
+    padding: 4px 0;
   }
 
-  .perk .pi { margin-right: 5px; }
+  .perk + .perk { border-top: 1px dashed rgba(44, 50, 66, 0.7); }
+
+  .perk .pi {
+    flex: 0 0 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #20242e, #14161d);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 7px;
+    font-size: 0.95rem;
+  }
 
   /* marcador de proficiência na tabela (tooltip lista os perks) */
   .profmark { color: #d4af37; white-space: nowrap; cursor: help; }
@@ -275,11 +398,9 @@
 
     .overlay { padding: 10px 6px; }
     .panel { padding: 16px 14px 20px; }
-    .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
-
-    /* o rótulo do nível comia 58px de largura útil dos perks */
-    .prof-lvl { flex-direction: column; gap: 3px; }
-    .prof-n { width: auto; }
+    .panel-head h2 { font-size: 1.3rem; }
+    .sect { padding: 11px 12px 13px; }
+    .statlist, .prof-grid { grid-template-columns: 1fr; }
   }
 </style>
 
@@ -569,24 +690,55 @@
     });
   }
 
-  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span>${
-    v === undefined || v === null || v === '' || v === '--' ? NA : v}</div>`;
+  // linha da lista de stats; campo vazio no wiki não vira linha de ruído
+  const stat = (icon, k, v, cls) =>
+    v === undefined || v === null || v === '' || v === '--' ? '' :
+    `<div class="stat"><span class="si">${icon}</span>` +
+    `<span class="sk">${k}</span><span class="sv${cls ? ' ' + cls : ''}">${v}</span></div>`;
 
-  const section = (title, inner) =>
-    `<h3>${title}</h3>${inner || `<p class="prose">${NA}</p>`}`;
+  // seção-cartão; sem conteúdo, a seção inteira some do painel
+  const sect = (title, inner) =>
+    inner ? `<section class="sect"><h3>${title}</h3>${inner}</section>` : '';
+
+  const RES_ICON = {
+    fire: '🔥', ice: '❄️', energy: '⚡', earth: '🌿', death: '💀', holy: '✨',
+    physical: '🗡️', 'life drain': '🩸', 'mana drain': '💧', drown: '🌊',
+  };
 
   function openDetail(it) {
     const stats = [
-      kv('Categoria', it.c), kv('Tipo', it.t), kv('Level', it.lvl),
-      kv('Vocação', it.voc), kv('Armor', it.arm), kv('Ataque', it.atk),
-      kv('Hit %', it.hit), kv('Defesa', it.def), kv('Peso', it.w ? it.w + ' oz' : ''),
-      kv('Slots de imbuement', it.sl), kv('Classification', it.cl),
-      kv('Empilhável', it.st ? 'sim' : 'não'),
+      stat('🧩', 'Tipo', it.t),
+      stat('⚔️', 'Ataque', it.atk, 'pos'),
+      stat('🎯', 'Hit %', it.hit, 'pos'),
+      stat('🛡️', 'Defesa', it.def),
+      stat('🦺', 'Armor', it.arm),
+      stat('💠', 'Slots de imbuement', it.sl ? '◆'.repeat(it.sl) + ` (${it.sl})` : ''),
+      stat('🏆', 'Classificação', it.cl),
+      stat('⚖️', 'Peso', it.w ? it.w + ' oz' : ''),
+      stat('📦', 'Empilhável', it.st ? 'sim' : ''),
     ].join('');
 
+    // level + vocação viram a faixa de requisito sob o título
+    const voc = (it.voc || '').trim().toLowerCase() === 'none' ? '' : (it.voc || '').trim();
+    const ribbon = voc || it.lvl ? `<div class="ribbon">⚜ ${
+      voc && it.lvl ? `Somente ${voc} nível ${it.lvl}+ podem usar` :
+      voc ? `Somente ${voc}` : `Requer nível ${it.lvl}+`}</div>` : '';
+
+    const attrs = it.at ? `<div class="chips">${
+      it.at.split(',').map((a) => a.trim()).filter(Boolean).map((a) =>
+        `<span class="chipx"><span>${perkIcon(a)}</span>${a}</span>`).join('')}</div>` : '';
+
+    const resist = it.rf ? `<div class="chips">${
+      it.rf.map(([el, v]) =>
+        `<span class="chipx${v < 0 ? ' neg' : ''}"><span>${RES_ICON[el] || '🔮'}</span>` +
+        `${el} ${v > 0 ? '+' : ''}${v}%</span>`).join('')}</div>`
+      : it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '';
+
     const value = [
-      kv('Valor de mercado', it.v), kv('Preço de NPC', it.nv ? it.nv.toLocaleString('pt-BR') + ' gp' : ''),
-      kv('Compra de', it.bf), kv('Vende para', it.sl_to),
+      stat('💰', 'Valor de mercado', it.v),
+      stat('🪙', 'Preço de NPC', it.nv ? it.nv.toLocaleString('pt-BR') + ' gp' : ''),
+      stat('🛒', 'Compra de', it.bf),
+      stat('🏪', 'Vende para', it.sl_to),
     ].join('');
 
     // [nome, local, hp, dificuldade, lvl mín, lvl máx]
@@ -630,11 +782,11 @@
 
     // perks por nível de proficiência; só um perk de cada nível pode ficar ativo
     const perks = it.p === undefined ? null : PROF[it.p];
-    const prof = perks ? `<div class="prof">
-      ${perks.map((lvl, i) => `<div class="prof-lvl">
-        <span class="prof-n">Nível ${i + 1}</span>
-        <span class="prof-perks">${lvl.map((p) =>
-          `<span class="perk"><span class="pi">${perkIcon(p)}</span>${p}</span>`).join('')}</span>
+    const prof = perks ? `<div class="prof-grid">
+      ${perks.map((lvl, i) => `<div class="plvl">
+        <span class="plvl-n">Nível ${i + 1}${lvl.length > 1 ? ' · escolha 1' : ''}</span>
+        ${lvl.map((p) =>
+          `<span class="perk"><span class="pi">${perkIcon(p)}</span>${p}</span>`).join('')}
       </div>`).join('')}
     </div>
     <p class="prof-mastery">${perks.length} ${perks.length === 1 ? 'nível' : 'níveis'} com perk ·
@@ -654,22 +806,24 @@
           <button class="close" onclick="closeDetail()">fechar ✕</button>
         </span>
       </div>
-      ${section('Propriedades', `<div class="grid">${stats}</div>`)}
-      ${section('Atributos', it.at ? `<p class="prose attrib">${it.at}</p>` : '')}
-      ${section('Resistências', it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '')}
-      ${prof ? section(`Weapon proficiency (${perks.length} níveis)`, prof) : ''}
-      ${it.sl ? section(`Imbuements (${it.sl} slot${it.sl > 1 ? 's' : ''})`, imbu) : ''}
-      ${section('Comércio', `<div class="grid">${value}</div>`)}
-      ${it.dt ? section('Delivery task (semanal)', `<div class="grid">${
-        kv('Quantidade pedida', `${it.dt[0]}–${it.dt[1]} unidades`) +
-        kv('Preço de compra no NPC', it.dt[2].toLocaleString('pt-BR') + ' gp') +
-        kv('Custo máximo estimado', (it.dt[1] * it.dt[2]).toLocaleString('pt-BR') + ' gp')
+      ${ribbon}
+      ${sect('Sobre o item', `<div class="statlist">${stats}</div>`)}
+      ${sect('Atributos', attrs)}
+      ${sect('Resistências', resist)}
+      ${prof ? sect(`Proficiências (${perks.length} níveis)`, prof) : ''}
+      ${it.sl ? sect(`Imbuements (${it.sl} slot${it.sl > 1 ? 's' : ''})`, imbu) : ''}
+      ${sect('Comércio', value)}
+      ${it.dt ? sect('Delivery task (semanal)', `<div class="statlist">${
+        stat('📦', 'Quantidade pedida', `${it.dt[0]}–${it.dt[1]} unidades`) +
+        stat('🪙', 'Preço de compra no NPC', it.dt[2].toLocaleString('pt-BR') + ' gp') +
+        stat('💰', 'Custo máximo estimado', (it.dt[1] * it.dt[2]).toLocaleString('pt-BR') + ' gp')
       }</div>`) : ''}
-      ${section(it.by ? `Dropado por (${it.by.length})` : 'Dropado por', drops)}
-      ${it.by ? '<p class="legend" style="margin-top:6px">Clique na criatura para abrir a ficha dela. '
-        + 'O level vem dos spawns onde ela aparece — '
-        + 'uma faixa significa que ela habita áreas de dificuldades diferentes.</p>' : ''}
-      ${section('Notas', it.no ? `<p class="prose">${it.no}</p>` : '')}
+      ${sect(it.by ? `Dropado por (${it.by.length})` : 'Dropado por',
+        (drops || `<p class="prose">${NA}</p>`) +
+        (it.by ? '<p class="legend" style="margin-top:6px">Clique na criatura para abrir a ficha dela. '
+          + 'O level vem dos spawns onde ela aparece — '
+          + 'uma faixa significa que ela habita áreas de dificuldades diferentes.</p>' : ''))}
+      ${sect('Notas', it.no ? `<p class="prose desc">${it.no}</p>` : '')}
     `;
     $('overlay').classList.add('open');
     document.body.style.overflow = 'hidden';

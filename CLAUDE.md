@@ -54,7 +54,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
 | `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
-| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) |
+| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) + aba "Flips" (scanner de oportunidades de compra-e-revenda no mundo carregado, com parâmetros persistentes; `?tab=flip` abre direto) |
 | `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
 | `tibia-mcp/gen_market.py` | regenera `market-items.js` (só metadados: id, nome, categoria, tier, NPC — **preço nenhum**) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
@@ -122,6 +122,16 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 - **Item forjável não vem separado por tier.** `market_values` devolve um
   preço por object type id; t0 e t3 entram no mesmo número. Não usar para
   comparar Falcon Bow t1 vs t2.
+- **Taxa do Market: 2% do total por oferta criada (mín. 20 gp, máx. 250k),
+  nas DUAS pontas** — buy e sell offer pagam, ao criar, sem devolução no
+  cancelamento (wiki, "The Market (Object)"; era 1% até 2023). A aba Flips
+  desconta as duas. O **spread de agora vs o "regime" do mês** (o mesmo
+  cálculo sobre `month_average_sell/buy`) separa rotina de pico: o backtest
+  de 2026-09 em Gentebra (30 dias de `item_history`, preços reais das
+  transações) mostrou que spread do snapshot muito acima do regime é o
+  principal falso positivo — daí o filtro "só spread de regime" nascer
+  ligado. `item_history` tem rate limit de ~5/min; o scanner usa só
+  `market_values` (1 chamada) e deixa o histórico para o clique no item.
 - **`{{Loot Item}}` tem dois formatos**: `|Item|raridade` e `|1-8|Item|raridade`.
   Metade das páginas usa o segundo. Ler o primeiro parâmetro como nome do item
   perde esses drops silenciosamente (foi o que aconteceu até 2026-08).
