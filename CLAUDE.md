@@ -49,7 +49,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 
 | Caminho | O que é |
 |---|---|
-| `index.html` + `items-data.js` | catálogo completo (9.894 itens, 56 categorias) com índice reverso de drops |
+| `index.html` + `items-data.js` | catálogo completo (9.894 itens em 10 grupos › 55 categorias › subcategorias) com índice reverso de drops, ordenação por qualquer atributo e preço do Market sob demanda |
 | `creatures.html` + `creatures-data.js` | 1.629 criaturas com detalhe completo ao clicar |
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
@@ -60,6 +60,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
+| `tibia-mcp/categorize.py` | taxonomia grupo › categoria › subcategoria de cada item (usada pelo `gen_items.py`) |
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
 | `tibia-mcp/gen_imbuements.py` | regenera `imbuements-data.js` (slots, efeitos e materiais saem do wikitext — a tabela `imbuements` importou vazia) |
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
@@ -132,6 +133,23 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   principal falso positivo — daí o filtro "só spread de regime" nascer
   ligado. `item_history` tem rate limit de ~5/min; o scanner usa só
   `market_values` (1 chamada) e deixa o histórico para o clique no item.
+- **Categoria de item é decidida em `tibia-mcp/categorize.py`, não no wiki.**
+  O `primarytype` do wiki mistura arco, besta e arremesso em "Distance
+  Weapons", espalha runas em três tipos, põe poção em "Liquids" e deixa ~100
+  páginas de lista ("Item IDs", "Alicorn Set") entrarem como item porque citam
+  o Infobox dentro de uma DPL. O módulo devolve `(grupo, categoria,
+  subcategoria)` a partir de `primarytype`/`secondarytype`/`objectclass`/
+  `hands`/`vocrequired`/`damagetype`/`imbuements`; nome de item só entra onde
+  o wiki não separa (flecha × virote, gema, tier de pergaminho). Item sem
+  `{{Infobox Object` abrindo a página vai para o grupo "Wiki". Para mudar uma
+  classificação, mexer lá e rodar `gen_items.py` — nunca editar
+  `items-data.js` à mão.
+- **Ordenação do catálogo é toda no cliente** (`SORTS` em `index.html`): os
+  números saem dos campos texto (`atk`, `def`, `w`, `v`, bônus de skill/ML/
+  velocidade do `attrib`) na carga; `v` ignora "Negotiable"/"?"/"--". Item
+  sem o dado vai para o fim nos dois sentidos. O preço do Market entra como
+  critério só depois de escolher um mundo (uma chamada `market_values`, em
+  memória, mesma regra do `market.html`; mundo padrão = o salvo lá).
 - **`{{Loot Item}}` tem dois formatos**: `|Item|raridade` e `|1-8|Item|raridade`.
   Metade das páginas usa o segundo. Ler o primeiro parâmetro como nome do item
   perde esses drops silenciosamente (foi o que aconteceu até 2026-08).

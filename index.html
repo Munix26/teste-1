@@ -71,6 +71,32 @@
   /* par label+campo: nunca se separam na quebra de linha */
   .ctl { display: flex; align-items: center; gap: 6px; }
   .ctl select { min-width: 0; }
+  /* `display: flex` acima vence o [hidden] do navegador — devolve o efeito */
+  .ctl[hidden] { display: none; }
+
+  /* controle de ordenação: fica fora do painel dobrável no celular (.wctl) */
+  .sortctl select { max-width: 220px; }
+  .sortctl button {
+    background: #12141a;
+    border: 1px solid #303646;
+    color: #cbd3e4;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+  .sortctl button:hover { color: #e6e8ee; border-color: #4a5266; }
+  /* a barra "Ordenar" que o ui.js monta no celular repetiria este seletor
+     com menos opções — aqui o próprio controle da página é o que vale */
+  .wrap .msort { display: none; }
+
+  .subcat { color: #7dd3a0; font-size: 0.78rem; white-space: nowrap; }
+  .subcat::before { content: '› '; color: #4a5266; }
+  td.sortval { color: #f6e9b8; font-weight: 600; }
+  th.sorted.dyn { color: #f6e9b8; }
+  .mkt { color: #d4af37; font-weight: 600; }
+  .mkt small { color: #8b93a7; font-weight: 400; }
 
   .chk { display: flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #8b93a7; }
   .chk input { width: auto; }
@@ -430,8 +456,9 @@
   <div class="controls">
     <input id="q" type="search" placeholder="Buscar item, atributo, resistência ou NPC… (use | para “ou”)" />
     <span class="ctl"><label for="cat">Categoria</label>
-    <select id="cat"><option value="">Todas</option>
-      <option value="__equip">⚔️ Todo equipamento</option></select></span>
+    <select id="cat"></select></span>
+    <span class="ctl" id="subctl" hidden><label for="sub">Subcategoria</label>
+    <select id="sub"></select></span>
     <span class="ctl"><label for="voc">Vocação</label>
     <select id="voc">
       <option value="">Todas</option>
@@ -456,6 +483,11 @@
     <label class="chk"><input type="checkbox" id="onlyprof" /> Proficiência</label>
     <label class="chk"><input type="checkbox" id="onlytask" /> Delivery task</label>
     <button class="clearbtn" id="clear" title="Limpar todos os filtros">✕ limpar</button>
+    <span class="ctl wctl sortctl"><label for="sort">Ordenar</label>
+    <select id="sort"></select>
+    <button type="button" id="sdir" title="Inverter a ordem">↓</button>
+    <select id="mworld" hidden title="Mundo do Market"></select>
+    <input id="sdirv" type="hidden" /></span>
     <span class="count" id="count"></span>
   </div>
 
@@ -469,6 +501,9 @@
     <span class="r-rare">rare</span> ·
     <span class="r-veryrare">very rare</span>.
     Campos ausentes no wiki aparecem como <span class="na">não disponível</span>.
+    <b>Ordenar</b> aceita qualquer atributo (ataque, defesa, skill, magic level, peso, preço…);
+    quando o critério não é uma coluna da tabela, uma coluna extra mostra o valor usado.
+    O <b>preço no Market</b> vem ao vivo da API (tibiamarket.top) do mundo escolhido e mistura tiers.
     Sprites carregados direto do TibiaWiki — sem internet eles somem, o resto continua funcionando.
     Os filtros ficam salvos no navegador; <b>✕ limpar</b> zera tudo.
   </p>
@@ -495,16 +530,132 @@
   const PROF = D.prof || [];      // [[perks nível 1], [nível 2], …] por tabela
   const NA = '<span class="na">não disponível</span>';
 
-  // categorias que formam o grupo "todo equipamento" (o resto é consumível,
-  // decoração, quest etc.)
-  const EQUIP_CATS = new Set([
-    'Armaduras', 'Capacetes', 'Pernas', 'Botas', 'Escudos', 'Amuletos',
-    'Anéis', 'Armas de Distância', 'Aljavas', 'Espadas', 'Machados',
-    'Clavas', 'Wands', 'Rods', 'Spellbooks',
-  ]);
+  // grupo → [[categoria, [subcategorias]]] (tibia-mcp/categorize.py)
+  const TREE = D.tree || [];
+  const SUBS = new Map();            // categoria → subcategorias
+  const GROUP_OF = new Map();        // categoria → grupo
+  TREE.forEach(([g, cats]) => cats.forEach(([c, subs]) => {
+    SUBS.set(c, subs); GROUP_OF.set(c, g);
+  }));
+  const GICON = {
+    'Armas': '⚔️', 'Equipamento': '🛡️', 'Consumíveis': '🧪', 'Materiais e valiosos': '💎',
+    'Utilidades': '🧰', 'Quest': '📜', 'Casa e decoração': '🏠', 'Cenário': '🌲',
+    'Outros': '📦', 'Wiki': '📚',
+  };
 
-  let sortKey = 'n';
-  let sortDir = 1;
+  // ── ordenação ──────────────────────────────────────────────────────────
+  // Cada critério lê um número já extraído do item (it.k); string só para
+  // nome e categoria. `asc` marca os que por padrão sobem (A→Z); o resto
+  // desce (maior primeiro), que é o que se quer ao comparar equipamento.
+  const num = (v) => {
+    const m = /-?\d+(?:\.\d+)?/.exec(String(v ?? '').replace(/,/g, ''));
+    return m ? parseFloat(m[0]) : undefined;
+  };
+  const bonus = (it, re) => { const m = re.exec(it.at || ''); return m ? +m[1] : undefined; };
+  const fmtInt = (v) => v.toLocaleString('pt-BR');
+  const fmtKk = (n) => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 2).replace('.', ',') + 'kk'
+    : n >= 1e4 ? Math.round(n / 1e3) + 'k' : fmtInt(n);
+
+  D.items.forEach((it) => {
+    it.k = {
+      atk: num(it.atk), hit: num(it.hit), def: num(it.def),
+      sk: bonus(it, /(?:fist|sword|axe|club|distance) fighting \+(\d+)/),
+      ml: bonus(it, /(?:^|, )magic level \+(\d+)/),
+      spd: bonus(it, /speed \+(\d+)/),
+      res: it.rf ? (it.rf.reduce((s, [, v]) => s + Math.max(v, 0), 0) || undefined) : undefined,
+      w: num(it.w),
+      // "Negotiable", "?" e "--" não são valor; "20,000 - 50,000" vira 20000
+      v: /^\s*(negotiable|\?|--)/i.test(it.v || '') ? undefined : num(it.v),
+      dr: it.by ? it.by.length : undefined,
+    };
+  });
+
+  const SORTS = [
+    ['n', 'Nome', (it) => it.n, null, true],
+    ['lvl', 'Level', (it) => it.lvl, fmtInt],
+    ['atk', 'Ataque', (it) => it.k.atk, fmtInt],
+    ['hit', 'Hit %', (it) => it.k.hit, (v) => (v > 0 ? '+' : '') + v],
+    ['def', 'Defesa', (it) => it.k.def, fmtInt],
+    ['arm', 'Armor', (it) => it.arm, fmtInt],
+    ['sk', 'Bônus de skill', (it) => it.k.sk, (v) => '+' + v],
+    ['ml', 'Magic level', (it) => it.k.ml, (v) => '+' + v],
+    ['spd', 'Velocidade', (it) => it.k.spd, (v) => '+' + v],
+    ['res', 'Resistência total', (it) => it.k.res, (v) => '+' + v + '%'],
+    ['rng', 'Alcance', (it) => it.rng, fmtInt],
+    ['sl', 'Slots de imbuement', (it) => it.sl, (v) => '◆'.repeat(v)],
+    ['cl', 'Classificação', (it) => it.cl, fmtInt],
+    ['w', 'Peso', (it) => it.k.w, (v) => v.toFixed(2).replace('.', ',') + ' oz'],
+    ['nv', 'Preço de NPC', (it) => it.nv, fmtInt],
+    ['v', 'Valor (wiki)', (it) => it.k.v, (v) => fmtKk(v) + ' gp'],
+    ['mk', 'Preço no Market', (it) => mkPrice(it), (v) => fmtKk(v) + ' gp'],
+    ['pn', 'Níveis de proficiência', (it) => it.pn, fmtInt],
+    ['dr', 'Criaturas que dropam', (it) => it.k.dr, fmtInt],
+    ['c', 'Categoria', (it) => it.c + ' ' + (it.sc || ''), null, true],
+  ];
+  const SORT_BY = new Map(SORTS.map((s) => [s[0], s]));
+  // colunas fixas da tabela: para estas o valor já está à vista
+  const FIXED_COLS = new Set(['n', 'c', 'lvl', 'arm', 'pn', 'nv', 'dr']);
+
+  const sortKey = () => SORT_BY.has($('sort').value) ? $('sort').value : 'n';
+  const sortDir = () => {
+    const v = $('sdirv').value;
+    if (v === 'asc') return 1;
+    if (v === 'desc') return -1;
+    return SORT_BY.get(sortKey())[4] ? 1 : -1;
+  };
+
+  // ── preço no Market (sob demanda) ──────────────────────────────────────
+  // Uma chamada por mundo (market_values), guardada só em memória — mesma
+  // regra do market.html: preço commitado nasce velho. O mundo padrão é o
+  // que estiver escolhido lá.
+  const MKAPI = window.MARKETITEMS ? MARKETITEMS.api : null;
+  const MK_ID = new Map(
+    (window.MARKETITEMS ? MARKETITEMS.items : []).map((r) => [r[1].toLowerCase(), r[0]])
+  );
+  const MK = { world: null, prices: null, loading: null, error: null };
+  const mkPrice = (it) => {
+    if (!MK.prices) return undefined;
+    const p = MK.prices.get(MK_ID.get(it.n.toLowerCase()));
+    return p && p.sell_offer > 0 ? p.sell_offer : undefined;
+  };
+  const marketWorldSaved = () => {
+    try { return JSON.parse(localStorage.getItem('tibia-ai:market') || '{}').world || ''; }
+    catch (_) { return ''; }
+  };
+
+  async function loadWorlds() {
+    if (!MKAPI || $('mworld').options.length) return;
+    const want = $('mworld').dataset.want || marketWorldSaved();
+    try {
+      const r = await fetch(MKAPI + '/world_data');
+      const worlds = (await r.json()).map((w) => w.name).sort();
+      $('mworld').innerHTML = '<option value="">mundo…</option>' +
+        worlds.map((w) => `<option value="${w}">${w}</option>`).join('');
+      if (worlds.includes(want)) $('mworld').value = want;
+    } catch (_) {
+      $('mworld').innerHTML = '<option value="">API do Market fora do ar</option>';
+    }
+  }
+
+  async function loadPrices() {
+    const w = $('mworld').value;
+    if (!MKAPI || !w || w === MK.world) return;
+    MK.world = w; MK.prices = null; MK.error = null; MK.loading = w;
+    render();
+    try {
+      const r = await fetch(`${MKAPI}/market_values?server=${encodeURIComponent(w)}&limit=6000`);
+      if (!r.ok) throw new Error('API respondeu ' + r.status);
+      const vals = await r.json();
+      // -1 = "sem leitura" na API; zerar antes que vire preço (ver CLAUDE.md)
+      vals.forEach((v) => { for (const k in v) if (typeof v[k] === 'number' && v[k] < 0) v[k] = 0; });
+      if (MK.world !== w) return;          // o usuário já trocou de mundo
+      MK.prices = new Map(vals.map((v) => [v.id, v]));
+    } catch (e) {
+      if (MK.world === w) MK.error = e.message;
+    }
+    if (MK.world === w) { MK.loading = null; render(); }
+  }
+
   let current = [];
 
   // categorias de perk de proficiência: viram ícone nos chips do painel,
@@ -600,6 +751,7 @@
   function render() {
     const q = $('q').value.trim().toLowerCase();
     const cat = $('cat').value;
+    const sub = $('subctl').hidden ? '' : $('sub').value;
     const voc = $('voc').value;
     const maxLvl = parseInt($('lvl').value, 10);
     const onlyDrop = $('onlydrop').checked;
@@ -612,7 +764,10 @@
     const profperk = $('profperk').value;
 
     let rows = D.items.filter((it) => {
-      if (cat === '__equip' ? !EQUIP_CATS.has(it.c) : (cat && it.c !== cat)) return false;
+      if (cat === '__equip') { if (it.g !== 'Armas' && it.g !== 'Equipamento') return false; }
+      else if (cat.startsWith('g:')) { if (it.g !== cat.slice(2)) return false; }
+      else if (cat && it.c !== cat) return false;
+      if (sub && it.sc !== sub) return false;
       if (voc && !matchVoc(it, voc)) return false;
       if (attr && !(it.af || []).includes(attr)) return false;
       // só interessa resistência positiva ao filtrar por elemento
@@ -626,48 +781,70 @@
       if (onlyStats && !(it.at || it.rs || it.arm || it.atk)) return false;
       if (q) {
         // a busca também cobre os perks de proficiência ("life leech", "Divine Missile"…)
-        const hay = [it.n, it.at, it.rs, it.bf, it.sl_to, it.c, it.ptext].join(' ').toLowerCase();
+        const hay = [it.n, it.at, it.rs, it.bf, it.sl_to, it.g, it.c, it.sc, it.ptext]
+          .join(' ').toLowerCase();
         if (!matchQuery(hay, q)) return false;
       }
       return true;
     });
 
+    const key = sortKey(), dir = sortDir();
+    const [, label, val, fmt] = SORT_BY.get(key);
+    // item sem o dado vai para o fim nos dois sentidos; empate desempata por nome
     rows.sort((a, b) => {
-      const x = a[sortKey], y = b[sortKey];
+      const x = val(a), y = val(b);
+      if (x === undefined && y === undefined) return a.n.localeCompare(b.n);
       if (x === undefined) return 1;
       if (y === undefined) return -1;
-      return typeof x === 'string' ? sortDir * x.localeCompare(y) : sortDir * (x - y);
+      const r = typeof x === 'string' ? dir * x.localeCompare(y) : dir * (x - y);
+      return r || a.n.localeCompare(b.n);
     });
 
     current = rows.slice(0, 300);
+
+    // coluna de Market aparece assim que um mundo é escolhido; a coluna
+    // dinâmica só quando o critério de ordenação não está à vista
+    const showMk = !!MK.world;
+    const dyn = !FIXED_COLS.has(key) && !(key === 'mk' && showMk);
+    const mkHead = !MK.world ? '' : MK.loading ? `Market <small>(${MK.world}…)</small>`
+      : MK.error ? `Market <small title="${MK.error.replace(/"/g, '&quot;')}">(erro)</small>`
+      : `Market <small>(${MK.world})</small>`;
+    const dim = '<span class="dim">—</span>';
+    const cell = (v, f) => (v === undefined ? dim : f ? f(v) : v);
 
     const head = `<thead><tr>
       <th data-k="n">Item</th>
       <th data-k="c">Categoria</th>
       <th data-k="lvl" class="num">Lvl</th>
       <th data-k="arm" class="num">Base</th>
+      ${dyn ? `<th data-k="${key}" class="num dyn">${label}</th>` : ''}
+      ${showMk ? `<th data-k="mk" class="num" title="Menor oferta de venda (o que você paga) no mundo escolhido; tiers misturados">${mkHead}</th>` : ''}
       <th>Atributos</th>
       <th>Resistências</th>
       <th data-k="pn" class="num" title="Níveis de weapon proficiency">Prof.</th>
       <th data-k="nv" class="num">NPC</th>
-      <th class="num">Drops</th>
+      <th data-k="dr" class="num">Drops</th>
     </tr></thead>`;
 
     const body = current.map((it, i) => {
       const base = [it.atk && 'atk ' + it.atk, it.hit && 'hit ' + it.hit,
+                    it.def && it.def !== '0' && 'def ' + it.def,
                     it.arm && 'arm ' + it.arm].filter(Boolean).join(' · ');
+      const mk = showMk ? mkPrice(it) : undefined;
       return `<tr data-i="${i}" class="has-spr">
         <td class="name"><span class="namecell">${spr(it.n)}${it.n}</span></td>
-        <td class="dim">${it.c}</td>
-        <td class="num">${it.lvl ?? '<span class="dim">—</span>'}</td>
-        <td class="num">${base || '<span class="dim">—</span>'}</td>
-        <td class="attrib">${it.at || '<span class="dim">—</span>'}</td>
-        <td class="resist">${it.rs ? paintNeg(it.rs) : '<span class="dim">—</span>'}</td>
+        <td class="dim">${it.c}${it.sc ? ` <span class="subcat">${it.sc}</span>` : ''}</td>
+        <td class="num">${it.lvl ?? dim}</td>
+        <td class="num">${base || dim}</td>
+        ${dyn ? `<td class="num sortval">${cell(val(it), fmt)}</td>` : ''}
+        ${showMk ? `<td class="num">${mk === undefined ? dim : `<span class="mkt">${fmtKk(mk)}</span>`}</td>` : ''}
+        <td class="attrib">${it.at || dim}</td>
+        <td class="resist">${it.rs ? paintNeg(it.rs) : dim}</td>
         <td class="num">${it.pn ? `<span class="profmark" title="${
           PROF[it.p].map((lvl, j) => `Nível ${j + 1}: ${lvl.join('  |  ')}`)
-            .join('\n').replace(/"/g, '&quot;')}">✦ ${it.pn}</span>` : '<span class="dim">—</span>'}</td>
-        <td class="num">${it.nv ? it.nv.toLocaleString('pt-BR') : '<span class="dim">—</span>'}</td>
-        <td class="num drops">${it.by ? it.by.length : '<span class="dim">—</span>'}</td>
+            .join('\n').replace(/"/g, '&quot;')}">✦ ${it.pn}</span>` : dim}</td>
+        <td class="num">${it.nv ? it.nv.toLocaleString('pt-BR') : dim}</td>
+        <td class="num drops">${it.by ? it.by.length : dim}</td>
       </tr>`;
     }).join('');
 
@@ -678,13 +855,11 @@
     if (!rows.length) $('tbl').innerHTML = '<caption class="empty">Nenhum item com esses filtros.</caption>';
 
     $('tbl').querySelectorAll('th[data-k]').forEach((th) => {
-      if (th.dataset.k === sortKey) th.classList.add('sorted');
-      th.onclick = () => {
-        if (sortKey === th.dataset.k) sortDir *= -1;
-        else { sortKey = th.dataset.k; sortDir = th.dataset.k === 'n' ? 1 : -1; }
-        render();
-      };
+      if (th.dataset.k === key) th.classList.add('sorted');
+      th.onclick = () => setSort(th.dataset.k);
     });
+    $('sdir').textContent = dir > 0 ? '↑' : '↓';
+    $('sdir').title = dir > 0 ? 'Crescente — clique para inverter' : 'Decrescente — clique para inverter';
     $('tbl').querySelectorAll('tbody tr').forEach((tr) => {
       tr.onclick = () => openDetail(current[+tr.dataset.i]);
     });
@@ -710,6 +885,8 @@
       stat('🧩', 'Tipo', it.t),
       stat('⚔️', 'Ataque', it.atk, 'pos'),
       stat('🎯', 'Hit %', it.hit, 'pos'),
+      stat('🏹', 'Alcance', it.rng),
+      stat('✋', 'Mãos', it.hd === 2 ? 'duas' : it.hd === 1 ? 'uma' : ''),
       stat('🛡️', 'Defesa', it.def),
       stat('🦺', 'Armor', it.arm),
       stat('💠', 'Slots de imbuement', it.sl ? '◆'.repeat(it.sl) + ` (${it.sl})` : ''),
@@ -734,8 +911,10 @@
         `${el} ${v > 0 ? '+' : ''}${v}%</span>`).join('')}</div>`
       : it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '';
 
+    const mk = mkPrice(it);
     const value = [
       stat('💰', 'Valor de mercado', it.v),
+      stat('📈', `Market em ${MK.world}`, mk ? fmtKk(mk) + ' gp' : ''),
       stat('🪙', 'Preço de NPC', it.nv ? it.nv.toLocaleString('pt-BR') + ' gp' : ''),
       stat('🛒', 'Compra de', it.bf),
       stat('🏪', 'Vende para', it.sl_to),
@@ -796,7 +975,7 @@
     $('panel').innerHTML = `
       <div class="panel-head">
         ${spr(it.n, true)}
-        <h2>${it.n}</h2><span class="cat">${it.c}</span>
+        <h2>${it.n}</h2><span class="cat">${it.g} › ${it.c}${it.sc ? ' › ' + it.sc : ''}</span>
         <span class="panel-actions">
           ${TRADEABLE.has(it.n.toLowerCase())
             ? `<a class="panel-link" href="market.html?open=${encodeURIComponent(it.n)}">preço no Market ↗</a>`
@@ -849,7 +1028,52 @@
     return [...m.entries()];
   };
 
-  fill('cat', tally((it) => [it.c]));
+  // categoria: grupos primeiro, depois cada grupo com suas categorias
+  {
+    const cc = new Map(), gc = new Map();
+    D.items.forEach((it) => {
+      cc.set(it.c, (cc.get(it.c) || 0) + 1);
+      gc.set(it.g, (gc.get(it.g) || 0) + 1);
+    });
+    const opt = (v, t) => `<option value="${v}">${t}</option>`;
+    $('cat').innerHTML = opt('', 'Todas') + opt('__equip', '⚔️🛡️ Armas + equipamento') +
+      `<optgroup label="Grupos">${TREE.map(([g]) =>
+        opt('g:' + g, `${GICON[g] || ''} ${g} (${gc.get(g)})`)).join('')}</optgroup>` +
+      TREE.map(([g, cats]) => `<optgroup label="${GICON[g] || ''} ${g}">${
+        cats.map(([c]) => opt(c, `${c} (${cc.get(c)})`)).join('')}</optgroup>`).join('');
+  }
+
+  // subcategoria: só existe para categoria com subdivisão; troca junto
+  function syncSub(keep) {
+    const cat = $('cat').value;
+    const subs = SUBS.get(cat) || [];
+    const prev = keep ? $('sub').value : '';
+    $('subctl').hidden = !subs.length;
+    if (!subs.length) { $('sub').innerHTML = ''; return; }
+    const cnt = new Map();
+    D.items.forEach((it) => { if (it.c === cat && it.sc) cnt.set(it.sc, (cnt.get(it.sc) || 0) + 1); });
+    $('sub').innerHTML = '<option value="">Todas</option>' +
+      subs.map((sc) => `<option value="${sc}">${sc} (${cnt.get(sc) || 0})</option>`).join('');
+    $('sub').value = subs.includes(prev) ? prev : '';
+  }
+
+  $('sort').innerHTML = SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
+
+  // ordenar por: pelo seletor, pelo <th> ou pelo botão de sentido
+  function setSort(k, flip) {
+    if (!SORT_BY.has(k)) return;
+    if (k === sortKey() && flip !== false) $('sdirv').value = sortDir() > 0 ? 'desc' : 'asc';
+    else if (k !== sortKey()) { $('sort').value = k; $('sdirv').value = ''; }
+    onSortChange();
+  }
+  function onSortChange() {
+    const mk = sortKey() === 'mk';
+    $('mworld').hidden = !mk && !MK.world;
+    if (mk) loadWorlds().then(loadPrices);
+    state.save();
+    render();
+  }
+
   fill('attr', tally((it) => it.af || []));
   fill('res', tally((it) => [...new Set((it.rf || []).filter(([, v]) => v > 0).map(([e]) => e))]));
 
@@ -862,18 +1086,44 @@
   }
 
   // ── estado, presets e deep-links ─────────────────────────────────────────
-  const FILTER_IDS = ['q', 'cat', 'voc', 'attr', 'res', 'lvl', 'profperk',
-                      'onlydrop', 'onlystats', 'onlyimb', 'onlyprof', 'onlytask'];
+  const FILTER_IDS = ['q', 'cat', 'sub', 'voc', 'attr', 'res', 'lvl', 'profperk',
+                      'onlydrop', 'onlystats', 'onlyimb', 'onlyprof', 'onlytask',
+                      'sort', 'sdirv', 'mworld'];
   const state = filterState(FILTER_IDS, 'items');
 
-  $('clear').onclick = () => { state.clear(); render(); };
+  const resetSort = () => { $('sort').value = 'n'; $('sdirv').value = ''; };
+  $('clear').onclick = () => { state.clear(); resetSort(); syncSub(); onSortChange(); };
 
-  FILTER_IDS.forEach((id) => $(id).addEventListener('input', render));
+  FILTER_IDS.forEach((id) => {
+    if (!['cat', 'sub', 'sort', 'sdirv', 'mworld'].includes(id)) $(id).addEventListener('input', render);
+  });
+  $('sub').addEventListener('input', render);
+  // a subcategoria depende da categoria: trocar uma zera a outra antes de renderizar
+  $('cat').addEventListener('input', () => { syncSub(); state.save(); render(); });
+  $('sort').addEventListener('change', () => { $('sdirv').value = ''; onSortChange(); });
+  $('sdir').onclick = () => setSort(sortKey());
+  $('mworld').addEventListener('change', () => { state.save(); loadPrices(); });
 
   // volta na consulta em que se estava; ?q= e ?open= (deep-links) têm prioridade
+  // (o <select> de subcategoria ainda não tem opções na hora do restore —
+  // guarda o valor salvo e reaplica depois de montar)
+  let savedSub = '';
+  try { savedSub = JSON.parse(localStorage.getItem('tibia-ai:items') || '{}').sub || ''; } catch (_) {}
+  const savedWorld = (() => {
+    try { return JSON.parse(localStorage.getItem('tibia-ai:items') || '{}').mworld || ''; } catch (_) { return ''; }
+  })();
   state.restore();
+  if (!SORT_BY.has($('sort').value)) resetSort();
+  syncSub();
+  if (savedSub) $('sub').value = savedSub;
   const qParam = urlParam('q');
-  if (qParam !== null) { state.clear(); $('q').value = qParam; }
+  if (qParam !== null) { state.clear(); resetSort(); syncSub(); $('q').value = qParam; }
+  // mundo salvo: o <select> só ganha opções quando a lista chega da API
+  if (savedWorld) $('mworld').dataset.want = savedWorld;
+  if (sortKey() === 'mk' || savedWorld) {
+    $('mworld').hidden = false;
+    loadWorlds().then(loadPrices);
+  }
   render();
 
   const openParam = urlParam('open');

@@ -6,11 +6,15 @@ TibiaWiki inteiro.
 
 ## O que tem aqui
 
-- **`index.html`** — catálogo completo de itens: 9.894 itens em 56 categorias
-  (equipamento, itens de quest e delivery task, produtos de criatura, valiosos…).
-  Filtra por categoria, vocação, level e presença de drop/atributos; clicar num
-  item mostra propriedades, comércio e **quem dropa, com raridade e onde a
-  criatura vive**.
+- **`index.html`** — catálogo completo de itens: 9.894 itens organizados em
+  grupo › categoria › subcategoria (Armas › Armas de Distância › Arco / Besta /
+  Arremesso; Munição › Flecha / Virote; Espadas › Uma / Duas mãos; Runas ›
+  Ataque / Cura / Suporte; equipamento por vocação…). Filtra por categoria,
+  subcategoria, vocação, level e presença de drop/atributos; **ordena por
+  qualquer atributo** (ataque, hit, defesa, armor, bônus de skill, magic level,
+  velocidade, resistência total, alcance, slots, peso, preço de NPC, valor do
+  wiki, preço no Market do mundo escolhido…); clicar num item mostra
+  propriedades, comércio e **quem dropa, com raridade e onde a criatura vive**.
 - **`creatures.html`** — 1.629 criaturas com stats, resistências elementais e
   gp/kill; clicar abre o detalhe completo (habilidades, comportamento,
   localização, estratégia, bestiário e loot table). Filtra por faixas de exp,
@@ -41,6 +45,7 @@ documenta por raridade — não um número exato.
     completo de 28.967 páginas), crawleado de `tibia.fandom.com`.
   - `setup.sh` — restaura tudo do zero, sem refazer o crawl.
   - `gen_items.py` — regenera `items-data.js`.
+  - `categorize.py` — a taxonomia grupo › categoria › subcategoria dos itens.
   - `gen_market.py` — regenera `market-items.js` (metadados do Market; preço não).
   - `loot.py` — parser das loot tables e cálculo da faixa de gp/kill.
   - `english-wiki-adaptation.patch` — adaptação do
