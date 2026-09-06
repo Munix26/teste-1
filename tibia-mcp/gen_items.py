@@ -66,6 +66,7 @@ ATTR_ALIASES = [
 ]
 ELEMENTS = ["physical", "fire", "earth", "energy", "ice", "holy", "death",
             "life drain", "mana drain", "drowning"]
+ATTACK_ELEMENTS = ["fire", "earth", "ice", "energy", "death", "holy"]
 
 
 def attr_facets(attrib):
@@ -133,6 +134,49 @@ def to_int(value):
     return int(m.group()) if m else None
 
 
+def dropped_by(content):
+    """`{{Dropped By|Grand Master Oberon|…}}` da página do item -> nomes."""
+    m = re.search(r"\{\{Dropped By\|([^}]*)\}\}", content)
+    return [x.strip() for x in m.group(1).split("|") if x.strip()] if m else []
+
+
+def merge_dropped_by(item_rows, drops, creature_info):
+    """O índice reverso vem das loot tables das criaturas; a página do item
+    também lista quem dropa, e às vezes sabe mais (Amazon Armor ← Orc Warlord).
+    Entra com raridade "unknown" — a página do item não diz a chance."""
+    added = 0
+    for row in item_rows:
+        have = {c for c, _ in drops.get(row["title"], [])}
+        for name in dropped_by(row["content"]):
+            if name in creature_info and name not in have:
+                drops[row["title"]].append((name, "unknown"))
+                have.add(name)
+                added += 1
+    return added
+
+
+def store_offers(content):
+    """`{{Store Trades|{{Store Product|11|amount=100}}…}}` -> [[coins, qtd]]."""
+    raw = big_field(content, "storevalue")
+    return [[int(c), int(a or 1)]
+            for c, a in re.findall(r"\{\{Store Product\|(\d+)(?:\|amount=(\d+))?", raw)]
+
+
+def attack_elements(content):
+    """fire_attack=46, earth_attack=… -> [["fire", 46], …] (dano elemental da arma)."""
+    out = []
+    for el in ATTACK_ELEMENTS:
+        v = to_int(field(content, el + "_attack"))
+        if v:
+            out.append([el, v])
+    return out
+
+
+def split_list(text):
+    """Campo com várias linhas/entradas (augments) -> lista limpa."""
+    return [clean(x) for x in re.split(r"<br\s*/?>|\n|,(?![^(]*\))", text) if clean(x)]
+
+
 def build_drop_index(rows):
     """creature loot tables -> {item name: [(creature, rarity)]}, plus creature info."""
     index = defaultdict(list)
@@ -193,6 +237,10 @@ def main():
         row = cur.fetchone()
         prof_tables = proficiency.parse_tables(row["content"]) if row else {}
     conn.close()
+    resolver = proficiency.Resolver(prof_tables)
+
+    # a página do item complementa as loot tables (antes de indexar as criaturas)
+    extra_drops = merge_dropped_by(item_rows, drops, creature_info)
 
     # creatures referenced by any drop, stored once and referenced by index
     referenced = sorted({c for lst in drops.values() for c, _ in lst})
@@ -225,10 +273,11 @@ def main():
             "infobox": bool(re.search(r"\{\{Infobox Object", c)),
         })
 
-        prof = None
+        prof, generic = None, False
         if oclass == "Weapons":
-            perks = proficiency.lookup(prof_tables, title, ptype,
-                                       field(c, "secondarytype"), field(c, "hands"))
+            perks, generic = resolver.find(title, ptype, field(c, "secondarytype"),
+                                           field(c, "hands"), field(c, "vocrequired"),
+                                           field(c, "upgradeclass"))
             if perks:
                 key = json.dumps(perks, ensure_ascii=False)
                 if key not in pidx:
@@ -269,7 +318,43 @@ def main():
             "sl_to": clean(field(c, "sellto"))[:200],
             "by": [[cidx[n], r] for n, r in by],
             "p": prof,
+            "pg": generic,                       # tabela genérica por classe, não do set
             "no": clean(big_field(c, "notes"))[:500],
+            # ── combate ──
+            "hc": to_int(field(c, "hit_chance")),          # munição: chance de acerto %
+            "dm": field(c, "damagetype").lower(),          # wand/rod/runa: elemento
+            "dmr": clean(field(c, "damagerange")),         # wand/rod: "85-105" ou "97 (94-100)"
+            "mc": to_int(field(c, "manacost")),            # wand/rod: mana por ataque
+            "ea": attack_elements(c),                      # dano elemental da arma
+            "dfm": clean(field(c, "defensemod")),          # modificador de defesa
+            "cr": [clean(field(c, "crithit_ch")), clean(field(c, "critextra_dmg"))]
+                  if field(c, "crithit_ch") or field(c, "critextra_dmg") else None,
+            "hl": [clean(field(c, "hpleech_am")), clean(field(c, "hpleech_ch"))]
+                  if field(c, "hpleech_am") else None,
+            "lm": [clean(field(c, "manaleech_am")), clean(field(c, "manaleech_ch"))]
+                  if field(c, "manaleech_am") else None,
+            "eb": clean(field(c, "elementalbond")),        # punho: elemento do vínculo
+            # ── uso ──
+            "ch": to_int(field(c, "charges")),
+            "du": clean(field(c, "duration")),
+            "rg": to_int(field(c, "regenseconds")),        # comida: segundos de regeneração
+            "mlr": to_int(field(c, "mlrequired")),         # runa: magic level mínimo
+            "wd": clean(field(c, "words")),                # runa: palavras da magia
+            "mn": to_int(field(c, "mantra")),
+            "aug": split_list(big_field(c, "augments")),   # "Spell -> +x%"
+            "en": "ed" if field(c, "enchanted").lower() == "yes"
+                  else "able" if field(c, "enchantable").lower() == "yes" else "",
+            "im": clean(field(c, "imbuements")),           # material de quais imbuements
+            "vol": to_int(field(c, "volume")),
+            "lt": to_int(field(c, "lightradius")),
+            "so": field(c, "slot"),
+            "t2": field(c, "secondarytype"),
+            # ── comércio / texto ──
+            "sv": store_offers(c),                         # [[Tibia Coins, quantidade]]
+            "pc": clean(field(c, "pricecurrency")),        # moeda do NPC quando não é gp
+            "nvr": to_int(field(c, "npcvaluerook")),
+            "ft": clean(big_field(c, "flavortext"))[:400],
+            "loc": clean(big_field(c, "location"))[:220],
         })
 
     # drop empty keys to keep the payload lean — `p` pode ser 0, que é índice válido
@@ -311,8 +396,10 @@ def main():
     print(f"{len(items)} itens em {len(order)} categorias ({len(tree)} grupos, "
           f"{subs} com subcategoria) — {with_drops} com fonte de drop, "
           f"{len(creature_table)} criaturas indexadas")
-    print(f"{weapons} armas com proficiência, {len(prof_table)} tabelas de perks distintas "
-          f"(de {len(prof_tables)} seções no wiki)")
+    generic = sum(1 for it in items if it["pg"])
+    print(f"{weapons} armas com proficiência ({generic} pela tabela genérica da classe), "
+          f"{len(prof_table)} tabelas de perks distintas (de {len(prof_tables)} seções no wiki)")
+    print(f"{extra_drops} drops a mais vindos do `droppedby` das páginas de item")
     print("->", OUT, f"({os.path.getsize(OUT)/1024:.0f} KB)")
 
 

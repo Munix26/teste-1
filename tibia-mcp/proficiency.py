@@ -4,18 +4,30 @@ O wiki não guarda a proficiência na página da arma. Ela mora inteira numa pá
 só (`Weapon Proficiency Tables`), dividida em seções, e o `Infobox Object` deriva
 o nome da seção a partir do *nome* da arma mais o tipo e a quantidade de mãos.
 Este módulo reimplementa essa derivação — a lógica original é uma cascata de
-`{{#ifeq:{{#rpos:...}}}}` no template `Infobox Object/Weapon Proficiency Name`.
+`{{#ifeq:{{#rpos:...}}}}` no template `Infobox Object/Weapon Proficiency Name`
+(está no dump: `raw_pages`, mesmo título) — e acrescenta o que o template
+não cobre mas a página de tabelas tem:
+
+- sets que entraram depois do template (Moonsilver, Stellar Moonsilver, Crypt);
+- seções nomeadas com grafia diferente do item ("Sword 1H Pharao Sword",
+  "Club 1H Gluttons Mace", "Wand 1H Scorcher" para "The Scorcher"…);
+- as tabelas **genéricas** por classe ("Generic 1H Sword Class 1"), que é o
+  que as armas antigas sem set usam.
 """
 import re
 
 # Ordem importa: é a ordem dos ifs aninhados no template, e o primeiro que casa
 # vence. Por isso "Grand Sanguine" vem antes de "Sanguine" e "Crude Umbral"
-# antes de "Umbral" — invertendo, a arma cairia no set errado.
+# antes de "Umbral" — invertendo, a arma cairia no set errado. ("Eldritch"
+# antes de "Gilded Eldritch" também é do template: no wiki, os Gilded mostram
+# a tabela Eldritch.) Stellar Moonsilver, Moonsilver e Crypt não estão no
+# template, mas têm seções próprias na página de tabelas.
 SETS = [
     "Amber", "Cobra", "Crude Umbral", "Destruction", "Draining Inferniarch",
     "Eldritch", "Falcon", "Gilded Eldritch", "Glooth", "Grand Sanguine",
     "Siphoning Inferniarch", "Jungle", "Lion", "Master Umbral", "Naga",
     "Rending Inferniarch", "Sanguine", "Inferniarch", "Soul", "Umbral",
+    "Stellar Moonsilver", "Moonsilver", "Crypt",
 ]
 
 # armas de evento/réplica: o set vira outro nome
@@ -27,12 +39,20 @@ REPLICAS = [("Carving", "Replica Carving"), ("Remedy", "Replica Remedy"),
 SPLIT_DISTANCE = {
     "Amber", "Umbral", "Master Umbral", "Crude Umbral", "Siphoning Inferniarch",
     "Draining Inferniarch", "Rending Inferniarch", "Inferniarch",
-    "Grand Sanguine", "Sanguine", "Soul",
+    "Grand Sanguine", "Sanguine", "Soul", "Stellar Moonsilver", "Moonsilver", "Crypt",
 }
 
 WEAPON_TYPE = {
     "Axe Weapons": "Axe", "Club Weapons": "Club", "Sword Weapons": "Sword",
-    "Fist Fighting Weapons": "Fist", "Rods": "Rod", "Wands": "Wand",
+    "Fist Fighting Weapons": "Fist",
+}
+
+# seção nomeada cuja grafia não se deduz do nome do item
+ALIASES = {
+    "Vile Axe": "Axe 1H Vile Ornamented Axe",
+    "Ornamented Axe": "Axe 1H Vile Ornamented Axe",
+    "Pharaoh Sword": "Sword 1H Pharao Sword",
+    "Snowball with Ice Shards": "Throw - Snowball with Shards",
 }
 
 
@@ -57,8 +77,20 @@ def parse_tables(content):
     return out
 
 
-def section_name(name, primarytype, secondarytype, hands):
-    """Nome da seção de proficiência da arma, ou None se não for arma."""
+def weapon_type(primarytype, secondarytype, vocrequired):
+    """Axe/Club/Sword/Fist/Distance/Throw/Rod/Wand/Caster, ou None."""
+    if primarytype == "Distance Weapons":
+        return {"Bows": "Distance", "Crossbows": "Distance",
+                "Throwing Weapons": "Throw"}.get(secondarytype)
+    if primarytype in ("Rods", "Wands"):
+        voc = (vocrequired or "").strip().lower()
+        return {"druids": "Rod", "sorcerers": "Wand",
+                "sorcerers and druids": "Caster"}.get(voc) or primarytype[:-1]
+    return WEAPON_TYPE.get(primarytype)
+
+
+def section_name(name, primarytype, secondarytype, hands, vocrequired=""):
+    """Nome da seção de proficiência da arma (como o template deriva), ou None."""
     weapon_set = ""
     for candidate in SETS:
         if candidate in name:
@@ -73,13 +105,9 @@ def section_name(name, primarytype, secondarytype, hands):
             if name.startswith("Energy"):
                 weapon_set = "Replica Energy"
 
-    if primarytype == "Distance Weapons":
-        wtype = "Throw" if secondarytype == "Throwing Weapons" else "Distance"
-    else:
-        wtype = WEAPON_TYPE.get(primarytype)
+    wtype = weapon_type(primarytype, secondarytype, vocrequired)
     if not wtype:
         return None
-
     if wtype == "Throw":
         return f"Throw - {name}"
 
@@ -89,19 +117,91 @@ def section_name(name, primarytype, secondarytype, hands):
             if wtype == "Distance" else wtype
         return f"{weapon_set} {grip} {sub}"
     if weapon_set.startswith("Replica") or weapon_set == "Test":
-        return f"{weapon_set} {'Caster' if wtype in ('Rod', 'Wand') else wtype}"
+        return f"{weapon_set} {'Caster' if wtype in ('Rod', 'Wand', 'Caster') else wtype}"
     if weapon_set:
         return f"{weapon_set} {grip} {wtype}"
     return f"{wtype} {grip} {name}"
 
 
-def lookup(tables, name, primarytype, secondarytype, hands):
-    """Perks da arma, ou None. Casa sem diferenciar caixa: várias seções do wiki
-    usam Title Case onde o nome do item não usa ("Club Of The Fury")."""
-    section = section_name(name, primarytype, secondarytype, hands)
-    if not section:
+def _norm(s):
+    s = s.lower().replace("'", "").replace("’", "")
+    s = re.sub(r"\(.*?\)", " ", s)
+    s = re.sub(r"^the ", "", s.strip())
+    return re.sub(r"\s+", " ", s).strip()
+
+
+class Resolver:
+    """Casa armas com as seções da página de tabelas, do jeito mais exato ao
+    mais tolerante. `find()` devolve (perks, generica?) ou (None, False)."""
+
+    def __init__(self, tables):
+        self.tables = tables
+        self.folded = {k.lower(): k for k in tables}
+        # "Sword 1H Pharao Sword" -> ("pharao sword" -> seção): índice por nome,
+        # ignorando tipo e mãos — o wiki erra o tipo às vezes ("Sword 1H
+        # Ravenwing" para um machado) e isso não pode custar a tabela
+        self.by_name = {}
+        for k in tables:
+            m = re.match(r"^(?:Axe|Club|Sword|Fist|Distance|Rod|Wand|Caster) [12]H (.+)$", k) \
+                or re.match(r"^Throw - (.+)$", k)
+            if m:
+                self.by_name.setdefault(_norm(m.group(1)), k)
+
+    def _exact(self, section):
+        if not section:
+            return None
+        if section in self.tables:
+            return section
+        return self.folded.get(section.lower())
+
+    def _named(self, name):
+        n = _norm(name)
+        if n in self.by_name:
+            return self.by_name[n]
+        # "Incredible Mumpiz Slayer" ~ "Mumpiz Slayer"; "Ron the Ripper's Sabre" ~
+        # "Ripper's Sabre". Só nesse sentido: o contrário levaria "Dagger" para
+        # "Deepling Ceremonial Dagger" (uma rod).
+        for rest, section in self.by_name.items():
+            if len(rest) >= 8 and n.endswith(" " + rest):
+                return section
         return None
-    if section in tables:
-        return tables[section]
-    folded = {k.lower(): v for k, v in tables.items()}
-    return folded.get(section.lower())
+
+    def _generic(self, wtype, hands, upgradeclass):
+        if not wtype or wtype == "Throw":
+            return None
+        kind = "Caster" if wtype in ("Rod", "Wand", "Caster") else wtype
+        grip = "2H" if hands == "Two" else "1H"
+        cls = str(upgradeclass or "").strip() or "1"
+        # wand/rod não tem `hands` no wiki e a seção genérica de classe 1 é "2H
+        # Caster": para caster vale qualquer empunhadura
+        grips = [grip, "1H" if grip == "2H" else "2H"] if kind == "Caster" else [grip]
+        for g in grips:
+            for candidate in (f"Generic {g} {kind} Class {cls}",
+                              f"Generic {g} {kind}" if cls == "1" else None):
+                if candidate and candidate in self.tables:
+                    return candidate
+        return None
+
+    def find(self, name, primarytype, secondarytype, hands, vocrequired="", upgradeclass=""):
+        derived = section_name(name, primarytype, secondarytype, hands, vocrequired)
+        section = self._exact(ALIASES.get(name)) or self._exact(derived)
+        # set listado como "split" no template mas com uma seção só na tabela
+        # ("Inferniarch 2H Distance" em vez de "… Bow" / "… Crossbow")
+        if not section and derived and re.search(r" (Bow|Crossbow)$", derived):
+            section = self._exact(re.sub(r" (Bow|Crossbow)$", " Distance", derived))
+        if section:
+            return self.tables[section], False
+        section = self._named(name)
+        if section:
+            return self.tables[section], False
+        wtype = weapon_type(primarytype, secondarytype, vocrequired)
+        section = self._generic(wtype, hands, upgradeclass)
+        if section:
+            return self.tables[section], True
+        return None, False
+
+
+def lookup(tables, name, primarytype, secondarytype, hands, vocrequired="", upgradeclass=""):
+    """Perks da arma (só a tabela), ou None. Ver Resolver.find para a origem."""
+    return Resolver(tables).find(name, primarytype, secondarytype, hands,
+                                 vocrequired, upgradeclass)[0]
