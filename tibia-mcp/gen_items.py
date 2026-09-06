@@ -16,6 +16,7 @@ from psycopg2.extras import RealDictCursor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from loot import loot_items
+import categorize
 import proficiency
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tibiawiki:tibiawiki@127.0.0.1:5432/tibiawiki")
@@ -215,7 +216,14 @@ def main():
         c, title = row["content"], row["title"]
         ptype = field(c, "primarytype")
         oclass = field(c, "objectclass")
-        cat = CATEGORY.get(ptype) or FALLBACK.get(oclass) or (ptype or oclass or "Outros")
+        # grupo → categoria → subcategoria (ver categorize.py). Páginas de
+        # lista só citam o Infobox dentro de uma DPL: não abrem com ele.
+        group, cat, sub = categorize.classify(title, {
+            "pt": ptype, "st": field(c, "secondarytype"), "oc": oclass,
+            "hands": field(c, "hands"), "voc": field(c, "vocrequired"),
+            "dmg": field(c, "damagetype"), "imb": bool(field(c, "imbuements")),
+            "infobox": bool(re.search(r"\{\{Infobox Object", c)),
+        })
 
         prof = None
         if oclass == "Weapons":
@@ -237,8 +245,12 @@ def main():
             "rf": resist_facets(resist),
             "dt": delivery.get(title),
             "n": title,
+            "g": group,
             "c": cat,
+            "sc": sub,
             "t": ptype or oclass,
+            "rng": to_int(field(c, "range")),
+            "hd": {"one": 1, "two": 2}.get(field(c, "hands").lower()),
             "lvl": to_int(field(c, "levelrequired")),
             "voc": field(c, "vocrequired"),
             "arm": to_int(field(c, "armor")),
@@ -271,7 +283,23 @@ def main():
         cats[it["c"]] += 1
     order = [c for c, _ in sorted(cats.items(), key=lambda x: -x[1])]
 
-    payload = {"cats": order, "creatures": creature_table,
+    # árvore grupo → [categoria, [subcategorias]] na ordem de categorize.GROUPS;
+    # dentro do grupo, categorias e subcategorias por tamanho (maior primeiro)
+    tree = []
+    for g in categorize.GROUPS:
+        cat_subs = defaultdict(lambda: defaultdict(int))
+        for it in items:
+            if it["g"] == g:
+                cat_subs[it["c"]][it["sc"]] += 1
+        if not cat_subs:
+            continue
+        tree.append([g, [
+            [cname, [s for s, _ in sorted(((s, n) for s, n in subs.items() if s),
+                                          key=lambda x: -x[1])]]
+            for cname, subs in sorted(cat_subs.items(), key=lambda x: -sum(x[1].values()))
+        ]])
+
+    payload = {"cats": order, "tree": tree, "creatures": creature_table,
                "prof": prof_table, "items": slim}
     with open(OUT, "w") as fh:
         fh.write("window.ITEMDATA = " + json.dumps(payload, ensure_ascii=False,
@@ -279,7 +307,9 @@ def main():
 
     with_drops = sum(1 for it in items if it["by"])
     weapons = sum(1 for it in items if it["t"] and it["p"] is not None)
-    print(f"{len(items)} itens em {len(order)} categorias — {with_drops} com fonte de drop, "
+    subs = sum(1 for it in items if it["sc"])
+    print(f"{len(items)} itens em {len(order)} categorias ({len(tree)} grupos, "
+          f"{subs} com subcategoria) — {with_drops} com fonte de drop, "
           f"{len(creature_table)} criaturas indexadas")
     print(f"{weapons} armas com proficiência, {len(prof_table)} tabelas de perks distintas "
           f"(de {len(prof_tables)} seções no wiki)")
