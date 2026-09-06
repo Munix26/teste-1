@@ -61,6 +61,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `tibia-mcp/setup.sh` | recria o ambiente do zero, sem refazer o crawl |
 | `tibia-mcp/gen_items.py` | regenera `items-data.js` (inverte as loot tables para o índice de drops) |
 | `tibia-mcp/categorize.py` | taxonomia grupo › categoria › subcategoria de cada item (usada pelo `gen_items.py`) |
+| `tibia-mcp/proficiency.py` | resolve cada arma para a seção certa de `Weapon Proficiency Tables` (template do wiki + sets novos + genéricas por classe) |
 | `tibia-mcp/gen_creatures.py` | regenera `creatures-data.js` |
 | `tibia-mcp/gen_imbuements.py` | regenera `imbuements-data.js` (slots, efeitos e materiais saem do wikitext — a tabela `imbuements` importou vazia) |
 | `tibia-mcp/gen_hunts.py` | regenera `hunts-data.js` (junta spawn + criaturas) |
@@ -144,6 +145,27 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   `{{Infobox Object` abrindo a página vai para o grupo "Wiki". Para mudar uma
   classificação, mexer lá e rodar `gen_items.py` — nunca editar
   `items-data.js` à mão.
+- **Proficiência vem da página `Weapon Proficiency Tables`, não da página da
+  arma.** `tibia-mcp/proficiency.py` reimplementa o template
+  `Infobox Object/Weapon Proficiency Name` (está no dump) — set pela ordem
+  exata dos `#ifeq` (Gilded cai em Eldritch de propósito), Rod/Wand/Caster
+  pela vocação — e completa o que o template não sabe: sets novos (Stellar
+  Moonsilver, Moonsilver, Crypt), seções com grafia própria ("Sword 1H Pharao
+  Sword", "Wand 1H Scorcher") casadas por nome ignorando tipo/mãos (só no
+  sentido item ⊇ seção, senão "Dagger" vira rod), e as tabelas **genéricas
+  por classe** ("Generic 1H Sword Class 1") das armas antigas — marcadas com
+  `pg` e mostradas como "tabela genérica" na página. 855 de ~890 armas
+  resolvem; as que sobram não têm seção no wiki (1H axe classe 2, wands
+  decorativas, arremesso de evento).
+- **`droppedby` da página do item complementa o índice de drops** (353
+  entradas, ex.: Amazon Armor ← Orc Warlord) com raridade `unknown`, porque
+  a página do item não diz a chance. Só entra criatura que tem página.
+- **Campos do infobox exportados por item** (todos opcionais; ver
+  `gen_items.py`): hit chance, elemento/dano/mana de wand e rod, ataque
+  elemental, mod. de defesa, crítico, leech, vínculo elemental, charges,
+  duração, regen, ML mínimo, palavras, mantra, augments, encantamento,
+  imbuements que usam o material, volume, luz, slot, subtipo, Store (Tibia
+  Coins), moeda do NPC, preço em Rookgaard, flavor text e localização.
 - **Ordenação do catálogo é toda no cliente** (`SORTS` em `index.html`): os
   números saem dos campos texto (`atk`, `def`, `w`, `v`, bônus de skill/ML/
   velocidade do `attrib`) na carga; `v` ignora "Negotiable"/"?"/"--". Item

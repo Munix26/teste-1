@@ -13,8 +13,10 @@ TibiaWiki inteiro.
   subcategoria, vocação, level e presença de drop/atributos; **ordena por
   qualquer atributo** (ataque, hit, defesa, armor, bônus de skill, magic level,
   velocidade, resistência total, alcance, slots, peso, preço de NPC, valor do
-  wiki, preço no Market do mundo escolhido…); clicar num item mostra
-  propriedades, comércio e **quem dropa, com raridade e onde a criatura vive**.
+  wiki, preço no Market do mundo escolhido…); clicar num item mostra tudo que
+  o infobox do wiki sabe (combate, uso, Store, descrição, proficiência —
+  inclusive das armas antigas, pela tabela genérica da classe), comércio e
+  **quem dropa, com raridade e onde a criatura vive**.
 - **`creatures.html`** — 1.629 criaturas com stats, resistências elementais e
   gp/kill; clicar abre o detalhe completo (habilidades, comportamento,
   localização, estratégia, bestiário e loot table). Filtra por faixas de exp,
