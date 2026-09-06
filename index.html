@@ -522,7 +522,9 @@
     Campos ausentes no wiki aparecem como <span class="na">não disponível</span>.
     <b>Ordenar</b> aceita qualquer atributo (ataque, defesa, skill, magic level, peso, preço…);
     quando o critério não é uma coluna da tabela, uma coluna extra mostra o valor usado.
-    O <b>preço no Market</b> vem ao vivo da API (tibiamarket.top) do mundo escolhido e mistura tiers.
+    <b>Compra</b> e <b>Venda</b> vêm ao vivo do Market (tibiamarket.top) do mundo escolhido ao lado
+    de “Ordenar”: menor oferta de venda (o que você paga) e maior oferta de compra (o que você recebe),
+    com o número de ofertas de cada lado. Preço mistura tiers; sem oferta aparece “—”.
     Sprites carregados direto do TibiaWiki — sem internet eles somem, o resto continua funcionando.
     Os filtros ficam salvos no navegador; <b>✕ limpar</b> zera tudo.
   </p>
@@ -618,7 +620,10 @@
     ['w', 'Peso', (it) => it.k.w, (v) => v.toFixed(2).replace('.', ',') + ' oz'],
     ['nv', 'Preço de NPC', (it) => it.nv, fmtInt],
     ['v', 'Valor (wiki)', (it) => it.k.v, (v) => fmtKk(v) + ' gp'],
-    ['mk', 'Preço no Market', (it) => mkPrice(it), (v) => fmtKk(v) + ' gp'],
+    ['mk', 'Market: comprar por', (it) => mkPrice(it), (v) => fmtKk(v) + ' gp'],
+    ['mkb', 'Market: vender por', (it) => mkBuy(it), (v) => fmtKk(v) + ' gp'],
+    ['mko', 'Market: nº de ofertas', (it) => mkOffers(it), fmtInt],
+    ['mks', 'Market: vendidos no mês', (it) => mkSold(it), fmtInt],
     ['pn', 'Níveis de proficiência', (it) => it.pn, fmtInt],
     ['dr', 'Criaturas que dropam', (it) => it.k.dr, fmtInt],
     ['c', 'Categoria', (it) => it.c + ' ' + (it.sc || ''), null, true],
@@ -643,12 +648,18 @@
   const MK_ID = new Map(
     (window.MARKETITEMS ? MARKETITEMS.items : []).map((r) => [r[1].toLowerCase(), r[0]])
   );
+  // mundo padrão do dono; o seletor deixa trocar e a escolha fica salva
+  const DEFAULT_WORLD = 'Gentebra';
   const MK = { world: null, prices: null, loading: null, error: null };
-  const mkPrice = (it) => {
-    if (!MK.prices) return undefined;
-    const p = MK.prices.get(MK_ID.get(it.n.toLowerCase()));
-    return p && p.sell_offer > 0 ? p.sell_offer : undefined;
+  const mkRec = (it) => (MK.prices ? MK.prices.get(MK_ID.get(it.n.toLowerCase())) : undefined);
+  const mkPrice = (it) => { const p = mkRec(it); return p && p.sell_offer > 0 ? p.sell_offer : undefined; };
+  const mkBuy = (it) => { const p = mkRec(it); return p && p.buy_offer > 0 ? p.buy_offer : undefined; };
+  const mkOffers = (it) => {
+    const p = mkRec(it);
+    const n = p ? (p.sell_offers || 0) + (p.buy_offers || 0) : 0;
+    return n || undefined;
   };
+  const mkSold = (it) => { const p = mkRec(it); return p && p.month_sold > 0 ? p.month_sold : undefined; };
   const marketWorldSaved = () => {
     try { return JSON.parse(localStorage.getItem('tibia-ai:market') || '{}').world || ''; }
     catch (_) { return ''; }
@@ -656,7 +667,7 @@
 
   async function loadWorlds() {
     if (!MKAPI || $('mworld').options.length) return;
-    const want = $('mworld').dataset.want || marketWorldSaved();
+    const want = $('mworld').dataset.want || marketWorldSaved() || DEFAULT_WORLD;
     try {
       const r = await fetch(MKAPI + '/world_data');
       const worlds = (await r.json()).map((w) => w.name).sort();
@@ -839,10 +850,14 @@
     // coluna de Market aparece assim que um mundo é escolhido; a coluna
     // dinâmica só quando o critério de ordenação não está à vista
     const showMk = !!MK.world;
-    const dyn = !FIXED_COLS.has(key) && !(key === 'mk' && showMk);
-    const mkHead = !MK.world ? '' : MK.loading ? `Market <small>(${MK.world}…)</small>`
-      : MK.error ? `Market <small title="${MK.error.replace(/"/g, '&quot;')}">(erro)</small>`
-      : `Market <small>(${MK.world})</small>`;
+    const dyn = !FIXED_COLS.has(key) && !(showMk && (key === 'mk' || key === 'mkb'));
+    const mkTag = !MK.world ? '' : MK.loading ? `<small>(${MK.world}…)</small>`
+      : MK.error ? `<small title="${MK.error.replace(/"/g, '&quot;')}">(erro)</small>`
+      : `<small>(${MK.world})</small>`;
+    // preço + nº de ofertas daquele lado do livro
+    const mkCell = (price, offers) => price === undefined && !offers ? dim :
+      `${price === undefined ? dim : `<span class="mkt">${fmtKk(price)}</span>`}` +
+      `${offers ? ` <small class="dim" title="${offers} ofertas">${offers} of.</small>` : ''}`;
     const dim = '<span class="dim">—</span>';
     const cell = (v, f) => (v === undefined ? dim : f ? f(v) : v);
 
@@ -852,7 +867,8 @@
       <th data-k="lvl" class="num">Lvl</th>
       <th data-k="arm" class="num">Base</th>
       ${dyn ? `<th data-k="${key}" class="num dyn">${label}</th>` : ''}
-      ${showMk ? `<th data-k="mk" class="num" title="Menor oferta de venda (o que você paga) no mundo escolhido; tiers misturados">${mkHead}</th>` : ''}
+      ${showMk ? `<th data-k="mk" class="num" title="Menor oferta de venda = o que você paga para comprar agora, e quantas ofertas de venda existem. Tiers misturados.">Compra ${mkTag}</th>
+      <th data-k="mkb" class="num" title="Maior oferta de compra = o que você recebe vendendo agora, e quantas ofertas de compra existem.">Venda ${mkTag}</th>` : ''}
       <th>Atributos</th>
       <th>Resistências</th>
       <th data-k="pn" class="num" title="Níveis de weapon proficiency">Prof.</th>
@@ -866,14 +882,15 @@
                     it.dmr && 'dano ' + it.dmr, it.mc && 'mana ' + it.mc,
                     it.def && it.def !== '0' && 'def ' + it.def,
                     it.arm && 'arm ' + it.arm].filter(Boolean).join(' · ');
-      const mk = showMk ? mkPrice(it) : undefined;
+      const rec = showMk ? mkRec(it) : undefined;
       return `<tr data-i="${i}" class="has-spr">
         <td class="name"><span class="namecell">${spr(it.n)}${it.n}</span></td>
         <td class="dim">${it.c}${it.sc ? ` <span class="subcat">${it.sc}</span>` : ''}</td>
         <td class="num">${it.lvl ?? dim}</td>
         <td class="num">${base || dim}</td>
         ${dyn ? `<td class="num sortval">${cell(val(it), fmt)}</td>` : ''}
-        ${showMk ? `<td class="num">${mk === undefined ? dim : `<span class="mkt">${fmtKk(mk)}</span>`}</td>` : ''}
+        ${showMk ? `<td class="num">${mkCell(rec && rec.sell_offer > 0 ? rec.sell_offer : undefined, rec && rec.sell_offers)}</td>
+        <td class="num">${mkCell(rec && rec.buy_offer > 0 ? rec.buy_offer : undefined, rec && rec.buy_offers)}</td>` : ''}
         <td class="attrib">${it.at || dim}</td>
         <td class="resist">${it.rs ? paintNeg(it.rs) : dim}</td>
         <td class="num">${it.pn ? `<span class="profmark" title="${
@@ -982,10 +999,19 @@
         `${el} ${v > 0 ? '+' : ''}${v}%</span>`).join('')}</div>`
       : it.rs ? `<p class="prose resist">${paintNeg(it.rs)}</p>` : '';
 
-    const mk = mkPrice(it);
+    const rec = mkRec(it) || {};
+    const gp = (n) => (n > 0 ? fmtKk(n) + ' gp' : '');
     const value = [
-      stat('💰', 'Valor de mercado', it.v),
-      stat('📈', `Market em ${MK.world}`, mk ? fmtKk(mk) + ' gp' : ''),
+      stat('💰', 'Valor de mercado (wiki)', it.v),
+      stat('🛍️', `Comprar por (${MK.world})`, gp(rec.sell_offer) +
+        (rec.sell_offers ? ` · ${rec.sell_offers} ofertas de venda` : '')),
+      stat('💵', `Vender por (${MK.world})`, gp(rec.buy_offer) +
+        (rec.buy_offers ? ` · ${rec.buy_offers} ofertas de compra` : '')),
+      stat('📅', 'Média do mês', rec.month_average_sell > 0 || rec.month_average_buy > 0
+        ? `${gp(rec.month_average_sell) || '—'} / ${gp(rec.month_average_buy) || '—'}` : ''),
+      stat('🔁', 'Negociados no mês', rec.month_sold || rec.month_bought
+        ? `${fmtInt(rec.month_sold || 0)} vendidos · ${fmtInt(rec.month_bought || 0)} comprados` : ''),
+      stat('👥', 'Traders ativos', rec.active_traders),
       stat('🪙', 'Preço de NPC', it.nv ? it.nv.toLocaleString('pt-BR') + (it.pc ? ' ' + it.pc : ' gp') : ''),
       stat('🏛️', 'Preço de NPC (Rookgaard)', it.nvr ? it.nvr.toLocaleString('pt-BR') + ' gp' : ''),
       stat('🪙', 'Store', it.sv ? it.sv.map(([tc, q]) =>
@@ -1147,9 +1173,7 @@
     onSortChange();
   }
   function onSortChange() {
-    const mk = sortKey() === 'mk';
-    $('mworld').hidden = !mk && !MK.world;
-    if (mk) loadWorlds().then(loadPrices);
+    if (/^mk/.test(sortKey())) loadWorlds().then(loadPrices);
     state.save();
     render();
   }
@@ -1199,11 +1223,11 @@
   const qParam = urlParam('q');
   if (qParam !== null) { state.clear(); resetSort(); syncSub(); $('q').value = qParam; }
   // mundo salvo: o <select> só ganha opções quando a lista chega da API
+  // Market carrega sempre (mundo salvo → mundo do market.html → Gentebra):
+  // preço e nº de ofertas fazem parte da listagem, não de um modo à parte
   if (savedWorld) $('mworld').dataset.want = savedWorld;
-  if (sortKey() === 'mk' || savedWorld) {
-    $('mworld').hidden = false;
-    loadWorlds().then(loadPrices);
-  }
+  $('mworld').hidden = false;
+  loadWorlds().then(loadPrices);
   render();
 
   const openParam = urlParam('open');
