@@ -49,7 +49,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 
 | Caminho | O que é |
 |---|---|
-| `index.html` + `items-data.js` | catálogo completo (9.894 itens em 10 grupos › 55 categorias › subcategorias) com índice reverso de drops, ordenação por qualquer atributo e preço do Market sob demanda |
+| `index.html` + `items-data.js` | catálogo completo (9.894 itens em 10 grupos › 55 categorias › subcategorias) com índice reverso de drops, ordenação por qualquer atributo e colunas Compra/Venda do Market (preço + nº de ofertas, Gentebra por padrão) |
 | `creatures.html` + `creatures-data.js` | 1.629 criaturas com detalhe completo ao clicar |
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
@@ -169,9 +169,13 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 - **Ordenação do catálogo é toda no cliente** (`SORTS` em `index.html`): os
   números saem dos campos texto (`atk`, `def`, `w`, `v`, bônus de skill/ML/
   velocidade do `attrib`) na carga; `v` ignora "Negotiable"/"?"/"--". Item
-  sem o dado vai para o fim nos dois sentidos. O preço do Market entra como
-  critério só depois de escolher um mundo (uma chamada `market_values`, em
-  memória, mesma regra do `market.html`; mundo padrão = o salvo lá).
+  sem o dado vai para o fim nos dois sentidos. O Market carrega **sempre**
+  ao abrir a página (uma chamada `market_values`, em memória, mesma regra do
+  `market.html`): mundo salvo na página → mundo salvo em `market.html` →
+  **Gentebra** (mundo do dono). As colunas Compra/Venda mostram menor sell
+  offer / maior buy offer com o nº de ofertas de cada lado; critérios de
+  ordenação `mk`/`mkb`/`mko`/`mks` (comprar por, vender por, nº de ofertas,
+  vendidos no mês).
 - **`{{Loot Item}}` tem dois formatos**: `|Item|raridade` e `|1-8|Item|raridade`.
   Metade das páginas usa o segundo. Ler o primeiro parâmetro como nome do item
   perde esses drops silenciosamente (foi o que aconteceu até 2026-08).
