@@ -54,7 +54,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
 | `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
-| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) + aba "Flips" (scanner de oportunidades de compra-e-revenda no mundo carregado, com parâmetros persistentes; `?tab=flip` abre direto) |
+| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) + aba "Flips" (scanner de oportunidades de compra-e-revenda no mundo carregado, com parâmetros persistentes; `?tab=flip` abre direto) + filtro de classe/tier (1–4, forjável ou sem classe) valendo nas abas Itens e Flips |
 | `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
 | `tibia-mcp/gen_market.py` | regenera `market-items.js` (só metadados: id, nome, categoria, tier, NPC — **preço nenhum**) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
