@@ -319,6 +319,7 @@
   <div class="tabs">
     <button id="tab-itens" class="on">Itens</button>
     <button id="tab-flip">🪙 Flips</button>
+    <button id="tab-scan">🔨 Tiers</button>
     <button id="tab-imb">Custo de imbuement</button>
     <button id="tab-srv">Por servidor</button>
   </div>
@@ -369,6 +370,33 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       Clique no item para ver o histórico de 30 dias e o livro de ofertas.
       Lembretes: máx. 100 ofertas simultâneas, oferta dura 30 dias, e o preço
       de item forjável mistura os tiers.
+    </p>
+  </div>
+
+  <div id="view-scan" hidden>
+    <div class="srvpick">
+      <span class="ctl"><label for="snmin">Ofertas mín</label>
+        <input id="snmin" type="number" placeholder="4" min="4" style="width:72px" /></span>
+      <span class="ctl"><label for="smax">Máx. de itens</label>
+        <input id="smax" type="number" placeholder="100" min="1" style="width:84px" /></span>
+      <button class="go" id="sgo">varrer livros ⟳</button>
+      <button class="clearbtn" id="sstop" hidden>■ parar</button>
+      <span class="dim" id="sprog"></span>
+    </div>
+
+    <div class="scroll"><table id="sctbl"></table></div>
+    <p class="legend">
+      Varredura dos <b>livros de ofertas</b> à procura de peça com tier à venda.
+      Candidato = item forjável que passa nos filtros de cima e tem ofertas de
+      venda suficientes; para cada um, a mesma regra da marca
+      <span class="guess">tier?</span> (maior salto de preço do livro ≥ 2× →
+      marca dali para cima). <b>É chute pelo preço</b>: em 21 itens sem classe,
+      onde tier nem existe, a regra ainda marcou 1 — conte com ~1 em 20 falso.
+      Um item só entra na lista se tiver oferta marcada.
+      A varredura é lenta de propósito: <code>/market_board</code> é uma chamada
+      por item e a API corta em ~1 a cada 2s, então o scanner espera 3s entre
+      itens (100 itens ≈ 5 min). Pode trocar de aba que ela continua; trocar de
+      mundo para. O resultado fica salvo e reaparece com a idade da varredura.
     </p>
   </div>
 
@@ -555,25 +583,32 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     return ((v.sell_offer - v.buy_offer) / v.sell_offer) * 100;
   }
 
-  function render() {
+  // a barra de cima filtra as três abas que listam itens; Flips ignora preço e
+  // "só com oferta ativa" de propósito (tem a própria economia)
+  function topFilter({ price = true, active = true } = {}) {
     const q = $('q').value.trim().toLowerCase();
     const cat = $('cat').value;
     const tier = $('tier').value;
     const pmin = parseFloat($('pmin').value);
     const pmax = parseFloat($('pmax').value);
-    const onlyActive = $('onlyactive').checked;
-
-    let rows = ITEMS.filter((it) => {
+    const onlyActive = active && $('onlyactive').checked;
+    return (it) => {
       const v = prices.get(it.id);
       if (cat && it.cat !== cat) return false;
       if (!tierOk(it, tier)) return false;
       if (onlyActive && !(v && (v.sell_offer || v.buy_offer))) return false;
-      const ref = v ? (v.sell_offer || v.buy_offer) : 0;
-      if (!isNaN(pmin) && ref < pmin) return false;
-      if (!isNaN(pmax) && (!ref || ref > pmax)) return false;
+      if (price) {
+        const ref = v ? (v.sell_offer || v.buy_offer) : 0;
+        if (!isNaN(pmin) && ref < pmin) return false;
+        if (!isNaN(pmax) && (!ref || ref > pmax)) return false;
+      }
       if (q && !matchQuery((it.n + ' ' + it.cat).toLowerCase(), q)) return false;
       return true;
-    });
+    };
+  }
+
+  function render() {
+    let rows = ITEMS.filter(topFilter());
 
     const key = SORTS[sortKey] || SORTS.n;
     rows.sort((a, b) => {
@@ -872,9 +907,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   };
 
   function renderFlip() {
-    const q = $('q').value.trim().toLowerCase();
-    const cat = $('cat').value;
-    const tier = $('tier').value;
+    const keep = topFilter({ price: false, active: false });
     const num = (id, dflt) => {
       const n = parseFloat($(id).value);
       return isNaN(n) ? dflt : n;
@@ -888,9 +921,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
 
     const rows = [];
     for (const it of ITEMS) {
-      if (cat && it.cat !== cat) continue;
-      if (!tierOk(it, tier)) continue;
-      if (q && !matchQuery((it.n + ' ' + it.cat).toLowerCase(), q)) continue;
+      if (!keep(it)) continue;
       const r = flipRow(it);
       if (!r) continue;
       if (r.net < minNet || r.roi < minRoi || r.giro < minGiro || r.cost > maxCap) continue;
@@ -1240,8 +1271,168 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     });
   }
 
+  // ── scanner de tiers ──────────────────────────────────────────────────
+  // Varre livro por livro procurando oferta marcada. Uma chamada por item:
+  // /market_board corta em ~1 a cada 2s (medido: 4ª chamada seguida a 1/s já
+  // volta 429 com retry-after), por isso o passo de 3s e o backoff no 429.
+  const SCAN_DELAY = 3000;
+  const SCAN_KEY = 'tibia-ai:scan';
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  let scan = { world: null, at: 0, done: 0, total: 0, errs: 0, running: false, stop: false };
+  let scanRows = [];
+  let scanKey = 'x', scanDir = -1;
+
+  const SCSORTS = {
+    n: (r) => r.it.n.toLowerCase(),
+    cls: (r) => r.it.tier,
+    base: (r) => r.base,
+    mark: (r) => r.marks[0].price,
+    x: (r) => r.marks[0].price / r.base,
+    qtd: (r) => r.marks.length,
+    sold: (r) => (prices.get(r.it.id) || {}).month_sold || 0,
+  };
+
+  function scanList() {
+    const keep = topFilter({ active: false });
+    const nmin = Math.max(4, parseFloat($('snmin').value) || 4);
+    // dos mais caros para os mais baratos: com o teto de itens, uma peça
+    // tierada de Falcon vale mais a chamada do que uma de Crowbar
+    return ITEMS.filter((it) => it.tier > 0 && keep(it)
+      && ((prices.get(it.id) || {}).sell_offers || 0) >= nmin)
+      .sort((a, b) => ((prices.get(b.id) || {}).sell_offer || 0)
+                    - ((prices.get(a.id) || {}).sell_offer || 0));
+  }
+
+  function saveScan() {
+    try {
+      localStorage.setItem(SCAN_KEY, JSON.stringify({
+        world: scan.world, at: scan.at, done: scan.done, total: scan.total, errs: scan.errs,
+        rows: scanRows.map((r) => ({ id: r.it.id, base: r.base, n: r.n, marks: r.marks })),
+      }));
+    } catch (_) {}
+  }
+
+  function restoreScan() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SCAN_KEY) || 'null');
+      if (!d) return;
+      scan = { ...scan, world: d.world, at: d.at, done: d.done, total: d.total, errs: d.errs || 0 };
+      scanRows = (d.rows || []).map((r) => ({ ...r, it: BY_ID.get(r.id) })).filter((r) => r.it);
+    } catch (_) {}
+  }
+
+  async function runScan() {
+    const w = $('world').value;
+    if (!w || scan.running) return;
+    const cap = Math.max(1, parseFloat($('smax').value) || 100);
+    const list = scanList().slice(0, cap);
+    scan = { world: w, at: Date.now(), done: 0, total: list.length, errs: 0, running: true, stop: false };
+    scanRows = [];
+    renderScan();
+
+    for (const it of list) {
+      if (scan.stop || $('world').value !== w) break;
+      let b = null;
+      for (let tryN = 0; tryN < 2 && !b; tryN++) {
+        try {
+          b = await api(`/market_board?server=${encodeURIComponent(w)}&item_id=${it.id}`);
+        } catch (e) {
+          if (tryN) scan.errs++;
+          else await sleep(8000);   // quase sempre 429: respira e tenta de novo
+        }
+      }
+      const cut = b && tierCut(it, b.sellers);
+      if (cut != null) {
+        const ps = b.sellers.map((o) => o.price);
+        scanRows.push({
+          it, n: b.sellers.length, base: Math.min(...ps),
+          marks: b.sellers.filter((o) => o.price >= cut).sort((a, x) => a.price - x.price),
+        });
+      }
+      scan.done++;
+      renderScan();
+      await sleep(SCAN_DELAY);
+    }
+
+    scan.running = false;
+    scan.at = Date.now();
+    saveScan();
+    renderScan();
+  }
+
+  function renderScan() {
+    const tbl = $('sctbl');
+    const stale = scan.world && scan.world !== $('world').value;
+    const left = Math.max(0, scan.total - scan.done);
+
+    $('sstop').hidden = !scan.running;
+    $('sgo').disabled = scan.running;
+    $('sprog').innerHTML = scan.running
+      ? `varrendo <b>${scan.done}/${scan.total}</b> · faltam ~${Math.ceil(left * SCAN_DELAY / 60000)} min
+         · ${scanRows.length} com marca`
+      : scan.at
+        ? `varredura ${agoTs(scan.at / 1000)[0]} em <b>${scan.world}</b> · ${scan.done} itens
+           · ${scanRows.length} com marca${scan.errs ? ` · ${scan.errs} falharam` : ''}`
+        : `${scanList().length} candidatos com os filtros de cima
+           (~${Math.ceil(scanList().length * SCAN_DELAY / 60000)} min varrendo tudo)`;
+
+    if (!scanRows.length) {
+      tbl.innerHTML = `<caption class="na" style="padding:32px">${
+        scan.running ? 'varrendo…'
+          : scan.at ? 'Nenhuma oferta marcada nos itens varridos.'
+          : 'Ajuste os filtros de cima e clique em “varrer livros”.'}</caption>`;
+      return;
+    }
+
+    const rows = [...scanRows].sort((a, b) => {
+      const k = SCSORTS[scanKey] || SCSORTS.x;
+      const x = k(a), y = k(b);
+      return typeof x === 'string' ? scanDir * x.localeCompare(y) : scanDir * (x - y);
+    });
+
+    const body = rows.map((r) => {
+      const o = r.marks[0];
+      const d = Math.round((o.time * 1000 - Date.now()) / 8.64e7);
+      const v = prices.get(r.it.id) || {};
+      return `<tr data-id="${r.it.id}" class="has-spr">
+        <td><span class="namecell">${spr(r.it.n)}<span class="name">${r.it.n}</span>
+          <span class="tier">t≤${r.it.tier}</span></span></td>
+        <td class="num dim">${kk(r.base)}</td>
+        <td class="num"><b class="sell">${kk(o.price)}</b><span class="guess">tier?</span></td>
+        <td class="num">${(o.price / r.base).toFixed(1)}×</td>
+        <td class="num dim">${r.marks.length} de ${r.n}</td>
+        <td class="num dim">${d > 0 ? d + 'd' : '—'}</td>
+        <td class="num dim">${v.month_sold ? fullNum(v.month_sold) : '0'}</td>
+      </tr>`;
+    }).join('');
+
+    tbl.innerHTML = `<thead><tr>
+      <th data-k="n">Item</th>
+      <th data-k="base" class="num" title="menor oferta de venda do livro">Bloco base</th>
+      <th data-k="mark" class="num" title="oferta mais barata entre as marcadas">Marcada</th>
+      <th data-k="x" class="num" title="quantas vezes a marcada custa o bloco base">×base</th>
+      <th data-k="qtd" class="num">Marcadas</th>
+      <th data-k="mark" class="num nosort">Expira</th>
+      <th data-k="sold" class="num">Vend./mês</th>
+    </tr></thead><tbody>${body}</tbody>`
+      + (stale ? '<caption class="na">varredura de outro mundo</caption>' : '');
+
+    tbl.querySelectorAll('th[data-k]:not(.nosort)').forEach((th) => {
+      if (th.dataset.k === scanKey) th.classList.add('sorted');
+      th.onclick = () => {
+        if (scanKey === th.dataset.k) scanDir *= -1;
+        else { scanKey = th.dataset.k; scanDir = th.dataset.k === 'n' ? 1 : -1; }
+        renderScan();
+      };
+    });
+    tbl.querySelectorAll('tbody tr').forEach((tr) => {
+      tr.onclick = () => openDetail(BY_ID.get(+tr.dataset.id));
+    });
+  }
+
   let tab = 'itens';
-  const TABS = ['itens', 'flip', 'imb', 'srv'];
+  const TABS = ['itens', 'flip', 'scan', 'imb', 'srv'];
   function setTab(t) {
     tab = t;
     TABS.forEach((x) => {
@@ -1255,6 +1446,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   }
   const draw = () => (tab === 'itens' ? render()
     : tab === 'flip' ? renderFlip()
+    : tab === 'scan' ? renderScan()
     : tab === 'imb' ? renderImb() : renderSrv());
   TABS.forEach((x) => ($('tab-' + x).onclick = () => setTab(x)));
 
@@ -1285,7 +1477,18 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     draw();
   };
   FILTER_IDS.forEach((id) => $(id).addEventListener('input', draw));
-  $('world').addEventListener('change', () => { state.save(); load(); });
+  $('world').addEventListener('change', () => {
+    scan.stop = true;   // varredura é por mundo: trocar de mundo invalida o resto
+    state.save();
+    load();
+  });
+
+  $('sgo').onclick = runScan;
+  $('sstop').onclick = () => { scan.stop = true; };
+  ['snmin', 'smax'].forEach((id) => $(id).addEventListener('input', () => {
+    if (!scan.running && !scan.at) renderScan();
+  }));
+  restoreScan();
 
   // datalist montado na hora: são 5.121 itens, jogar todos no DOM é desperdício
   $('cmpq').addEventListener('input', () => {
