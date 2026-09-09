@@ -1361,6 +1361,37 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     renderScan();
   }
 
+  // por que a lista está vazia — a resposta é quase sempre um filtro de cima
+  // que sobrou da visita anterior (o filterState guarda tudo)
+  function whichFilters() {
+    const f = [];
+    if ($('q').value.trim()) f.push(`busca “${$('q').value.trim()}”`);
+    if ($('cat').value) f.push(`categoria ${$('cat').value}`);
+    const t = $('tier').value;
+    if (t) f.push(`classe ${t === 'f' ? 'forjável' : t === '0' ? '“sem classe”' : t}`);
+    if ($('pmin').value) f.push(`preço ≥ ${fullNum(+$('pmin').value)}`);
+    if ($('pmax').value) f.push(`preço ≤ ${fullNum(+$('pmax').value)}`);
+    return f;
+  }
+
+  function emptyWhy() {
+    if (!$('world').value) return 'Escolha o mundo lá em cima: sem preço carregado não dá para saber quem é candidato.';
+    if (!prices.size) return 'Os preços do mundo não carregaram — recarregue pela barra de estado.';
+    if (scan.at && scan.done) {
+      return `Varri ${scan.done} ${scan.done === 1 ? 'item' : 'itens'} em ${scan.world} e nenhum tinha oferta`
+        + ` destacada do bloco base${scan.errs ? ` (${scan.errs} falharam na API)` : ''}.`
+        + ' Aumente “Máx. de itens” ou afrouxe os filtros de cima e varra de novo.';
+    }
+    const n = scanList().length;
+    if (n) return `${n} candidatos prontos. Clique em “varrer livros ⟳” — a lista só enche depois da varredura.`;
+    const f = whichFilters();
+    const t = $('tier').value;
+    if (t === '0') return 'O filtro de classe está em “Sem classe”, e item sem classe não tem tier — troque para “Forjável (qualquer)”.';
+    return 'Nenhum candidato' + (f.length ? ` com ${f.join(', ')}` : '')
+      + `. Candidato é item forjável com ${Math.max(4, parseFloat($('snmin').value) || 4)}+ ofertas de venda no mundo;`
+      + ' limpe os filtros de cima ou baixe “Ofertas mín”.';
+  }
+
   function renderScan() {
     const tbl = $('sctbl');
     const stale = scan.world && scan.world !== $('world').value;
@@ -1374,14 +1405,14 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       : scan.at
         ? `varredura ${agoTs(scan.at / 1000)[0]} em <b>${scan.world}</b> · ${scan.done} itens
            · ${scanRows.length} com marca${scan.errs ? ` · ${scan.errs} falharam` : ''}`
-        : `${scanList().length} candidatos com os filtros de cima
-           (~${Math.ceil(scanList().length * SCAN_DELAY / 60000)} min varrendo tudo)`;
+        : scanList().length
+          ? `${scanList().length} candidatos com os filtros de cima
+             (~${Math.ceil(scanList().length * SCAN_DELAY / 60000)} min varrendo tudo)`
+          : 'nenhum candidato — veja abaixo';
 
     if (!scanRows.length) {
       tbl.innerHTML = `<caption class="na" style="padding:32px">${
-        scan.running ? 'varrendo…'
-          : scan.at ? 'Nenhuma oferta marcada nos itens varridos.'
-          : 'Ajuste os filtros de cima e clique em “varrer livros”.'}</caption>`;
+        scan.running ? 'varrendo…' : emptyWhy()}</caption>`;
       return;
     }
 
