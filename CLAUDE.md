@@ -101,6 +101,10 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   uncommon 5–25%, semi-rare 1–5%, rare 0,5–1%, very rare <0,5%. Escolher um
   ponto dentro do intervalo seria inventar precisão. Todo o cálculo vive em
   `tibia-mcp/loot.py`; não reintroduzir tabelas de probabilidade fixas.
+- **`market.html` abre num mundo, nunca em "— escolha —".** Mundo salvo →
+  **Gentebra** (mesma regra do `index.html`). Sem mundo escolhido a página é um
+  beco: status pedindo mundo, tabela vazia e o scanner de tiers sem candidato
+  nenhum — foi exatamente assim que a aba Tiers pareceu quebrada em 2026-09.
 - **Preço de Market vem da API, não do repositório.** `api.tibiamarket.top`
   (Tibia Market Tracker, MIT, sem token, CORS liberado) cobre os 113 mundos.
   `market.html` busca a cada carregamento e guarda só em memória — preço

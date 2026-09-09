@@ -278,7 +278,7 @@
     Preços e ofertas do Market ao vivo, do
     <a class="xlink" href="https://www.tibiamarket.top/" target="_blank" rel="noopener">Tibia Market Tracker</a>.
     Nada de preço fica salvo no repositório — cada carregamento busca na API.
-    Escolha o mundo primeiro: preço de Market é por mundo.
+    Preço de Market é por mundo: abre em Gentebra e lembra o que você escolher.
   </p>
 
   <div class="controls">
@@ -1329,7 +1329,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   function restoreScan() {
     try {
       const d = JSON.parse(localStorage.getItem(SCAN_KEY) || 'null');
-      if (!d) return;
+      if (!d || !d.done) return;   // registro de varredura vazia: ignora
       scan = { ...scan, world: d.world, at: d.at, done: d.done, total: d.total, errs: d.errs || 0 };
       scanRows = (d.rows || []).map((r) => ({ ...r, it: BY_ID.get(r.id) })).filter((r) => r.it);
     } catch (_) {}
@@ -1340,6 +1340,9 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     if (!w || scan.running) return;
     const cap = Math.max(1, parseFloat($('smax').value) || 100);
     const list = scanList().slice(0, cap);
+    // varrer zero item não é resultado: carimbar isso como varredura recente
+    // deixava a linha dizendo "0 itens" e bloqueava a automática por 6h
+    if (!list.length) { renderScan(); return; }
     scan = { world: w, at: Date.now(), done: 0, total: list.length, errs: 0, running: true, stop: false };
     scanRows = [];
     renderScan();
@@ -1396,7 +1399,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   function emptyWhy() {
     if (!$('world').value) return 'Escolha o mundo lá em cima: sem preço carregado não dá para saber quem é candidato.';
     if (!prices.size) return 'Os preços do mundo não carregaram — recarregue pela barra de estado.';
-    if (scan.at && scan.done) {
+    if (scan.at && scan.done && scan.world === $('world').value) {
       return `Varri ${scan.done} ${scan.done === 1 ? 'item' : 'itens'} em ${scan.world} e nenhum tinha oferta`
         + ` saltando ${jumpVal()}× sobre o bloco base${scan.errs ? ` — e ${scan.errs} livros nem chegaram (a API cortou)` : ''}.`
         + ' Baixe o “Salto mín” para 1,5, aumente “Máx. de itens” ou afrouxe os filtros de cima, e varra de novo.';
@@ -1424,7 +1427,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
 
   function renderScan() {
     const tbl = $('sctbl');
-    const stale = scan.world && scan.world !== $('world').value;
+    const stale = !!scan.world && scan.world !== $('world').value;
     const left = Math.max(0, scan.total - scan.done);
 
     $('sstop').hidden = !scan.running;
@@ -1432,8 +1435,9 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     $('sprog').innerHTML = scan.running
       ? `varrendo <b>${scan.done}/${scan.total}</b> · faltam ~${Math.ceil(left * SCAN_DELAY / 60000)} min
          · ${scanRows.length} com marca${scan.errs ? ` · <span class="err">${scan.errs} falharam</span>` : ''}`
-      : scan.at
-        ? `varredura ${agoTs(scan.at / 1000)[0]} em <b>${scan.world}</b> · ${scan.done} itens
+      : scan.at && scan.done
+        ? `varredura ${agoTs(scan.at / 1000)[0]} em <b>${scan.world}</b>${
+             stale ? ' <span class="err">(outro mundo)</span>' : ''} · ${scan.done} itens
            · ${scanRows.length} com marca${scan.errs ? ` · ${scan.errs} falharam` : ''}`
         : scanList().length
           ? `${scanList().length} candidatos com os filtros de cima
@@ -1583,6 +1587,13 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   });
 
   state.restore();
+  // sem mundo escolhido a página inteira fica num beco: status pedindo mundo,
+  // tabela vazia, scanner sem candidato. Mesma regra do index.html — mundo
+  // salvo, senão Gentebra (o mundo do dono).
+  if (!$('world').value) {
+    $('world').value = M.worlds.includes('Gentebra') ? 'Gentebra' : M.worlds[0];
+    state.save();
+  }
   const qParam = urlParam('q');
   if (qParam !== null) $('q').value = qParam;
 
