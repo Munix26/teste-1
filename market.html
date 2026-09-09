@@ -113,6 +113,16 @@
   .sell { color: #f0a868; }
   .tier { color: #d4af37; font-size: 0.72rem; }
 
+  /* marca de chute: tracejada de propósito, para não passar por dado */
+  .guess {
+    color: #c9a3ff; font-size: 0.68rem; cursor: help; white-space: nowrap;
+    border: 1px dashed #5b4a80; border-radius: 4px; padding: 0 4px; margin-left: 6px;
+  }
+  .bookctl {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 0.78rem; color: #8b93a7; margin-bottom: 8px;
+  }
+
   .legend { color: #79829a; font-size: 0.76rem; margin-top: 16px; }
 
   /* ── barra de estado da API ── */
@@ -624,20 +634,83 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   const kv = (k, v) => `<div class="kv"><span class="k">${k}</span>${
     v === null || v === undefined || v === '' ? NA : v}</div>`;
 
-  function book(title, offers, cls) {
+  // ── marca "tier?" no livro de ofertas ─────────────────────────────────
+  // A API não diz o tier de cada oferta: o livro vem por object type id, e t0
+  // e t3 entram na mesma lista (conferido em /market_board, /market_values e
+  // /item_metadata). O único sinal que sobra é o preço, então isto é CHUTE,
+  // não dado — e a marca é tracejada para lembrar disso.
+  //
+  // Regra: só item forjável (em item sem classe não existe tier para adivinhar),
+  // só na ponta de venda (do lado da compra os lances de 1 gp dominam os saltos
+  // e o sinal vira ruído), com pelo menos 4 ofertas. Ordena por preço, acha o
+  // maior salto entre vizinhos deixando ao menos 2 ofertas no bloco de baixo e,
+  // se esse salto for >= TIER_JUMP, marca tudo dali para cima.
+  //
+  // O 2× saiu de medição, não de gosto: em 55 livros de Gentebra (2026-09), a
+  // regra marcou 15% dos itens forjáveis e 5% dos sem classe — e item sem
+  // classe não tem tier, então esses 5% são o piso de erro. Com 1,5× virava
+  // 24% × 14% (quase não separa) e com 2,5× só sobravam 9% dos forjáveis.
+  const TIER_JUMP = 2;
+
+  function tierCut(it, offers) {
+    if (!it || !it.tier || !offers || offers.length < 4) return null;
+    const ps = offers.map((o) => o.price).filter((p) => p > 0).sort((a, b) => a - b);
+    if (ps.length < 4) return null;
+    let best = 0, cut = null;
+    for (let i = 2; i < ps.length; i++) {
+      const r = ps[i] / ps[i - 1];
+      if (r > best) { best = r; cut = ps[i]; }
+    }
+    return best >= TIER_JUMP ? cut : null;
+  }
+
+  function book(title, offers, cls, cut) {
     if (!offers || !offers.length) return `<div class="book"><h3>${title}</h3><p class="na">nenhuma oferta</p></div>`;
-    const rows = offers.slice(0, 12).map((o) => {
+    const marked = (o) => cut !== null && cut !== undefined && o.price >= cut;
+    const list = bookOnlyTier && cut != null ? offers.filter(marked) : offers;
+    const rows = list.slice(0, 12).map((o) => {
       const d = Math.round((o.time * 1000 - Date.now()) / 8.64e7);
       return `<tr>
-        <td class="num ${cls}">${fullNum(o.price)}</td>
+        <td class="num ${cls}">${fullNum(o.price)}${marked(o)
+          ? `<span class="guess" title="Chute pelo preço: esta oferta abre um salto de ${TIER_JUMP}× ou mais sobre o bloco mais barato deste item forjável. A API não informa o tier de cada oferta.">tier?</span>`
+          : ''}</td>
         <td class="num dim">${fullNum(o.amount)}×</td>
         <td class="num dim">${d > 0 ? d + 'd' : '—'}</td>
       </tr>`;
     }).join('');
-    return `<div class="book"><h3>${title} (${offers.length})</h3><table>
+    const head = `${title} (${list.length}${list.length !== offers.length ? ` de ${offers.length}` : ''})`;
+    return `<div class="book"><h3>${head}</h3>${list.length ? `<table>
       <thead><tr><th class="num nosort">Preço</th><th class="num nosort">Qtd</th><th class="num nosort">Expira</th></tr></thead>
-      <tbody>${rows}</tbody></table>
-      ${offers.length > 12 ? `<p class="legend">+${offers.length - 12} ofertas</p>` : ''}</div>`;
+      <tbody>${rows}</tbody></table>` : '<p class="na">nenhuma oferta marcada</p>'}
+      ${list.length > 12 ? `<p class="legend">+${list.length - 12} ofertas</p>` : ''}</div>`;
+  }
+
+  // o livro fica guardado para o filtro redesenhar sem chamar a API de novo
+  let bookData = null;
+  let bookOnlyTier = false;
+  let detailId = null;   // item aberto agora: descarta resposta de painel antigo
+
+  function renderBook() {
+    const e = $('p-book');
+    if (!e || !bookData) return;
+    const { it, b } = bookData;
+    const cut = tierCut(it, b.sellers);
+    const n = cut === null ? 0 : (b.sellers || []).filter((o) => o.price >= cut).length;
+    const ctl = cut === null ? '' : `<div class="bookctl">
+      <label class="chk"><input type="checkbox" id="bkonly"${bookOnlyTier ? ' checked' : ''} />
+        só as marcadas</label>
+      <span>${n} de ${b.sellers.length} ofertas de venda com a marca</span></div>`;
+    e.className = '';
+    e.innerHTML = ctl
+      + `<div class="books">${book('Vendendo', b.sellers, 'sell', cut)}${book('Comprando', b.buyers, 'buy')}</div>`
+      + (it.tier ? `<p class="legend">A marca <span class="guess">tier?</span> é chute pelo preço, não dado:
+          a API entrega o livro por item, sem separar tier. Só aparece na ponta de venda de item
+          forjável (aqui, t≤${it.tier}) com 4+ ofertas, quando o maior salto de preço do livro é de
+          ${TIER_JUMP}× ou mais — dali para cima. Erra: em 21 itens sem classe (onde tier nem existe)
+          a regra ainda marcou 1.</p>`
+        : `<p class="legend">Item sem classe: não existe tier para marcar.</p>`);
+    const c = $('bkonly');
+    if (c) c.onchange = () => { bookOnlyTier = c.checked; renderBook(); };
   }
 
   // sparkline de 30 dias: duas linhas (venda e compra) num viewBox fixo
@@ -717,6 +790,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     `;
     $('overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+    detailId = it.id;
 
     // as três chamadas pesadas só saem quando o painel abre, uma por item
     const q = `server=${encodeURIComponent(w)}&item_id=${it.id}`;
@@ -726,9 +800,10 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     api(`/item_history?${q}&start_days_ago=30`)
       .then((h) => fill('p-hist', chart)(h.map(clean))).catch(fail('p-hist'));
 
-    api(`/market_board?${q}`).then(fill('p-book', (b) =>
-      `<div class="books">${book('Vendendo', b.sellers, 'sell')}${book('Comprando', b.buyers, 'buy')}</div>`
-    )).catch(fail('p-book'));
+    bookData = null;
+    api(`/market_board?${q}`)
+      .then((b) => { if (detailId !== it.id) return; bookData = { it, b }; renderBook(); })
+      .catch(fail('p-book'));
 
     api(`/item_activity?${q}`).then(fill('p-act', (a) => {
       const top = a.slice(0, 8);
