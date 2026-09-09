@@ -133,6 +133,7 @@
     padding: 8px 12px; margin-bottom: 12px; background: #171a22;
   }
   .status.err { border-color: rgba(248,113,113,0.4); color: #f87171; }
+  .srvpick .err { color: #f87171; }
   .status .fresh { color: #7dd3a0; }
   .status .stale { color: #f0a868; }
   .status button {
@@ -379,6 +380,8 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
         <input id="snmin" type="number" placeholder="4" min="4" style="width:72px" /></span>
       <span class="ctl"><label for="smax">Máx. de itens</label>
         <input id="smax" type="number" placeholder="100" min="1" style="width:84px" /></span>
+      <span class="ctl"><label for="sjump" title="Quantas vezes a oferta precisa saltar sobre o bloco base para ganhar a marca">Salto mín</label>
+        <input id="sjump" type="number" placeholder="2" min="1.2" step="0.1" style="width:72px" /></span>
       <button class="go" id="sgo">varrer livros ⟳</button>
       <button class="clearbtn" id="sstop" hidden>■ parar</button>
       <span class="dim" id="sprog"></span>
@@ -393,10 +396,13 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       marca dali para cima). <b>É chute pelo preço</b>: em 21 itens sem classe,
       onde tier nem existe, a regra ainda marcou 1 — conte com ~1 em 20 falso.
       Um item só entra na lista se tiver oferta marcada.
-      A varredura é lenta de propósito: <code>/market_board</code> é uma chamada
-      por item e a API corta em ~1 a cada 2s, então o scanner espera 3s entre
-      itens (100 itens ≈ 5 min). Pode trocar de aba que ela continua; trocar de
-      mundo para. O resultado fica salvo e reaparece com a idade da varredura.
+      <b>A varredura começa sozinha</b> ao abrir a aba, se não houver resultado
+      do mundo atual das últimas 6 horas — os achados vão aparecendo enquanto
+      ela roda. É lenta por imposição da API: <code>/market_board</code> é uma
+      chamada por item e ela corta em ~1 a cada 2s, então o scanner espera 3s
+      entre itens (100 itens ≈ 5 min). Pode trocar de aba que continua; trocar
+      de mundo ou clicar em <b>parar</b> interrompe (e aí não recomeça sozinha).
+      O resultado fica salvo e reaparece com a idade da varredura.
     </p>
   </div>
 
@@ -528,6 +534,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       ({ prices, updated } = cache.get(w));
       showStatus(w);
       draw();
+      if (tab === 'scan') maybeAutoScan();
       return;
     }
 
@@ -543,6 +550,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       cache.set(w, { prices, updated });
       showStatus(w);
       draw();
+      if (tab === 'scan') maybeAutoScan();
     } catch (e) {
       prices = new Map();
       setStatus(`não deu para buscar os preços de <b>${w}</b>: ${e.message}`, true);
@@ -687,8 +695,13 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
   // 24% × 14% (quase não separa) e com 2,5× só sobravam 9% dos forjáveis.
   const TIER_JUMP = 2;
 
-  function tierCut(it, offers) {
+  // o 2x é o padrão medido, mas fica ajustável na aba Tiers: mercado apertado
+  // não produz salto nenhum, e aí ver os de 1,6x é melhor que ver lista vazia
+  const jumpVal = () => Math.max(1.2, parseFloat($('sjump').value) || TIER_JUMP);
+
+  function tierCut(it, offers, jump) {
     if (!it || !it.tier || !offers || offers.length < 4) return null;
+    const j = jump || jumpVal();
     const ps = offers.map((o) => o.price).filter((p) => p > 0).sort((a, b) => a - b);
     if (ps.length < 4) return null;
     let best = 0, cut = null;
@@ -696,7 +709,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       const r = ps[i] / ps[i - 1];
       if (r > best) { best = r; cut = ps[i]; }
     }
-    return best >= TIER_JUMP ? cut : null;
+    return best >= j ? cut : null;
   }
 
   function book(title, offers, cls, cut) {
@@ -707,7 +720,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       const d = Math.round((o.time * 1000 - Date.now()) / 8.64e7);
       return `<tr>
         <td class="num ${cls}">${fullNum(o.price)}${marked(o)
-          ? `<span class="guess" title="Chute pelo preço: esta oferta abre um salto de ${TIER_JUMP}× ou mais sobre o bloco mais barato deste item forjável. A API não informa o tier de cada oferta.">tier?</span>`
+          ? `<span class="guess" title="Chute pelo preço: esta oferta abre um salto de ${jumpVal()}× ou mais sobre o bloco mais barato deste item forjável. A API não informa o tier de cada oferta.">tier?</span>`
           : ''}</td>
         <td class="num dim">${fullNum(o.amount)}×</td>
         <td class="num dim">${d > 0 ? d + 'd' : '—'}</td>
@@ -741,7 +754,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       + (it.tier ? `<p class="legend">A marca <span class="guess">tier?</span> é chute pelo preço, não dado:
           a API entrega o livro por item, sem separar tier. Só aparece na ponta de venda de item
           forjável (aqui, t≤${it.tier}) com 4+ ofertas, quando o maior salto de preço do livro é de
-          ${TIER_JUMP}× ou mais — dali para cima. Erra: em 21 itens sem classe (onde tier nem existe)
+          ${jumpVal()}× ou mais — dali para cima. Erra: em 21 itens sem classe (onde tier nem existe)
           a regra ainda marcou 1.</p>`
         : `<p class="legend">Item sem classe: não existe tier para marcar.</p>`);
     const c = $('bkonly');
@@ -1331,26 +1344,32 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     scanRows = [];
     renderScan();
 
+    const jump = jumpVal();
     for (const it of list) {
       if (scan.stop || $('world').value !== w) break;
       let b = null;
-      for (let tryN = 0; tryN < 2 && !b; tryN++) {
+      // até 3 tentativas: 429 traz retry-after e é o caso comum
+      for (let tryN = 0; tryN < 3 && !b; tryN++) {
         try {
-          b = await api(`/market_board?server=${encodeURIComponent(w)}&item_id=${it.id}`);
-        } catch (e) {
-          if (tryN) scan.errs++;
-          else await sleep(8000);   // quase sempre 429: respira e tenta de novo
+          const r = await fetch(`${API}/market_board?server=${encodeURIComponent(w)}&item_id=${it.id}`);
+          if (r.ok) { b = await r.json(); break; }
+          await sleep(Math.min(20, +(r.headers.get('retry-after') || 6)) * 1000);
+        } catch (_) {
+          await sleep(6000);   // rede caiu no meio; tenta de novo
         }
       }
-      const cut = b && tierCut(it, b.sellers);
+      if (!b) scan.errs++;
+      const cut = b && tierCut(it, b.sellers, jump);
       if (cut != null) {
         const ps = b.sellers.map((o) => o.price);
         scanRows.push({
           it, n: b.sellers.length, base: Math.min(...ps),
           marks: b.sellers.filter((o) => o.price >= cut).sort((a, x) => a.price - x.price),
         });
+        saveScan();   // achado não pode morrer se a página recarregar no meio
       }
       scan.done++;
+      if (scan.done % 10 === 0) saveScan();
       renderScan();
       await sleep(SCAN_DELAY);
     }
@@ -1379,8 +1398,8 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     if (!prices.size) return 'Os preços do mundo não carregaram — recarregue pela barra de estado.';
     if (scan.at && scan.done) {
       return `Varri ${scan.done} ${scan.done === 1 ? 'item' : 'itens'} em ${scan.world} e nenhum tinha oferta`
-        + ` destacada do bloco base${scan.errs ? ` (${scan.errs} falharam na API)` : ''}.`
-        + ' Aumente “Máx. de itens” ou afrouxe os filtros de cima e varra de novo.';
+        + ` saltando ${jumpVal()}× sobre o bloco base${scan.errs ? ` — e ${scan.errs} livros nem chegaram (a API cortou)` : ''}.`
+        + ' Baixe o “Salto mín” para 1,5, aumente “Máx. de itens” ou afrouxe os filtros de cima, e varra de novo.';
     }
     const n = scanList().length;
     if (n) return `${n} candidatos prontos. Clique em “varrer livros ⟳” — a lista só enche depois da varredura.`;
@@ -1392,6 +1411,17 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
       + ' limpe os filtros de cima ou baixe “Ofertas mín”.';
   }
 
+  // abrir a aba já varre: a lista só existe depois da varredura, e tabela vazia
+  // esperando um clique parece feature quebrada. Só dispara quando não há
+  // resultado recente do mundo atual — parar no meio conta como resultado
+  // (runScan carimba scan.at ao sair), então nada reinicia sozinho.
+  const SCAN_FRESH = 6 * 3600e3;
+  function maybeAutoScan() {
+    if (scan.running || !$('world').value || !prices.size) return;
+    const fresh = scan.world === $('world').value && scan.at && Date.now() - scan.at < SCAN_FRESH;
+    if (!fresh) runScan();
+  }
+
   function renderScan() {
     const tbl = $('sctbl');
     const stale = scan.world && scan.world !== $('world').value;
@@ -1401,7 +1431,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     $('sgo').disabled = scan.running;
     $('sprog').innerHTML = scan.running
       ? `varrendo <b>${scan.done}/${scan.total}</b> · faltam ~${Math.ceil(left * SCAN_DELAY / 60000)} min
-         · ${scanRows.length} com marca`
+         · ${scanRows.length} com marca${scan.errs ? ` · <span class="err">${scan.errs} falharam</span>` : ''}`
       : scan.at
         ? `varredura ${agoTs(scan.at / 1000)[0]} em <b>${scan.world}</b> · ${scan.done} itens
            · ${scanRows.length} com marca${scan.errs ? ` · ${scan.errs} falharam` : ''}`
@@ -1474,6 +1504,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
     // entrar na aba com um item guardado do acesso anterior já busca por ele
     if (t === 'srv' && !cmpItem && !cmpHits.length) { pickCompare($('cmpq').value); return; }
     draw();
+    if (t === 'scan') maybeAutoScan();
   }
   const draw = () => (tab === 'itens' ? render()
     : tab === 'flip' ? renderFlip()
@@ -1516,7 +1547,7 @@ que os preços médios do mês sustentam — pico de momento, não rotina">
 
   $('sgo').onclick = runScan;
   $('sstop').onclick = () => { scan.stop = true; };
-  ['snmin', 'smax'].forEach((id) => $(id).addEventListener('input', () => {
+  ['snmin', 'smax', 'sjump'].forEach((id) => $(id).addEventListener('input', () => {
     if (!scan.running && !scan.at) renderScan();
   }));
   restoreScan();

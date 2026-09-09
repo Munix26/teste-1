@@ -144,7 +144,12 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   chamada seguida a 1/s já volta 429 (~1 a cada 2s sustentado). Daí a aba
   **Tiers**: ela varre livro por livro com passo de 3s e backoff de 8s no 429,
   do item mais caro para o mais barato, e só entra na lista item forjável cujo
-  livro tem oferta marcada. Com os filtros padrão em Gentebra dá ~312
+  livro tem oferta marcada. **Ela começa sozinha ao abrir a aba** (se não houver
+  resultado do mundo das últimas 6h): lista que só enche depois de um clique
+  escondido é indistinguível de feature quebrada. O salto mínimo é ajustável
+  ali (`Salto mín`, padrão o 2× medido) — mercado apertado não produz salto
+  nenhum, e ver os de 1,5× é melhor que ver lista vazia. Cada achado é salvo na
+  hora, então recarregar no meio da varredura não perde o que já apareceu. Com os filtros padrão em Gentebra dá ~312
   candidatos (forjável com 4+ ofertas de venda) ≈ 16 min de varredura, por isso
   o teto de itens e o resultado salvo em `localStorage` com a idade. **Não
   existe atalho pelo `market_values`**: testei `month_highest_sell /
