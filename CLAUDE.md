@@ -54,7 +54,7 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
 | `spawns.html` + `hunts-data.js` | 442 spawns com criaturas e médias calculadas |
 | `central.html` + `hunt-recs-data.js` | recomendações de hunt por level/voc curadas de bases da comunidade (TibiaBuddy, TibiaVault — coletadas 2026-08-16, fonte linkada em cada linha; **não inventar entradas: só adicionar com fonte real**) |
 | `quests.html` + `quests-data.js` | 371 quests do wiki com recompensas linkando o catálogo de itens |
-| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) + aba "Flips" (scanner de oportunidades de compra-e-revenda no mundo carregado, com parâmetros persistentes; `?tab=flip` abre direto) |
+| `market.html` + `market-items.js` | preços e ofertas do Market **ao vivo** (api.tibiamarket.top) nos 113 mundos + custo de imbuement pelo preço do mundo escolhido + aba "Por servidor" (um item nos 113 mundos de uma vez) + aba "Flips" (scanner de oportunidades de compra-e-revenda no mundo carregado, com parâmetros persistentes; `?tab=flip` abre direto) + filtro de classe/tier (1–4, forjável ou sem classe) valendo nas abas Itens e Flips + marca `tier?` (chute pelo preço) no livro de ofertas do item, com filtro "só as marcadas" + aba "Tiers" (varre os livros dos candidatos e lista quem tem oferta marcada) |
 | `tibia-mcp/gen_quests.py` | regenera `quests-data.js` (itens de recompensa saem dos [[links]] do wikitext) |
 | `tibia-mcp/gen_market.py` | regenera `market-items.js` (só metadados: id, nome, categoria, tier, NPC — **preço nenhum**) |
 | `tibia-mcp/tibiawiki.dump` | banco PostgreSQL completo (28.967 páginas do wiki) |
@@ -101,6 +101,10 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   uncommon 5–25%, semi-rare 1–5%, rare 0,5–1%, very rare <0,5%. Escolher um
   ponto dentro do intervalo seria inventar precisão. Todo o cálculo vive em
   `tibia-mcp/loot.py`; não reintroduzir tabelas de probabilidade fixas.
+- **`market.html` abre num mundo, nunca em "— escolha —".** Mundo salvo →
+  **Gentebra** (mesma regra do `index.html`). Sem mundo escolhido a página é um
+  beco: status pedindo mundo, tabela vazia e o scanner de tiers sem candidato
+  nenhum — foi exatamente assim que a aba Tiers pareceu quebrada em 2026-09.
 - **Preço de Market vem da API, não do repositório.** `api.tibiamarket.top`
   (Tibia Market Tracker, MIT, sem token, CORS liberado) cobre os 113 mundos.
   `market.html` busca a cada carregamento e guarda só em memória — preço
@@ -123,7 +127,39 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   está caro, não onde arbitrar.
 - **Item forjável não vem separado por tier.** `market_values` devolve um
   preço por object type id; t0 e t3 entram no mesmo número. Não usar para
-  comparar Falcon Bow t1 vs t2.
+  comparar Falcon Bow t1 vs t2. **Nenhum endpoint** informa o tier de uma
+  oferta: `/market_board` devolve cada oferta com `price`, `amount` e `time` e
+  mais nada, e `/item_metadata` só traz a classe do item (o `tier: 4` do
+  Soulbleeder é "forjável até t4", não o tier de uma peça). Enquanto a fonte
+  for essa API, listar ou filtrar oferta por tier é impossível — o que dá é
+  chutar pelo preço (ver a marca `tier?` abaixo).
+- **A marca `tier?` do livro de ofertas é chute, e o chute é medido.** Em item
+  forjável com 4+ ofertas de venda, `market.html` acha o maior salto de preço
+  entre ofertas vizinhas (deixando ao menos 2 no bloco de baixo) e, se ele for
+  **≥ 2×**, marca dali para cima; o filtro "só as marcadas" isola essas ofertas.
+  O 2× saiu de amostragem, não de gosto: em 55 livros de Gentebra (2026-09) a
+  regra marcou **15% dos itens forjáveis e 5% dos sem classe** — e item sem
+  classe não tem tier, então esses 5% são o piso de erro. Com 1,5× era 24% × 14%
+  (quase não separa), com 2,5× caía para 9% dos forjáveis. Só vale na ponta de
+  venda: do lado da compra os lances de 1 gp dominam os saltos. A marca é
+  tracejada de propósito, para não passar por dado.
+- **`/market_board` é uma chamada por item e tem rate limit apertado**: o
+  cabeçalho diz `x-ratelimit-limit: 1` com `retry-after`, e na prática a 4ª
+  chamada seguida a 1/s já volta 429 (~1 a cada 2s sustentado). Daí a aba
+  **Tiers**: ela varre livro por livro com passo de 3s e backoff de 8s no 429,
+  do item mais caro para o mais barato, e só entra na lista item forjável cujo
+  livro tem oferta marcada. **Ela começa sozinha ao abrir a aba** (se não houver
+  resultado do mundo das últimas 6h): lista que só enche depois de um clique
+  escondido é indistinguível de feature quebrada. O salto mínimo é ajustável
+  ali (`Salto mín`, padrão o 2× medido) — mercado apertado não produz salto
+  nenhum, e ver os de 1,5× é melhor que ver lista vazia. Cada achado é salvo na
+  hora, então recarregar no meio da varredura não perde o que já apareceu. Com os filtros padrão em Gentebra dá ~312
+  candidatos (forjável com 4+ ofertas de venda) ≈ 16 min de varredura, por isso
+  o teto de itens e o resultado salvo em `localStorage` com a idade. **Não
+  existe atalho pelo `market_values`**: testei `month_highest_sell /
+  month_lowest_sell` como proxy nos 55 livros amostrados e não prevê nada — a
+  lista fica dominada por lixo (Strange Helmet 1389×, Bat Wing 114×) e perde
+  Falcon Bow (1,25×), que tem marca no livro.
 - **Taxa do Market: 2% do total por oferta criada (mín. 20 gp, máx. 250k),
   nas DUAS pontas** — buy e sell offer pagam, ao criar, sem devolução no
   cancelamento (wiki, "The Market (Object)"; era 1% até 2023). A aba Flips
