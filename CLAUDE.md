@@ -18,8 +18,10 @@ Ferramenta pessoal de consulta e análise de dados de Tibia, focada em
   funciona); Sea of Light feita; Liquid Black "The First Visitor" feita
   (pré-req da Secret Library ok); Blood Brothers m1–4 e Grimvale (An Ancient
   Feud + The Curse Spreads) feitas → Katex Blood Tongue liberado; **Explorer
-  Society em Novice** (pickaxe não devolvida) — é o bloqueio da Dream Courts,
-  que exige Relic Hunter. **Cults of Tibia inteira do zero** (no quest log
+  Society: Novice fechado em 2026-08-18**, com as 3 missões de Journeyman
+  aceitas (Lizard Urn, Bonelord Secret, Orc Powder) — entregando as 3 vira
+  Relic Hunter; depois falta só a Undersea Kingdom (Calassa), a exigência
+  real da Dream Courts. **Cults of Tibia inteira do zero** (no quest log
   só o Zathroth Remnants, que aparece sozinho) — irrelevante pras 7 quests:
   a Prosperity começa direto no Gareth, sem pré-requisito. World change
   Deepling estava no **stage 3** em 2026-08-17 (muda com o tempo —
