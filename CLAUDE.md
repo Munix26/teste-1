@@ -25,6 +25,19 @@ Ferramenta pessoal de consulta e análise de dados de Tibia, focada em
   Deepling estava no **stage 3** em 2026-08-17 (muda com o tempo —
   perguntar antes de mandar pra Fiehonja).
   O roteiro dessas quests vive em `roteiro.html`.
+- Acessos de hunt conferidos no quest log em 2026-09-14 (os que decidem se
+  uma task do Task Board é farmável ou tem que ser comprada no Market):
+  **Rathleton/Oramond = rank Citizen** (301 casts, 3 voting rights) → o
+  Mystlic Flame do Workshop Quarter abre, ou seja **Underground Glooth
+  Factory e Oramond Dungeon liberados**; **The Order of the Lion em
+  andamento pós-morte do Fugue** (reunião Drume × Kesar já feita, falta o
+  Drume) → **Bounac liberado pra hunt**, que é de onde vem o Lion Crest;
+  **Liquid Black "The First Visitor" ✔** (agora na Dark Disintegration,
+  atrás do Heart of the Sea pro Qjell) → **Fiehonja ok**. Continuam
+  **não confirmadas**: Twenty Miles Beneath the Sea (é o que abre o
+  Seacrest Grounds — único spawn de Seacrest Serpent no jogo), Within the
+  Tides (Marapur: Great Pearl Fan Reef e Temple of the Moon Goddess) e a
+  Secret Library inteira (o pré-req já está ok, a quest não).
 - Objetivos de equipamento: Soulbleeder, Soulshell, Pair of Soulstalkers
   (Soul War) e Alicorn Headguard (Primal Ordeal/Hazard).
 - Uso é **pessoal** — o site não deve ir a público (a proteção da Vercel
