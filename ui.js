@@ -3,17 +3,126 @@
 (function () {
   'use strict';
 
-  // GIF oficial do TibiaWiki: Special:FilePath resolve File:<Nome>.gif sem
-  // precisar conhecer o hash do CDN. Se o arquivo não existir (nomes de
-  // imagem fora do padrão, ~5% dos casos), o onerror esconde a imagem e a
-  // caixa mantém o lugar — nada quebra offline.
-  const IMG = (name) =>
-    'https://tibia.fandom.com/wiki/Special:FilePath/' +
-    encodeURIComponent(String(name).trim().replace(/ /g, '_')) + '.gif';
+  // ── sprite do TibiaWiki ───────────────────────────────────────────────
+  // Vai direto ao CDN (static.wikia.nocookie.net) em vez de passar pelo
+  // Special:FilePath: o domínio tibia.fandom.com está atrás do Cloudflare e
+  // responde o desafio "Just a moment..." (403) a requisição de <img>, então
+  // TODA sprite falhava e só sobrava o "·" do .noimg. O CDN serve a imagem
+  // sem desafio nenhum (e ainda economiza o redirect por sprite).
+  //
+  // O caminho é o do MediaWiki: images/<h0>/<h0h1>/<Arquivo>, com h = md5 do
+  // nome do arquivo (espaço → underscore). O sufixo /revision/latest é
+  // obrigatório no Fandom; ?path-prefix=en escolhe o wiki inglês.
+  // `md5` abaixo existe só para montar esse caminho — nada de segurança.
+  function md5(str) {
+    const b = [];
+    for (let i = 0; i < str.length; i++) {
+      let c = str.charCodeAt(i);
+      if (c < 0x80) b.push(c);
+      else if (c < 0x800) b.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+      else if (c < 0xd800 || c >= 0xe000)
+        b.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+      else {
+        c = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(++i) & 0x3ff));
+        b.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63),
+               0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+      }
+    }
+    const bits = b.length * 8;
+    b.push(0x80);
+    while (b.length % 64 !== 56) b.push(0);
+    const x = [];
+    for (let i = 0; i < b.length; i += 4)
+      x.push(b[i] | (b[i + 1] << 8) | (b[i + 2] << 16) | (b[i + 3] << 24));
+    x.push(bits & 0xffffffff, Math.floor(bits / 4294967296));
 
+    const add = (a, c) => {
+      const l = (a & 0xffff) + (c & 0xffff);
+      return ((((a >> 16) + (c >> 16) + (l >> 16)) << 16) | (l & 0xffff)) >>> 0;
+    };
+    const rol = (n, c) => (n << c) | (n >>> (32 - c));
+    const cmn = (q, a, c, v, s, t) => add(rol(add(add(a, q), add(v, t)), s), c);
+    const ff = (a, c, d, e, v, s, t) => cmn((c & d) | (~c & e), a, c, v, s, t);
+    const gg = (a, c, d, e, v, s, t) => cmn((c & e) | (d & ~e), a, c, v, s, t);
+    const hh = (a, c, d, e, v, s, t) => cmn(c ^ d ^ e, a, c, v, s, t);
+    const ii = (a, c, d, e, v, s, t) => cmn(d ^ (c | ~e), a, c, v, s, t);
+
+    let a = 1732584193, d = -271733879, c = -1732584194, e = 271733878;
+    for (let i = 0; i < x.length; i += 16) {
+      const oa = a, od = d, oc = c, oe = e;
+      a=ff(a,d,c,e,x[i],7,-680876936);    e=ff(e,a,d,c,x[i+1],12,-389564586);
+      c=ff(c,e,a,d,x[i+2],17,606105819);  d=ff(d,c,e,a,x[i+3],22,-1044525330);
+      a=ff(a,d,c,e,x[i+4],7,-176418897);  e=ff(e,a,d,c,x[i+5],12,1200080426);
+      c=ff(c,e,a,d,x[i+6],17,-1473231341);d=ff(d,c,e,a,x[i+7],22,-45705983);
+      a=ff(a,d,c,e,x[i+8],7,1770035416);  e=ff(e,a,d,c,x[i+9],12,-1958414417);
+      c=ff(c,e,a,d,x[i+10],17,-42063);    d=ff(d,c,e,a,x[i+11],22,-1990404162);
+      a=ff(a,d,c,e,x[i+12],7,1804603682); e=ff(e,a,d,c,x[i+13],12,-40341101);
+      c=ff(c,e,a,d,x[i+14],17,-1502002290);d=ff(d,c,e,a,x[i+15],22,1236535329);
+
+      a=gg(a,d,c,e,x[i+1],5,-165796510);  e=gg(e,a,d,c,x[i+6],9,-1069501632);
+      c=gg(c,e,a,d,x[i+11],14,643717713); d=gg(d,c,e,a,x[i],20,-373897302);
+      a=gg(a,d,c,e,x[i+5],5,-701558691);  e=gg(e,a,d,c,x[i+10],9,38016083);
+      c=gg(c,e,a,d,x[i+15],14,-660478335);d=gg(d,c,e,a,x[i+4],20,-405537848);
+      a=gg(a,d,c,e,x[i+9],5,568446438);   e=gg(e,a,d,c,x[i+14],9,-1019803690);
+      c=gg(c,e,a,d,x[i+3],14,-187363961); d=gg(d,c,e,a,x[i+8],20,1163531501);
+      a=gg(a,d,c,e,x[i+13],5,-1444681467);e=gg(e,a,d,c,x[i+2],9,-51403784);
+      c=gg(c,e,a,d,x[i+7],14,1735328473); d=gg(d,c,e,a,x[i+12],20,-1926607734);
+
+      a=hh(a,d,c,e,x[i+5],4,-378558);     e=hh(e,a,d,c,x[i+8],11,-2022574463);
+      c=hh(c,e,a,d,x[i+11],16,1839030562);d=hh(d,c,e,a,x[i+14],23,-35309556);
+      a=hh(a,d,c,e,x[i+1],4,-1530992060); e=hh(e,a,d,c,x[i+4],11,1272893353);
+      c=hh(c,e,a,d,x[i+7],16,-155497632); d=hh(d,c,e,a,x[i+10],23,-1094730640);
+      a=hh(a,d,c,e,x[i+13],4,681279174);  e=hh(e,a,d,c,x[i],11,-358537222);
+      c=hh(c,e,a,d,x[i+3],16,-722521979); d=hh(d,c,e,a,x[i+6],23,76029189);
+      a=hh(a,d,c,e,x[i+9],4,-640364487);  e=hh(e,a,d,c,x[i+12],11,-421815835);
+      c=hh(c,e,a,d,x[i+15],16,530742520); d=hh(d,c,e,a,x[i+2],23,-995338651);
+
+      a=ii(a,d,c,e,x[i],6,-198630844);    e=ii(e,a,d,c,x[i+7],10,1126891415);
+      c=ii(c,e,a,d,x[i+14],15,-1416354905);d=ii(d,c,e,a,x[i+5],21,-57434055);
+      a=ii(a,d,c,e,x[i+12],6,1700485571); e=ii(e,a,d,c,x[i+3],10,-1894986606);
+      c=ii(c,e,a,d,x[i+10],15,-1051523);  d=ii(d,c,e,a,x[i+1],21,-2054922799);
+      a=ii(a,d,c,e,x[i+8],6,1873313359);  e=ii(e,a,d,c,x[i+15],10,-30611744);
+      c=ii(c,e,a,d,x[i+6],15,-1560198380);d=ii(d,c,e,a,x[i+13],21,1309151649);
+      a=ii(a,d,c,e,x[i+4],6,-145523070);  e=ii(e,a,d,c,x[i+11],10,-1120210379);
+      c=ii(c,e,a,d,x[i+2],15,718787259);  d=ii(d,c,e,a,x[i+9],21,-343485551);
+
+      a = add(a, oa); d = add(d, od); c = add(c, oc); e = add(e, oe);
+    }
+    let out = '';
+    [a, d, c, e].forEach((w) => {
+      for (let i = 0; i < 4; i++)
+        out += ((w >> (i * 8 + 4)) & 15).toString(16) + ((w >> (i * 8)) & 15).toString(16);
+    });
+    return out;
+  }
+
+  // Se o arquivo não existir (nomes fora do padrão + páginas de lista do
+  // wiki, ~4% dos itens), o onerror esconde a imagem e a caixa mantém o
+  // lugar — nada quebra offline.
+  const IMG = (name) => {
+    const file = String(name).trim().replace(/ /g, '_') + '.gif';
+    const h = md5(file);
+    return 'https://static.wikia.nocookie.net/tibia/images/' +
+      h[0] + '/' + h.slice(0, 2) + '/' + encodeURIComponent(file) +
+      '/revision/latest?path-prefix=en';
+  };
+
+  // referrerpolicy="no-referrer" é obrigatório: o CDN do Fandom tem proteção
+  // contra hotlink e, quando vê Referer de outro site, responde 404 com um
+  // JPEG "imagem indisponível" de 300×171 — que o navegador desenha como se
+  // fosse a sprite (o onerror nem dispara). Sem Referer ele serve o arquivo
+  // de verdade. De quebra, não vaza a URL do site.
+  // O mesmo JPEG de 300×171 volta (com 404) quando o arquivo não existe no
+  // wiki — ~4% dos itens, que são páginas de lista ("Alicorn Set") sem sprite
+  // nenhuma. Como o navegador desenha esse 404, o onerror não serve: quem
+  // manda a imagem para o .noimg é a medida no onload. Sprite de Tibia é
+  // múltipla de 32; 300×171 só existe no placeholder.
   window.spr = (name, big) =>
     `<span class="spr${big ? ' spr-big' : ''}"><img loading="lazy" alt="" ` +
-    `src="${IMG(name)}" onerror="this.parentElement.classList.add('noimg')"></span>`;
+    `referrerpolicy="no-referrer" src="${IMG(name)}" ` +
+    `onload="if(this.naturalWidth===300&&this.naturalHeight===171)` +
+    `this.parentElement.classList.add('noimg')" ` +
+    `onerror="this.parentElement.classList.add('noimg')"></span>`;
 
   // ── busca com OR ──────────────────────────────────────────────────────
   // "werelion|cobra" acha qualquer um dos termos (é o que os presets usam)

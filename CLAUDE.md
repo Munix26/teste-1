@@ -86,7 +86,27 @@ PGPASSWORD=tibiawiki pg_restore -h 127.0.0.1 -U tibiawiki -d tibiawiki --clean -
   barra "Ordenar" reproduz os `<th data-k>` num `<select>` e clica no `<th>`
   de verdade — cada página mantém a própria regra de sentido padrão, e nada
   precisou ser duplicado.
+- **Sprite vem do CDN do Fandom com `referrerpolicy="no-referrer"`** (`IMG()`
+  em `ui.js`). Duas armadilhas, as duas verificadas em Chromium real:
+  1. `tibia.fandom.com/wiki/Special:FilePath/<Nome>.gif` **não serve mais
+     imagem** — o domínio está atrás do Cloudflare e responde o desafio
+     "Just a moment..." (403) a requisição de `<img>`. Era por isso que toda
+     sprite do site sumiu. O caminho direto do CDN
+     (`static.wikia.nocookie.net/tibia/images/<h0>/<h0h1>/<Arquivo>/revision/latest?path-prefix=en`,
+     com `h` = md5 do nome do arquivo com `_` no lugar do espaço) passa
+     limpo e ainda poupa um redirect por sprite. A implementação de md5 em
+     `ui.js` existe **só para montar esse caminho** — foi conferida contra o
+     `hashlib` nos 11.523 nomes (itens + criaturas), zero divergência.
+  2. O CDN tem **proteção contra hotlink**: com `Referer` de outro site ele
+     devolve 404 com um JPEG "imagem indisponível" de **300×171**, que o
+     navegador desenha como se fosse a sprite — o `onerror` nem dispara. Sem
+     `Referer` ele serve o arquivo de verdade. Daí o `referrerpolicy` e o
+     `onload` que manda para `.noimg` o que medir 300×171 (sprite de Tibia é
+     múltipla de 32). Não remover nenhum dos dois.
 
+  `<Nome>.gif` cobre **96% dos itens e 89% das criaturas** (conferido contra
+  a lista `allimages` do wiki, 27.499 arquivos): o que falta são páginas de
+  lista ("Alicorn Set", "Backpacks") que não têm sprite mesmo — não é bug.
 - **Fonte de dados = `tibia.fandom.com` (wiki inglês)**, não o `tibiawiki.com.br`.
   O wiki BR fica atrás de Cloudflare e é inalcançável de datacenter (403 mesmo
   com Chromium real). O BR é fork do inglês, então bastou mapear aliases de
